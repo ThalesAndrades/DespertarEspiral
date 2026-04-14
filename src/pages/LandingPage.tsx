@@ -257,10 +257,6 @@ export default function LandingPage() {
               <span style={{ color: "var(--gold)" }}>É encontrar-se<br />pela primeira vez.</span>
             </h1>
 
-            <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginBottom: "clamp(12px,3vw,22px)", width: "100%" }}>
-              <MacbookMockup />
-            </div>
-
             <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300, textAlign: "center", margin: "0 auto clamp(24px,4vw,40px)" }}>
               Uma jornada de autoconhecimento profunda, estruturada e amorosa — para mulheres que sentem que existe mais.
             </p>
@@ -307,7 +303,7 @@ export default function LandingPage() {
             </div>
             </div>
 
-            <div className="hidden lg:flex" style={{ justifyContent: "flex-end", alignItems: "center", marginTop: "12px" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: "12px" }}>
               <MacbookMockup />
             </div>
           </div>
