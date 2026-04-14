@@ -110,8 +110,8 @@ export default function MacbookMockup() {
     const onLeave = () => { cx = 0; cy = 0; };
 
     const frame = () => {
-      tx += (cx * 3  - tx) * 0.05;
-      ty += (cy * -2 - ty) * 0.05;
+      tx += (cx * 1.8 - tx) * 0.035;
+      ty += (cy * -1.2 - ty) * 0.035;
       const inner = el.querySelector<HTMLElement>(".macbook-photo-inner");
       if (inner) inner.style.transform = `rotateY(${tx}deg) rotateX(${ty}deg)`;
       raf = requestAnimationFrame(frame);
