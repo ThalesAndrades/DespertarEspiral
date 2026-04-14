@@ -238,74 +238,76 @@ export default function LandingPage() {
 
         {/* Hero content */}
         <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "0 auto", padding: "0 clamp(16px,5vw,40px)", paddingTop: "clamp(72px,12vh,100px)" }}>
-          <div style={{ width: "100%", display: "grid", gap: "clamp(32px,6vw,72px)", alignItems: "center" }} className="grid lg:grid-cols-[1.05fr_0.95fr]">
-            <div style={{ width: "100%", maxWidth: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start" }} className="lg:items-start items-center">
+          {/*
+            3-item layout:
+            Mobile  (flex-col):  headline[order-1] → macbook[order-2] → body[order-3]
+            Desktop (grid 2-col): headline[col1 row1] + body[col1 row2]  |  macbook[col2 row1-2]
+          */}
+          <div style={{ width: "100%", display: "grid", gap: "clamp(16px,4vw,48px)", alignItems: "center" }}
+               className="flex flex-col lg:grid lg:grid-cols-[1.05fr_0.95fr]">
 
-            {/* Social proof pill */}
-            <div className="animate-fade-up delay-100" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "clamp(16px,3vw,28px)", background: "var(--gold-glow)", border: "1px solid var(--border-mid)", borderRadius: "100px", padding: "7px 16px 7px 10px", alignSelf: "center", justifySelf: "center" }}>
-              <div style={{ display: "flex", gap: "2px" }}>
-                {[...Array(5)].map((_, i) => <Star key={i} size={9} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
-              </div>
-              <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--gold)" }}>
-                +1.200 mulheres transformadas
-              </span>
-            </div>
-
-            <h1 className="animate-fade-up delay-200 text-balance" style={{ fontSize: "clamp(38px,5.8vw,84px)", lineHeight: 1.02, fontStyle: "italic", fontWeight: 300, marginBottom: "clamp(16px,3vw,28px)", color: heroText, textAlign: "center" }}>
-              Reconectar-se<br />
-              não é voltar.<br />
-              <span style={{ color: "var(--gold)" }}>É encontrar-se<br />pela primeira vez.</span>
-            </h1>
-
-            <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300, textAlign: "center", margin: "0 auto clamp(24px,4vw,40px)" }}>
-              Uma jornada de autoconhecimento profunda, estruturada e amorosa — para mulheres que sentem que existe mais.
-            </p>
-
-            {/* Desktop CTAs */}
-            <div className="hidden lg:flex animate-fade-up delay-400" style={{ gap: "12px", alignItems: "center", flexWrap: "wrap", marginBottom: "28px", justifyContent: "center" }}>
-              <Link to="/checkout/mulher-espiral" className="btn-gold">
-                Quero começar minha jornada <ArrowRight size={14} />
-              </Link>
-              <Link to="/login" className="btn-outline-gold" style={{ color: "rgba(245,240,232,0.85)", borderColor: "rgba(245,240,232,0.24)" }}>
-                Já sou aluna
-              </Link>
-            </div>
-
-            {/* Desktop guarantee strip */}
-            <div className="hidden lg:flex animate-fade-in delay-600" style={{ gap: "20px", flexWrap: "wrap", justifyContent: "center" }}>
-              {guarantees.map(({ icon: Icon, label }) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                  <Icon size={12} style={{ color: "var(--gold-dim)" }} strokeWidth={1.5} />
-                  <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</span>
+            {/* ── 1 · Headline group ── */}
+            <div
+              className="order-1 lg:order-none"
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
+            >
+              {/* Social proof pill */}
+              <div className="animate-fade-up delay-100" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "clamp(14px,2.5vw,24px)", background: "var(--gold-glow)", border: "1px solid var(--border-mid)", borderRadius: "100px", padding: "7px 16px 7px 10px" }}>
+                <div style={{ display: "flex", gap: "2px" }}>
+                  {[...Array(5)].map((_, i) => <Star key={i} size={9} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
                 </div>
-              ))}
+                <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--gold)" }}>
+                  +1.200 mulheres transformadas
+                </span>
+              </div>
+
+              <h1 className="animate-fade-up delay-200 text-balance" style={{ fontSize: "clamp(38px,5.8vw,84px)", lineHeight: 1.02, fontStyle: "italic", fontWeight: 300, marginBottom: 0, color: heroText, textAlign: "center", width: "100%" }}>
+                Reconectar-se<br />
+                não é voltar.<br />
+                <span style={{ color: "var(--gold)" }}>É encontrar-se<br />pela primeira vez.</span>
+              </h1>
             </div>
 
-            {/* Mobile CTAs — full-width */}
-            <div className="lg:hidden animate-fade-in delay-500" style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px", alignItems: "center" }}>
-              <Link to="/checkout/mulher-espiral" className="btn-gold"
-                style={{ width: "100%", justifyContent: "center", minHeight: "56px", borderRadius: "18px" }}>
-                Quero começar minha jornada <ArrowRight size={15} />
-              </Link>
-              <Link to="/login" className="btn-outline-gold"
-                style={{ width: "100%", justifyContent: "center", minHeight: "52px", borderRadius: "18px" }}>
-                Já sou aluna
-              </Link>
-              {/* Guarantee pills */}
-              <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap", marginTop: "12px" }}>
+            {/* ── 2 · MacBook (centred between headline and body on mobile) ── */}
+            <div
+              className="order-2 lg:order-none lg:row-span-2"
+              style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}
+            >
+              <MacbookMockup />
+            </div>
+
+            {/* ── 3 · Body group (subtitle + CTAs) ── */}
+            <div
+              className="order-3 lg:order-none"
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
+            >
+              <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, fontWeight: 300, textAlign: "center", marginBottom: "clamp(22px,3.5vw,36px)" }}>
+                Uma jornada de autoconhecimento profunda, estruturada e amorosa — para mulheres que sentem que existe mais.
+              </p>
+
+              {/* CTAs — stack on mobile, row on desktop */}
+              <div className="animate-fade-up delay-400" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "360px", marginBottom: "clamp(16px,2.5vw,24px)" }}>
+                <Link to="/checkout/mulher-espiral" className="btn-gold"
+                  style={{ justifyContent: "center", minHeight: "56px", borderRadius: "18px" }}>
+                  Quero começar minha jornada <ArrowRight size={15} />
+                </Link>
+                <Link to="/login" className="btn-outline-gold"
+                  style={{ justifyContent: "center", minHeight: "52px", borderRadius: "18px" }}>
+                  Já sou aluna
+                </Link>
+              </div>
+
+              {/* Guarantee strip */}
+              <div className="animate-fade-in delay-600" style={{ display: "flex", justifyContent: "center", gap: "clamp(10px,2vw,20px)", flexWrap: "wrap" }}>
                 {guarantees.map(({ icon: Icon, label }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <Icon size={10} style={{ color: "var(--gold-dim)" }} strokeWidth={1.5} />
-                    <span className="font-label" style={{ fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</span>
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Icon size={11} style={{ color: "var(--gold-dim)" }} strokeWidth={1.5} />
+                    <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</span>
                   </div>
                 ))}
               </div>
             </div>
-            </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: "12px" }}>
-              <MacbookMockup />
-            </div>
           </div>
         </div>
 

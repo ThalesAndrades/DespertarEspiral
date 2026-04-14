@@ -434,18 +434,23 @@ export default function MacbookMockup() {
           50% { opacity: 0; }
         }
         .macbook-wrapper {
-          max-width: 340px;
+          max-width: 300px;
           margin: 0 auto;
+        }
+        @media (min-width: 480px) {
+          .macbook-wrapper {
+            max-width: 360px;
+          }
         }
         @media (min-width: 640px) {
           .macbook-wrapper {
-            max-width: 420px;
+            max-width: 430px;
           }
         }
         @media (min-width: 1024px) {
           .macbook-wrapper {
             max-width: 580px;
-            margin: 0;
+            margin: 0 auto;
           }
         }
       `}</style>
