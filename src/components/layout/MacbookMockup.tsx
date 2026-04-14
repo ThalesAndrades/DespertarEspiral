@@ -14,7 +14,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import macbookPhoto from "@/assets/macbook-mockup.png";
-import platformUI   from "@/assets/platform-ui-screen.jpg";
+import platformUI from "@/assets/platform-screen-v2.jpg";
 
 /* ── Screen calibration constants ─────────────────────────── */
 const SCREEN = {
