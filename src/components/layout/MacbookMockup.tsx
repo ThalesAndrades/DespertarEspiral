@@ -207,7 +207,7 @@ export default function MacbookMockup() {
               left:   "11.0%",
               top:    "2.2%",
               width:  "78.0%",
-              height: "63.5%",
+              height: "65.5%",
               zIndex: 2,
               overflow: "hidden",
               borderRadius: "3px 3px 0 0",
