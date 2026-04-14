@@ -1,0 +1,329 @@
+/**
+ * CourseViewPage — Device-optimized course overview
+ * Mobile: stacked hero card + collapsible module accordion, full-width tap targets
+ * Desktop: hero banner + spacious accordion with side margins
+ */
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
+import { MOCK_PRODUCTS } from "@/constants/mockData";
+import {
+  ChevronDown, ChevronRight, Play, FileText, File, Volume2,
+  CheckCircle, ArrowLeft, BookOpen, Clock,
+} from "lucide-react";
+
+const lessonIcon: Record<string, React.ElementType> = {
+  video: Play, text: FileText, pdf: File, audio: Volume2,
+};
+const lessonLabel: Record<string, string> = {
+  video: "Vídeo", text: "Leitura", pdf: "PDF", audio: "Áudio",
+};
+
+const FALLBACK = "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80&auto=format";
+
+export default function CourseViewPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate  = useNavigate();
+  const { user }  = useAuth();
+
+  /* -- Local fallback from mock data */
+  const mockProduct = MOCK_PRODUCTS.find((p) => p.slug === slug);
+
+  const [product,     setProduct]     = useState(mockProduct ?? null);
+  const [completed,   setCompleted]   = useState<Set<string>>(new Set(["l1", "l2"]));
+  const [openModules, setOpenModules] = useState<Record<string, boolean>>({ m1: true });
+
+  /* -- Load real progress from Supabase */
+  useEffect(() => {
+    if (!user || !slug) return;
+    supabase
+      .from("products")
+      .select(`
+        id, slug, title, subtitle, description, thumbnail_url,
+        modules(id, title, sort_order,
+          lessons(id, title, type, duration_min, is_free, sort_order)
+        )
+      `)
+      .eq("slug", slug)
+      .single()
+      .then(({ data }) => {
+        if (data) setProduct(data as unknown as typeof mockProduct);
+      });
+
+    supabase
+      .from("lesson_progress")
+      .select("lesson_id")
+      .eq("user_id", user.id)
+      .eq("completed", true)
+      .then(({ data }) => {
+        if (data) setCompleted(new Set(data.map((r: { lesson_id: string }) => r.lesson_id)));
+      });
+  }, [user, slug]);
+
+  if (!product) return (
+    <DashboardLayout>
+      <div style={{ padding: "64px 24px", textAlign: "center" }}>
+        <p style={{ color: "var(--text-muted)", marginBottom: "16px" }}>Produto não encontrado.</p>
+        <Link to="/products" className="btn-outline-gold" style={{ fontSize: "9px", padding: "10px 24px" }}>Ver meus cursos</Link>
+      </div>
+    </DashboardLayout>
+  );
+
+  const allLessons     = product.modules.flatMap((m: { lessons: { id: string }[] }) => m.lessons);
+  const totalLessons   = allLessons.length;
+  const completedCount = allLessons.filter((l: { id: string }) => completed.has(l.id)).length;
+  const progress       = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+  const toggleModule = (id: string) =>
+    setOpenModules((p) => ({ ...p, [id]: !p[id] }));
+
+  /* Find first uncompleted lesson for "continuar" CTA */
+  const nextLesson = allLessons.find((l: { id: string }) => !completed.has(l.id)) ?? allLessons[0];
+
+  return (
+    <DashboardLayout>
+      <div style={{ maxWidth: "760px", margin: "0 auto", padding: "0 0 clamp(40px,6vw,80px)" }}>
+
+        {/* ── Back button ── */}
+        <div style={{ padding: "clamp(14px,2.5vw,20px) clamp(14px,4vw,24px) 0" }}>
+          <button
+            onClick={() => navigate("/products")}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "6px",
+              background: "transparent", border: "none", cursor: "pointer",
+              fontSize: "9px", fontFamily: "Montserrat, sans-serif",
+              letterSpacing: "0.18em", textTransform: "uppercase",
+              color: "var(--text-muted)", padding: "8px 0", minHeight: "44px",
+              transition: "color 0.2s",
+            }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-muted)")}
+          >
+            <ArrowLeft size={13} /> Meus Cursos
+          </button>
+        </div>
+
+        {/* ── Hero card ── */}
+        <div style={{ margin: "clamp(8px,1.5vw,12px) clamp(14px,4vw,24px)" }}>
+          <div className="card-dark" style={{ overflow: "hidden" }}>
+            {/* Thumbnail */}
+            <div style={{ position: "relative", height: "clamp(160px,28vw,240px)", overflow: "hidden" }}>
+              <img
+                src={(product as unknown as { thumbnail_url?: string }).thumbnail_url
+                  ?? (product as unknown as { thumbnail?: string }).thumbnail
+                  ?? FALLBACK}
+                alt={product.title}
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(7,9,21,0.94) 0%, rgba(7,9,21,0.5) 55%, rgba(7,9,21,0.15) 100%)" }} />
+
+              {/* Hero text overlay */}
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "clamp(16px,3vw,28px)" }}>
+                {product.subtitle && (
+                  <span className="badge-rose" style={{ marginBottom: "10px", alignSelf: "flex-start" }}>
+                    {product.subtitle}
+                  </span>
+                )}
+                <h1 className="font-display" style={{ fontSize: "clamp(22px,4.5vw,40px)", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.1, marginBottom: "6px" }}>
+                  {product.title}
+                </h1>
+                <p style={{ fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(245,240,232,0.40)" }}>
+                  {product.modules.length} módulos · {totalLessons} aulas
+                </p>
+              </div>
+            </div>
+
+            {/* Progress + CTA footer */}
+            <div style={{ padding: "clamp(14px,2.5vw,20px) clamp(16px,3vw,24px)", borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: "140px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {completedCount} de {totalLessons} aulas
+                  </span>
+                  <span style={{ fontSize: "13px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, color: "var(--gold)" }}>
+                    {progress}%
+                  </span>
+                </div>
+                <div className="progress-bar" style={{ height: "4px" }}>
+                  <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+
+              {nextLesson && (
+                <Link
+                  to={`/products/${slug}/lesson/${nextLesson.id}`}
+                  className="btn-gold"
+                  style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap" }}
+                >
+                  <Play size={12} fill="#060810" style={{ color: "#060810" }} />
+                  {completedCount === 0 ? "Começar" : "Continuar"}
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Stats strip ── */}
+        <div style={{ padding: "0 clamp(14px,4vw,24px)", margin: "clamp(12px,2vw,16px) 0" }}>
+          <div style={{ display: "flex", gap: "12px", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            {[
+              { icon: BookOpen, val: `${product.modules.length}`,   lbl: "módulos" },
+              { icon: Play,     val: `${totalLessons}`,             lbl: "aulas" },
+              { icon: CheckCircle, val: `${completedCount}`,        lbl: "concluídas" },
+              { icon: Clock,    val: progress > 0 ? `${progress}%` : "0%", lbl: "progresso" },
+            ].map(({ icon: Icon, val, lbl }) => (
+              <div
+                key={lbl}
+                style={{
+                  display: "flex", alignItems: "center", gap: "8px",
+                  padding: "10px 14px", borderRadius: "12px", flexShrink: 0,
+                  background: "var(--bg-surface-2)",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              >
+                <Icon size={13} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                <div>
+                  <p style={{ fontSize: "14px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, color: "var(--text-primary)", lineHeight: 1 }}>{val}</p>
+                  <p style={{ fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-faint)", marginTop: "2px" }}>{lbl}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <style>{`.scroll-x-hide::-webkit-scrollbar { display: none; }`}</style>
+        </div>
+
+        {/* ── Module accordion ── */}
+        <div style={{ padding: "0 clamp(14px,4vw,24px)" }}>
+          <p className="overline" style={{ color: "var(--gold)", marginBottom: "clamp(12px,2vw,16px)", fontSize: "8px" }}>Conteúdo do curso</p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {product.modules.map((mod: { id: string; title: string; lessons: { id: string; title: string; type: string; duration_min?: number }[] }, mIdx: number) => {
+              const isOpen   = !!openModules[mod.id];
+              const modDone  = mod.lessons.filter((l) => completed.has(l.id)).length;
+              const allDone  = modDone === mod.lessons.length && mod.lessons.length > 0;
+
+              return (
+                <div key={mod.id} className="card-dark" style={{ overflow: "hidden" }}>
+                  {/* Module header — full tap target */}
+                  <button
+                    onClick={() => toggleModule(mod.id)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: "clamp(10px,2vw,14px)",
+                      padding: "clamp(14px,2vw,18px) clamp(14px,2.5vw,20px)",
+                      background: "transparent", border: "none", cursor: "pointer", textAlign: "left",
+                      minHeight: "clamp(60px,8vw,72px)",
+                      transition: "background 0.15s",
+                    }}
+                  >
+                    {/* Number badge */}
+                    <span style={{
+                      width: "clamp(28px,4vw,34px)", height: "clamp(28px,4vw,34px)",
+                      borderRadius: "50%", flexShrink: 0,
+                      background: allDone ? "rgba(140,170,150,0.15)" : "rgba(198,168,112,0.12)",
+                      color: allDone ? "var(--sage)" : "var(--gold)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "11px", fontFamily: "Montserrat, sans-serif", fontWeight: 500,
+                    }}>
+                      {allDone ? <CheckCircle size={14} strokeWidth={2} /> : mIdx + 1}
+                    </span>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        fontSize: "clamp(14px,1.8vw,16px)", fontWeight: 500,
+                        color: "var(--text-primary)", lineHeight: 1.3, marginBottom: "3px",
+                      }}>
+                        {mod.title}
+                      </p>
+                      <p style={{
+                        fontSize: "11px", fontFamily: "Montserrat, sans-serif",
+                        letterSpacing: "0.08em", textTransform: "uppercase",
+                        color: allDone ? "var(--sage)" : "var(--text-faint)",
+                      }}>
+                        {modDone}/{mod.lessons.length} aulas concluídas
+                      </p>
+                    </div>
+
+                    {isOpen
+                      ? <ChevronDown  size={15} style={{ color: "var(--border-mid)", flexShrink: 0 }} />
+                      : <ChevronRight size={15} style={{ color: "var(--border-mid)", flexShrink: 0 }} />
+                    }
+                  </button>
+
+                  {/* Lessons list */}
+                  {isOpen && (
+                    <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                      {mod.lessons.map((lesson, lIdx) => {
+                        const Icon = lessonIcon[lesson.type] ?? FileText;
+                        const done = completed.has(lesson.id);
+                        const isLast = lIdx === mod.lessons.length - 1;
+
+                        return (
+                          <Link
+                            key={lesson.id}
+                            to={`/products/${slug}/lesson/${lesson.id}`}
+                            style={{
+                              display: "flex", alignItems: "center", gap: "clamp(10px,2vw,14px)",
+                              padding: "clamp(12px,2vw,14px) clamp(14px,2.5vw,20px)",
+                              textDecoration: "none",
+                              borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
+                              transition: "background 0.15s",
+                              minHeight: "clamp(52px,7vw,60px)",
+                            }}
+                            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)")}
+                            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "transparent")}
+                          >
+                            {/* Lesson icon */}
+                            <div style={{
+                              width: "clamp(28px,4vw,32px)", height: "clamp(28px,4vw,32px)",
+                              borderRadius: "50%", flexShrink: 0,
+                              background: done ? "rgba(140,170,150,0.12)" : "rgba(198,168,112,0.07)",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              transition: "background 0.2s",
+                            }}>
+                              {done
+                                ? <CheckCircle size={13} style={{ color: "var(--sage)" }} strokeWidth={2} />
+                                : <Icon size={12} style={{ color: "rgba(198,168,112,0.55)" }} strokeWidth={1.5} />
+                              }
+                            </div>
+
+                            {/* Title */}
+                            <p style={{
+                              flex: 1, minWidth: 0,
+                              fontSize: "clamp(13px,1.6vw,15px)", lineHeight: 1.4,
+                              color: done ? "var(--sage)" : "var(--text-muted)",
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            }}>
+                              {lesson.title}
+                            </p>
+
+                            {/* Meta */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                              {lesson.duration_min != null && lesson.duration_min > 0 && (
+                                <span style={{ fontSize: "10px", fontFamily: "Montserrat", color: "var(--text-faint)", letterSpacing: "0.06em" }}>
+                                  {lesson.duration_min}min
+                                </span>
+                              )}
+                              <span style={{
+                                fontSize: "8px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.14em",
+                                textTransform: "uppercase", color: "var(--text-faint)",
+                              }}>
+                                {lessonLabel[lesson.type] ?? lesson.type}
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+      </div>
+    </DashboardLayout>
+  );
+}
