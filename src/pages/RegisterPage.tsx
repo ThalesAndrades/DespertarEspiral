@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
-import { AuthSpiral3D } from "@/components/layout/Spiral3D";
+import { LazyAuthSpiral3D as AuthSpiral3D } from "@/components/layout/LazyDecorative";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, Mail, KeyRound, ChevronLeft } from "lucide-react";

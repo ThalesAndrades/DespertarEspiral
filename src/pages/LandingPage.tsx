@@ -5,8 +5,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
-import { BackgroundSpiral3D, SectionSpiral3D } from "@/components/layout/Spiral3D";
-import IPhoneMockup from "@/components/layout/IPhoneMockup";
+import {
+  LazyBackgroundSpiral3D as BackgroundSpiral3D,
+  LazySectionSpiral3D as SectionSpiral3D,
+  LazyIPhoneMockup as IPhoneMockup,
+} from "@/components/layout/LazyDecorative";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import { useTheme } from "@/hooks/useTheme";
