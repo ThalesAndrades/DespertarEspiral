@@ -45,12 +45,17 @@ export default function ProductsPage() {
     (async () => {
       setLoading(true);
 
+      // 1. All products with nested modules → lessons (single query)
       const { data: allProducts } = await supabase
         .from("products")
-        .select("id, slug, title, subtitle, description, price, original_price, thumbnail_url")
+        .select(`
+          id, slug, title, subtitle, description, price, original_price, thumbnail_url,
+          modules(id, lessons(id))
+        `)
         .eq("is_active", true)
-        .order("sort_order");
+        .order("created_at", { ascending: false });
 
+      // 2. User owned products
       const { data: owned } = await supabase
         .from("user_products")
         .select("product_id")
@@ -58,34 +63,42 @@ export default function ProductsPage() {
 
       const ownedIds = new Set((owned ?? []).map((r: { product_id: string }) => r.product_id));
 
-      const results: Product[] = await Promise.all(
-        (allProducts ?? []).map(async (p: { id: string; slug: string; title: string; subtitle: string | null; description: string | null; price: number; original_price: number | null; thumbnail_url: string | null }) => {
-          const { data: mods } = await supabase.from("modules").select("id").eq("product_id", p.id);
-          const moduleIds = (mods ?? []).map((m: { id: string }) => m.id);
-          let totalLessons = 0, completed = 0;
-
-          if (moduleIds.length > 0) {
-            const { data: lessons } = await supabase.from("lessons").select("id").in("module_id", moduleIds);
-            totalLessons = lessons?.length ?? 0;
-            if ((lessons?.length ?? 0) > 0 && ownedIds.has(p.id)) {
-              const { count } = await supabase.from("lesson_progress")
-                .select("id", { count: "exact", head: true })
-                .eq("user_id", user.id).eq("completed", true)
-                .in("lesson_id", (lessons ?? []).map((l: { id: string }) => l.id));
-              completed = count ?? 0;
-            }
-          }
-
-          return {
-            ...p,
-            total_modules: moduleIds.length,
-            total_lessons: totalLessons,
-            completed_lessons: completed,
-            progress_pct: totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0,
-            has_access: ownedIds.has(p.id),
-          };
-        })
+      // 3. All lesson progress in one shot
+      const allLessonIds = (allProducts ?? []).flatMap((p: Record<string, unknown>) =>
+        ((p.modules as { lessons: { id: string }[] }[]) ?? []).flatMap((m) => m.lessons.map((l) => l.id))
       );
+      let completedSet = new Set<string>();
+      if (allLessonIds.length > 0) {
+        const { data: progress } = await supabase
+          .from("lesson_progress")
+          .select("lesson_id")
+          .eq("user_id", user.id)
+          .eq("completed", true)
+          .in("lesson_id", allLessonIds);
+        completedSet = new Set((progress ?? []).map((r: { lesson_id: string }) => r.lesson_id));
+      }
+
+      const results: Product[] = (allProducts ?? []).map((p: Record<string, unknown>) => {
+        const mods = (p.modules as { id: string; lessons: { id: string }[] }[]) ?? [];
+        const lessonIds = mods.flatMap((m) => m.lessons.map((l) => l.id));
+        const totalLessons = lessonIds.length;
+        const completed = ownedIds.has(p.id as string) ? lessonIds.filter((id) => completedSet.has(id)).length : 0;
+        return {
+          id: p.id as string,
+          slug: p.slug as string,
+          title: p.title as string,
+          subtitle: p.subtitle as string | null,
+          description: p.description as string | null,
+          price: p.price as number,
+          original_price: p.original_price as number | null,
+          thumbnail_url: p.thumbnail_url as string | null,
+          total_modules: mods.length,
+          total_lessons: totalLessons,
+          completed_lessons: completed,
+          progress_pct: totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0,
+          has_access: ownedIds.has(p.id as string),
+        };
+      });
 
       setProducts(results);
       setLoading(false);

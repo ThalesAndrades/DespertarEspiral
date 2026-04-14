@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { MOCK_PRODUCTS } from "@/constants/mockData";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2 } from "lucide-react";
+import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
 import { toast } from "sonner";
 
 const LABEL: React.CSSProperties = {
@@ -23,14 +23,21 @@ const LABEL: React.CSSProperties = {
   fontWeight: 500,
 };
 
+const PAYMENT_METHODS = [
+  { id: "pix",    label: "PIX",         sub: "Aprovação imediata", icon: Zap },
+  { id: "credit", label: "Cartão",      sub: "12× sem juros",      icon: Shield },
+  { id: "boleto", label: "Boleto",      sub: "Vence em 3 dias",    icon: Star },
+];
+
 export default function CheckoutPage() {
   const { slug }  = useParams<{ slug: string }>();
   const navigate  = useNavigate();
   const { user }  = useAuth();
 
-  const [product, setProduct] = useState(MOCK_PRODUCTS.find((p) => p.slug === slug) ?? MOCK_PRODUCTS[0]);
-  const [form,    setForm]    = useState({ name: user?.name ?? "", email: user?.email ?? "" });
-  const [loading, setLoading] = useState(false);
+  const [product,       setProduct]       = useState(MOCK_PRODUCTS.find((p) => p.slug === slug) ?? MOCK_PRODUCTS[0]);
+  const [form,          setForm]          = useState({ name: user?.name ?? "", email: user?.email ?? "" });
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit" | "boleto">("pix");
+  const [loading,       setLoading]       = useState(false);
 
   useEffect(() => {
     if (user) setForm({ name: user.name, email: user.email });
@@ -60,7 +67,7 @@ export default function CheckoutPage() {
     setLoading(true);
 
     const { data, error } = await supabase.functions.invoke("checkout-session", {
-      body: { productSlug: slug, email: form.email, name: form.name, userId: user?.id ?? null },
+      body: { productSlug: slug, email: form.email, name: form.name, userId: user?.id ?? null, paymentMethod },
     });
 
     if (error) {
@@ -105,6 +112,26 @@ export default function CheckoutPage() {
           </span>
         </div>
       </header>
+
+      {/* Urgency strip */}
+      <div style={{
+        background: "linear-gradient(135deg, rgba(198,168,112,0.10) 0%, rgba(201,154,170,0.06) 100%)",
+        borderBottom: "1px solid var(--border-subtle)",
+        padding: "10px clamp(16px,5vw,32px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: "clamp(12px,3vw,28px)", flexWrap: "wrap",
+      }}>
+        {[
+          { icon: Users, text: "+1.200 mulheres já transformadas" },
+          { icon: Star,  text: "4.9 ★ avaliação média" },
+          { icon: Shield, text: "7 dias de garantia incondicional" },
+        ].map(({ icon: Icon, text }) => (
+          <div key={text} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Icon size={11} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+            <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)" }}>{text}</span>
+          </div>
+        ))}
+      </div>
 
       <div style={{ maxWidth: "1020px", margin: "0 auto", padding: "clamp(20px,4vw,40px) clamp(16px,5vw,24px) clamp(40px,6vw,80px)" }}>
 
@@ -163,13 +190,56 @@ export default function CheckoutPage() {
                 </p>
               )}
 
+              {/* Payment method selector */}
+              <div>
+                <label style={LABEL}>Forma de pagamento</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                  {PAYMENT_METHODS.map(({ id, label, sub, icon: Icon }) => {
+                    const active = paymentMethod === id;
+                    return (
+                      <button
+                        key={id} type="button"
+                        onClick={() => setPaymentMethod(id as "pix" | "credit" | "boleto")}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                          gap: "5px", padding: "14px 8px",
+                          borderRadius: "14px", border: `1.5px solid ${active ? "var(--gold)" : "var(--border-soft)"}`,
+                          background: active ? "rgba(198,168,112,0.08)" : "var(--input-bg)",
+                          cursor: "pointer", transition: "all 0.2s ease",
+                          minHeight: "72px",
+                        }}
+                      >
+                        <Icon size={16} style={{ color: active ? "var(--gold)" : "var(--text-faint)" }} strokeWidth={1.5} />
+                        <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: active ? "var(--gold)" : "var(--text-primary)", fontWeight: active ? 600 : 400 }}>{label}</span>
+                        <span style={{ fontSize: "10px", color: active ? "var(--text-secondary)" : "var(--text-faint)" }}>{sub}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {paymentMethod === "pix" && (
+                  <p style={{ fontSize: "12px", color: "var(--sage)", marginTop: "8px", display: "flex", alignItems: "center", gap: "5px" }}>
+                    <Zap size={10} /> Você receberá a chave PIX por e-mail após o registro.
+                  </p>
+                )}
+                {paymentMethod === "credit" && (
+                  <p style={{ fontSize: "12px", color: "var(--lavender)", marginTop: "8px" }}>
+                    Link de pagamento seguro enviado por e-mail após o registro.
+                  </p>
+                )}
+                {paymentMethod === "boleto" && (
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "8px" }}>
+                    Boleto gerado e enviado por e-mail. Vencimento em 3 dias úteis.
+                  </p>
+                )}
+              </div>
+
               {/* How it works */}
               <div className="card-dark" style={{ padding: "clamp(16px,2.5vw,22px)" }}>
                 <p className="overline" style={{ color: "var(--text-muted)", marginBottom: "14px", fontSize: "8px" }}>Como funciona</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "clamp(10px,1.5vw,14px)" }}>
                   {[
                     { n: "01", t: "Registre seu pedido", d: "Seus dados são registrados com segurança." },
-                    { n: "02", t: "Receba as instruções", d: "Instruções de pagamento via PIX chegam ao seu e-mail." },
+                    { n: "02", t: "Receba as instruções", d: `Instruções de pagamento via ${paymentMethod === "pix" ? "PIX" : paymentMethod === "credit" ? "cartão" : "boleto"} chegam ao seu e-mail.` },
                     { n: "03", t: "Acesso liberado", d: "Confirmamos o pagamento e liberamos acesso em até 1h." },
                   ].map(({ n, t, d }) => (
                     <div key={n} style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
@@ -179,11 +249,6 @@ export default function CheckoutPage() {
                         <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.6 }}>{d}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div style={{ display: "flex", gap: "6px", marginTop: "16px", flexWrap: "wrap" }}>
-                  {["PIX", "Cartão de crédito", "Boleto"].map((m) => (
-                    <span key={m} className="badge-gold" style={{ fontSize: "8px" }}>{m}</span>
                   ))}
                 </div>
               </div>

@@ -34,15 +34,48 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { action, orderId, paymentMethod } = body;
 
-    // Only accept internal admin actions
-    const authHeader = req.headers.get("Authorization");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseUrl  = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey   = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    // Validate that the caller has service role access
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      serviceKey
-    );
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey);
+
+    // ── Admin guard: validate caller is an authenticated admin ──
+    // The Supabase JS client sends the user's JWT in the Authorization header.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Autenticação necessária" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const callerToken = authHeader.replace("Bearer ", "").trim();
+
+    // Verify the token and fetch the caller's profile to check admin role
+    const supabaseCaller = createClient(supabaseUrl, serviceKey, {
+      global: { headers: { Authorization: `Bearer ${callerToken}` } },
+    });
+    const { data: { user: callerUser } } = await supabaseCaller.auth.getUser(callerToken);
+
+    if (!callerUser) {
+      return new Response(
+        JSON.stringify({ error: "Token inválido ou expirado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Fetch admin role from user_profiles
+    const { data: callerProfile } = await supabaseAdmin
+      .from("user_profiles")
+      .select("role")
+      .eq("id", callerUser.id)
+      .single();
+
+    if (callerProfile?.role !== "admin") {
+      return new Response(
+        JSON.stringify({ error: "Acesso negado. Requer papel de administrador." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // ── Action: confirm_payment ──
     // Called by admin to mark an order as paid and grant product access

@@ -11,6 +11,15 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
+/* Detect initial theme to pass correct colors to Toaster before React hydration */
+const initialTheme = ((): "dark" | "light" => {
+  try {
+    const stored = localStorage.getItem("theme");
+    if (stored === "light" || stored === "dark") return stored;
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  } catch { return "dark"; }
+})();
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -19,13 +28,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <App />
           <Toaster
             position="top-right"
+            theme={initialTheme}
             toastOptions={{
               style: {
-                background: "#12142a",
-                border: "1px solid rgba(198,168,112,0.25)",
-                color: "#f8f5ee",
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "14px",
+              },
+              classNames: {
+                toast: "toaster-brand",
               },
             }}
           />

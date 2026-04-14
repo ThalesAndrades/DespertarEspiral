@@ -36,11 +36,29 @@ Deno.serve(async (req: Request) => {
   if (corsResponse) return corsResponse;
 
   try {
-    const { productSlug, email, name, userId } = await req.json();
+    const { productSlug, email, name, userId, paymentMethod } = await req.json();
 
+    // Input validation
     if (!productSlug || !email) {
       return new Response(
         JSON.stringify({ error: "productSlug e email são obrigatórios" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "Formato de e-mail inválido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const allowedPaymentMethods = ["pix", "credit", "boleto", null, undefined];
+    if (!allowedPaymentMethods.includes(paymentMethod)) {
+      return new Response(
+        JSON.stringify({ error: "Método de pagamento inválido" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -72,10 +90,11 @@ Deno.serve(async (req: Request) => {
       .insert({
         user_id: userId || null,
         product_id: product.id,
-        email,
-        name: name || null,
+        email: email.toLowerCase().trim(),
+        name: name?.trim() || null,
         amount: product.price,
         status: "pending",
+        payment_method: paymentMethod || "pix",
       })
       .select("id")
       .single();
@@ -126,6 +145,7 @@ Deno.serve(async (req: Request) => {
           product_slug:     product.slug,
           amount:           product.price,
           order_id:         order.id,
+          payment_method:   paymentMethod || "pix",
           checkout_url:     `${req.headers.get("origin") || "https://despertarespiral.com"}/checkout/${product.slug}`,
         },
       });

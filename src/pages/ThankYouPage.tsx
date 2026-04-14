@@ -127,10 +127,9 @@ export default function ThankYouPage() {
       <header style={{
         width: "100%", padding: "clamp(16px,3vw,28px) clamp(16px,5vw,24px)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        position: "relative", zIndex: 2,
+        position: "sticky", top: 0, zIndex: 2,
         background: "var(--nav-bg)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid var(--border-subtle)",
-        position: "sticky", top: 0,
       }}>
         <Link to="/" style={{ textDecoration: "none" }}>
           <SpiralLogo variant="dark" size={28} autoTheme />

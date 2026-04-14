@@ -2,7 +2,7 @@
  * LandingPage — Reformulação completa
  * Dark / Light totalmente cobertos, mobile-first em todas as seções
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
 import { BackgroundSpiral3D, SectionSpiral3D } from "@/components/layout/Spiral3D";
@@ -10,7 +10,7 @@ import TabletMockup from "@/components/layout/TabletMockup";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import { useTheme } from "@/hooks/useTheme";
-import { ArrowRight, ArrowUpRight, Shield, Clock, Infinity, Star } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Shield, Clock, Infinity, Star, ChevronDown } from "lucide-react";
 
 /* ── Scroll progress ──────────────────────────────────────── */
 function useScrollProgress(ref: React.RefObject<HTMLDivElement | null>) {
@@ -44,7 +44,7 @@ function useReveal() {
 }
 
 /* ── Active section dots ──────────────────────────────────── */
-const SECTION_COUNT = 8;
+const SECTION_COUNT = 9;
 function useActiveSection(dotsRef: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const els = Array.from({ length: SECTION_COUNT }, (_, i) => document.getElementById(`section-${i}`));
@@ -97,6 +97,87 @@ const guarantees = [
   { icon: Infinity, label: "Acesso vitalício",   desc: "Conteúdo sempre disponível" },
   { icon: Clock,    label: "Suporte humanizado", desc: "Time dedicado à sua jornada" },
 ];
+
+const faqs = [
+  {
+    q: "Para quem é o Mulher Espiral?",
+    a: "Para mulheres que sentem que algo está faltando — mesmo quando tudo 'parece' bem por fora. Para quem carrega histórias difíceis no corpo, mas ainda acredita em transformação. Não é necessária nenhuma experiência prévia com autoconhecimento.",
+  },
+  {
+    q: "Como funciona o acesso ao curso?",
+    a: "Após a confirmação do pagamento, você recebe acesso vitalício à plataforma. Os módulos são liberados progressivamente para que você possa integrar cada etapa. Você aprende no seu ritmo, sem pressão.",
+  },
+  {
+    q: "E se eu não me identificar com o conteúdo?",
+    a: "Você tem 7 dias de garantia incondicional. Se por qualquer motivo sentir que não é o momento certo, devolvemos 100% do investimento sem burocracia e sem perguntas. Simples assim.",
+  },
+  {
+    q: "Preciso de muito tempo disponível?",
+    a: "As aulas foram criadas para a realidade da mulher moderna. Você pode progredir com 20 a 40 minutos por dia. O que importa é constância, não velocidade — a espiral avança no seu tempo.",
+  },
+  {
+    q: "Existe suporte durante a jornada?",
+    a: "Sim. Você tem acesso à comunidade exclusiva de alunas e ao suporte humanizado da nossa equipe. Ninguém percorre esse caminho sozinha.",
+  },
+  {
+    q: "Como é feito o pagamento?",
+    a: "Aceitamos PIX (aprovação instantânea), cartão de crédito em até 12× e boleto bancário. Após o pedido, você recebe as instruções detalhadas por e-mail.",
+  },
+];
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{
+      borderBottom: "1px solid var(--border-subtle)",
+      overflow: "hidden",
+    }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: "16px", padding: "clamp(16px,2.5vw,22px) 0",
+          background: "transparent", border: "none", cursor: "pointer",
+          textAlign: "left",
+        }}
+        aria-expanded={open}
+      >
+        <span style={{ fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-primary)", fontWeight: 400, lineHeight: 1.5, flex: 1 }}>
+          {q}
+        </span>
+        <div style={{
+          width: "28px", height: "28px", borderRadius: "50%",
+          border: "1px solid var(--border-soft)",
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          background: open ? "rgba(198,168,112,0.12)" : "transparent",
+          borderColor: open ? "var(--border-mid)" : "var(--border-soft)",
+          transition: "all 0.25s ease",
+        }}>
+          <ChevronDown
+            size={13}
+            style={{
+              color: open ? "var(--gold)" : "var(--text-faint)",
+              transform: open ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.3s cubic-bezier(.16,1,.3,1)",
+            }}
+          />
+        </div>
+      </button>
+      <div style={{
+        maxHeight: open ? "300px" : "0px",
+        overflow: "hidden",
+        transition: "max-height 0.4s cubic-bezier(.16,1,.3,1)",
+      }}>
+        <p style={{
+          fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-secondary)",
+          lineHeight: 1.85, paddingBottom: "clamp(16px,2.5vw,22px)",
+        }}>
+          {a}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   const progressRef = useRef<HTMLDivElement>(null);
@@ -266,7 +347,7 @@ export default function LandingPage() {
             <div style={{ display: "flex", justifyContent: "center", gap: "4px", marginBottom: "12px" }}>
               {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
             </div>
-            <p className="font-display" style={{ fontSize: "clamp(16px,2.4vw,22px)", fontStyle: "italic", color: isLight ? "#f5f0e8" : "var(--text-secondary)", fontWeight: 300, maxWidth: "560px", margin: "0 auto", lineHeight: 1.5 }}>
+            <p className="font-display" style={{ fontSize: "clamp(16px,2.4vw,22px)", fontStyle: "italic", color: isLight ? "var(--bg-surface)" : "var(--text-secondary)", fontWeight: 300, maxWidth: "560px", margin: "0 auto", lineHeight: 1.5 }}>
               "A experiência mais transformadora que já vivi."
             </p>
           </div>
@@ -543,9 +624,40 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          7 — CTA FINAL
+          7 — FAQ
       ══════════════════════════════════════════════ */}
       <section id="section-7" className="cv-auto" style={{
+        position: "relative", zIndex: 1, overflow: "hidden",
+        padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
+        background: "var(--bg-surface-2)",
+      }}>
+        <div style={{ position: "relative", maxWidth: "720px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "clamp(36px,6vw,56px)" }}>
+            <p className="overline reveal" style={{ color: "var(--gold)", marginBottom: "16px" }}>Dúvidas frequentes</p>
+            <h2 className="font-display text-balance reveal reveal-delay-1" style={{ fontSize: "clamp(28px,5vw,58px)", fontWeight: 300, color: "var(--text-primary)" }}>
+              O que você precisa saber
+            </h2>
+          </div>
+          <div className="reveal reveal-delay-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            {faqs.map((faq, i) => (
+              <FaqItem key={i} q={faq.q} a={faq.a} />
+            ))}
+          </div>
+          <div className="reveal reveal-delay-3" style={{ textAlign: "center", marginTop: "clamp(28px,4vw,44px)" }}>
+            <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-muted)", marginBottom: "20px" }}>
+              Ainda tem dúvidas? Fale com a gente.
+            </p>
+            <a href="mailto:contato@despertarespiral.com" className="btn-outline-gold" style={{ display: "inline-flex" }}>
+              contato@despertarespiral.com
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          8 — CTA FINAL
+      ══════════════════════════════════════════════ */}
+      <section id="section-8" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(100px,14vw,180px) clamp(16px,5vw,24px)",
         textAlign: "center", background: "#060810",

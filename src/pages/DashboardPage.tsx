@@ -73,35 +73,51 @@ export default function DashboardPage() {
     if (!user) return;
     (async () => {
       setLoadingP(true);
+
+      // 1. Owned products with nested structure (single query)
       const { data: owned } = await supabase
         .from("user_products")
-        .select("product_id, products(id, slug, title, subtitle, thumbnail_url)")
+        .select(`
+          product_id,
+          products(id, slug, title, subtitle, thumbnail_url,
+            modules(id, lessons(id))
+          )
+        `)
         .eq("user_id", user.id);
 
       if (!owned || owned.length === 0) { setLoadingP(false); return; }
 
-      const results: ProductWithProgress[] = await Promise.all(
-        owned.map(async (row: Record<string, unknown>) => {
-          const p = row.products as { id: string; slug: string; title: string; subtitle: string | null; thumbnail_url: string | null } | null;
-          if (!p) return null;
-          const { data: modules } = await supabase.from("modules").select("id").eq("product_id", p.id);
-          const moduleIds = (modules ?? []).map((m: { id: string }) => m.id);
-          let totalLessons = 0, completedLessons = 0;
-          if (moduleIds.length > 0) {
-            const { data: lessons } = await supabase.from("lessons").select("id").in("module_id", moduleIds);
-            totalLessons = lessons?.length ?? 0;
-            const lessonIds = (lessons ?? []).map((l: { id: string }) => l.id);
-            if (lessonIds.length > 0) {
-              const { count } = await supabase.from("lesson_progress").select("id", { count: "exact", head: true })
-                .eq("user_id", user.id).eq("completed", true).in("lesson_id", lessonIds);
-              completedLessons = count ?? 0;
-            }
-          }
-          const progress_pct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-          return { id: p.id, slug: p.slug, title: p.title, subtitle: p.subtitle, thumbnail_url: p.thumbnail_url, total_lessons: totalLessons, completed_lessons: completedLessons, progress_pct };
-        })
-      );
-      const valid = results.filter(Boolean) as ProductWithProgress[];
+      // 2. Collect all lesson IDs across all owned products
+      const allLessonIds = owned.flatMap((row: Record<string, unknown>) => {
+        const p = row.products as { modules: { lessons: { id: string }[] }[] } | null;
+        return (p?.modules ?? []).flatMap((m) => m.lessons.map((l) => l.id));
+      });
+
+      // 3. Single progress query for all lessons
+      let completedSet = new Set<string>();
+      if (allLessonIds.length > 0) {
+        const { data: progress } = await supabase
+          .from("lesson_progress")
+          .select("lesson_id")
+          .eq("user_id", user.id)
+          .eq("completed", true)
+          .in("lesson_id", allLessonIds);
+        completedSet = new Set((progress ?? []).map((r: { lesson_id: string }) => r.lesson_id));
+      }
+
+      const valid: ProductWithProgress[] = owned.map((row: Record<string, unknown>) => {
+        const p = row.products as { id: string; slug: string; title: string; subtitle: string | null; thumbnail_url: string | null; modules: { id: string; lessons: { id: string }[] }[] } | null;
+        if (!p) return null;
+        const lessonIds = (p.modules ?? []).flatMap((m) => m.lessons.map((l) => l.id));
+        const totalLessons = lessonIds.length;
+        const completedLessons = lessonIds.filter((id) => completedSet.has(id)).length;
+        return {
+          id: p.id, slug: p.slug, title: p.title, subtitle: p.subtitle, thumbnail_url: p.thumbnail_url,
+          total_lessons: totalLessons, completed_lessons: completedLessons,
+          progress_pct: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
+        };
+      }).filter(Boolean) as ProductWithProgress[];
+
       setProducts(valid);
       setTotalDone(valid.reduce((s, p) => s + p.completed_lessons, 0));
       setLoadingP(false);
