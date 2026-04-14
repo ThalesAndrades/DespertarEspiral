@@ -196,21 +196,21 @@ export default function MacbookMockup() {
           {/*
             ── Screen UI overlay ──
             Calibrated for this specific MacBook image:
-            Screen left  ≈ 15.2% of image width
-            Screen top   ≈ 2.6%  of image height
-            Screen right ≈ 84.8% → width ≈ 69.6%
-            Screen bottom≈ 67.4% → height ≈ 64.8%
+            Screen left  ≈ 12.5% of image width
+            Screen top   ≈ 3.8%  of image height
+            Screen width ≈ 75.0%
+            Screen height≈ 59.5%
           */}
           <div
             style={{
               position: "absolute",
-              left:   "15.2%",
-              top:    "2.6%",
-              width:  "69.6%",
-              height: "64.8%",
+              left:   "12.5%",
+              top:    "3.8%",
+              width:  "75.0%",
+              height: "59.5%",
               zIndex: 2,
               overflow: "hidden",
-              borderRadius: "2px",
+              borderRadius: "3px 3px 0 0",
               /* Screen boots from black to platform */
               background: "#070915",
               opacity: booted ? 1 : 0,
