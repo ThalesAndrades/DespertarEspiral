@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
 import { BackgroundSpiral3D, SectionSpiral3D } from "@/components/layout/Spiral3D";
-import MacBookMockup from "@/components/layout/MacBookMockup";
+import MacBookMockup from "@/components/layout/MacbookMockup";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import { useTheme } from "@/hooks/useTheme";

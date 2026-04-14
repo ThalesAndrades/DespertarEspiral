@@ -115,6 +115,7 @@ export default function CourseViewPage() {
                   ?? (product as unknown as { thumbnail?: string }).thumbnail
                   ?? FALLBACK}
                 alt={product.title}
+                loading="lazy" decoding="async"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(7,9,21,0.94) 0%, rgba(7,9,21,0.5) 55%, rgba(7,9,21,0.15) 100%)" }} />
