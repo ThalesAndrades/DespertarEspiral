@@ -204,10 +204,10 @@ export default function MacbookMockup() {
           <div
             style={{
               position: "absolute",
-              left:   "12.5%",
-              top:    "3.8%",
-              width:  "75.0%",
-              height: "59.5%",
+              left:   "11.0%",
+              top:    "2.2%",
+              width:  "78.0%",
+              height: "63.5%",
               zIndex: 2,
               overflow: "hidden",
               borderRadius: "3px 3px 0 0",
