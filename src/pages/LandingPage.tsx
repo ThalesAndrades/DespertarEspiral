@@ -267,7 +267,7 @@ export default function LandingPage() {
               <Link to="/checkout/mulher-espiral" className="btn-gold">
                 Quero começar minha jornada <ArrowRight size={14} />
               </Link>
-              <Link to="/login" className="btn-outline-gold" style={{ color: "rgba(245,240,232,0.85)", borderColor: "rgba(245,240,232,0.24)" }}>
+              <Link to="/login" className="btn-outline-gold" style={{ color: isLight ? "var(--text-secondary)" : "rgba(245,240,232,0.85)", borderColor: isLight ? "var(--border-mid)" : "rgba(245,240,232,0.24)" }}>
                 Já faço parte
               </Link>
             </div>
@@ -654,7 +654,7 @@ export default function LandingPage() {
               "Não sou guru. Sou uma companheira de jornada que já percorreu o caminho e voltou para te mostrar que é possível."
             </p>
             <div style={{ display: "flex", gap: "clamp(8px,1.5vw,12px)", flexWrap: "wrap", marginBottom: "clamp(20px,3vw,32px)" }}>
-              {[["1.2k", "alunos"], ["4.9", "avaliação"], ["97%", "recomendam"]].map(([val, lbl]) => (
+              {[["1.2k", "pessoas"], ["4.9", "avaliação"], ["97%", "recomendam"]].map(([val, lbl]) => (
                 <div key={lbl} className="card-dark" style={{ padding: "clamp(12px,2vw,16px) clamp(14px,2vw,18px)", textAlign: "center", flex: "1 1 80px" }}>
                   <p className="font-display" style={{ fontSize: "clamp(20px,2.5vw,26px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>{val}</p>
                   <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: "5px" }}>{lbl}</p>
