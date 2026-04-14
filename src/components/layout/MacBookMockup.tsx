@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 
 export default function MacBookMockup() {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -95,44 +96,18 @@ export default function MacBookMockup() {
               boxShadow: "inset 0 0 20px rgba(0,0,0,0.8)",
             }}
           >
-            {/* Background matching the platform */}
-            <div
+            <img
+              src={mulherEspiralHero}
+              alt="Plataforma Mulher Espiral"
+              loading="lazy"
+              decoding="async"
               style={{
-                position: "absolute",
-                inset: 0,
-                background: "linear-gradient(180deg, #0b0d1c 0%, #060810 60%, #050610 100%)",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
               }}
             />
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "radial-gradient(ellipse 70% 55% at 50% 35%, rgba(198,168,112,0.15) 0%, transparent 62%)",
-              }}
-            />
-
-            {/* Tornado Spiral */}
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "4%" }}>
-              <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%", maxWidth: "340px", filter: "drop-shadow(0 4px 16px rgba(198,168,112,0.4))" }}>
-                <g stroke="var(--gold)" strokeWidth="2.5" strokeLinecap="round">
-                  {/* Back paths (dim) */}
-                  <path d="M 30 40 C 30 25, 170 60, 170 75" opacity="0.25" />
-                  <path d="M 50 75 C 50 60, 150 95, 150 110" opacity="0.25" />
-                  <path d="M 70 110 C 70 100, 130 130, 130 145" opacity="0.25" />
-                  <path d="M 85 145 C 85 135, 115 160, 115 175" opacity="0.25" />
-                  <path d="M 95 175 C 95 170, 105 185, 105 190" opacity="0.25" />
-
-                  {/* Front paths (bright) */}
-                  <path d="M 190 40 C 190 55, 30 55, 30 40" />
-                  <path d="M 170 75 C 170 85, 50 85, 50 75" />
-                  <path d="M 150 110 C 150 118, 70 118, 70 110" />
-                  <path d="M 130 145 C 130 151, 85 151, 85 145" />
-                  <path d="M 115 175 C 115 179, 95 179, 95 175" />
-                  
-                  <circle cx="100" cy="190" r="2" fill="var(--gold)" />
-                </g>
-              </svg>
-            </div>
 
             {/* Glare overlay */}
             <div
