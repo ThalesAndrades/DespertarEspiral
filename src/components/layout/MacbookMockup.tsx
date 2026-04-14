@@ -96,13 +96,19 @@ export default function MacbookMockup() {
   /* ── Parallax tilt ── */
   useEffect(() => {
     const el = wrapRef.current;
+    // Disable on touch/coarse-pointer devices and small screens
     if (!el || window.innerWidth < 1024) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
 
     let raf = 0;
     let cx = 0, cy = 0;
     let tx = 0, ty = 0;
+    let lastMove = 0;
 
     const onMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastMove < 16) return;   // throttle ≈ 60 fps
+      lastMove = now;
       const rect = (el.closest("section") ?? document.documentElement).getBoundingClientRect();
       cx = ((e.clientX - rect.left) / rect.width  - 0.5) * 2;
       cy = ((e.clientY - rect.top)  / rect.height - 0.5) * 2;
