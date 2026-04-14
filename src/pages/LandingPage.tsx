@@ -8,7 +8,7 @@ import LandingNav from "@/components/layout/LandingNav";
 import {
   LazyBackgroundSpiral3D as BackgroundSpiral3D,
   LazySectionSpiral3D as SectionSpiral3D,
-  LazyIPhoneMockup as IPhoneMockup,
+  LazyMacbookMockup as MacbookMockup,
 } from "@/components/layout/LazyDecorative";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
@@ -258,7 +258,7 @@ export default function LandingPage() {
             </h1>
 
             <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginBottom: "clamp(12px,3vw,22px)" }}>
-              <IPhoneMockup />
+              <MacbookMockup />
             </div>
 
             <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300 }}>
@@ -307,8 +307,8 @@ export default function LandingPage() {
             </div>
             </div>
 
-            <div className="hidden lg:flex" style={{ justifyContent: "flex-end", pointerEvents: "none", marginTop: "12px" }}>
-              <IPhoneMockup />
+            <div className="hidden lg:flex" style={{ justifyContent: "flex-end", alignItems: "center", pointerEvents: "none", marginTop: "12px" }}>
+              <MacbookMockup />
             </div>
           </div>
         </div>

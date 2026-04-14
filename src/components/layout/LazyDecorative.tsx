@@ -14,18 +14,17 @@
 import React, { Suspense } from "react";
 
 /* ── Invisible placeholders (preserve layout space) ────────────── */
-function PhoneHolder() {
+function MacbookHolder() {
   return (
     <div
       aria-hidden="true"
       style={{
-        width: "clamp(160px, 42vw, 236px)",
-        aspectRatio: "9/19.5",
-        borderRadius: "34px",
+        width: "clamp(280px, 44vw, 540px)",
+        aspectRatio: "16/10",
+        borderRadius: "12px",
         background: "rgba(198,168,112,0.04)",
         border: "1px solid rgba(198,168,112,0.08)",
         flexShrink: 0,
-        animation: "skeletonShimmer 1.8s ease-in-out infinite",
         position: "relative",
         overflow: "hidden",
       }}
@@ -65,7 +64,7 @@ function InvisibleHolder({ width = 180, height = 432 }: { width?: number; height
 }
 
 /* ── Lazy component definitions ─────────────────────────────────── */
-const LazyIPhone  = React.lazy(() => import("@/components/layout/IPhoneMockup"));
+const LazyMacbook = React.lazy(() => import("@/components/layout/MacbookMockup"));
 const LazyTablet  = React.lazy(() => import("@/components/layout/TabletMockup"));
 const LazyBgSpiral = React.lazy(() =>
   import("@/components/layout/Spiral3D").then((m) => ({ default: m.BackgroundSpiral3D }))
@@ -79,10 +78,10 @@ const LazyAuthSpiral = React.lazy(() =>
 const LazyScrollSpiral = React.lazy(() => import("@/components/layout/ScrollSpiral"));
 
 /* ── Exported wrappers with Suspense fallbacks ──────────────────── */
-export function LazyIPhoneMockup() {
+export function LazyMacbookMockup() {
   return (
-    <Suspense fallback={<PhoneHolder />}>
-      <LazyIPhone />
+    <Suspense fallback={<MacbookHolder />}>
+      <LazyMacbook />
     </Suspense>
   );
 }
