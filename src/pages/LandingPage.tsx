@@ -307,7 +307,7 @@ export default function LandingPage() {
             </div>
             </div>
 
-            <div className="hidden lg:flex" style={{ justifyContent: "flex-end", alignItems: "center", pointerEvents: "none", marginTop: "12px" }}>
+            <div className="hidden lg:flex" style={{ justifyContent: "flex-end", alignItems: "center", marginTop: "12px" }}>
               <MacbookMockup />
             </div>
           </div>

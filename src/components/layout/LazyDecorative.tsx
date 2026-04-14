@@ -19,14 +19,13 @@ function MacbookHolder() {
     <div
       aria-hidden="true"
       style={{
-        width: "clamp(280px, 44vw, 540px)",
-        aspectRatio: "16/10",
-        borderRadius: "12px",
-        background: "rgba(198,168,112,0.04)",
-        border: "1px solid rgba(198,168,112,0.08)",
+        width: "clamp(320px, 46vw, 580px)",
+        aspectRatio: "1300/820",
+        background: "rgba(198,168,112,0.03)",
         flexShrink: 0,
         position: "relative",
         overflow: "hidden",
+        borderRadius: "4px",
       }}
     />
   );
