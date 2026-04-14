@@ -145,6 +145,7 @@ export default function ProductsPage() {
                     src={product.thumbnail_url || FALLBACK}
                     alt={product.title}
                     loading="lazy" decoding="async"
+                    width="820" height="240"
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.5s ease" }}
                     onMouseEnter={(e) => product.has_access && ((e.currentTarget as HTMLImageElement).style.transform = "scale(1.03)")}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1)")}
