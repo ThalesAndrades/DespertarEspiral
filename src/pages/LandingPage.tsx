@@ -242,8 +242,8 @@ export default function LandingPage() {
       <LandingNav />
 
       {/* ══════════════════════════════════════════════
-            0 — HERO
-         ══════════════════════════════════════════════ */}
+             0 — HERO
+          ══════════════════════════════════════════════ */}
       <section id="section-0" style={{
         position: "relative", minHeight: "100svh",
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -259,10 +259,10 @@ export default function LandingPage() {
         {/* Hero content */}
         <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "0 auto", padding: "0 clamp(16px,5vw,40px)", paddingTop: "clamp(72px,12vh,100px)" }}>
           {/*
-              3-item layout:
-              Mobile  (flex-col):  headline[order-1] → macbook[order-2] → body[order-3]
-              Desktop (grid 2-col): headline[col1 row1] + body[col1 row2]  |  macbook[col2 row1-2]
-             */}
+               3-item layout:
+               Mobile  (flex-col):  headline[order-1] → macbook[order-2] → body[order-3]
+               Desktop (grid 2-col): headline[col1 row1] + body[col1 row2]  |  macbook[col2 row1-2]
+              */}
           <div style={{ width: "100%", display: "grid", gap: "clamp(16px,4vw,48px)", alignItems: "center" }}
           className="flex flex-col lg:grid lg:grid-cols-[1.05fr_0.95fr]">
 
@@ -293,7 +293,7 @@ export default function LandingPage() {
               <img
                 src={mockupAtualizado}
                 alt="Mockup Despertar Espiral"
-                className="lg:scale-[1.20] xl:scale-[1.30] transition-transform duration-1000 object-cover"
+                className="lg:scale-[1.20] xl:scale-[1.30] transition-transform duration-1000 object-contain"
                 style={{
                   width: "100%",
                   maxWidth: "min(92vw, 640px)",
@@ -348,8 +348,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            1 — SOCIAL PROOF
-         ══════════════════════════════════════════════ */}
+             1 — SOCIAL PROOF
+          ══════════════════════════════════════════════ */}
       <section id="section-1" style={{
         position: "relative", zIndex: 1,
         marginTop: "-2px", overflow: "hidden",
@@ -379,8 +379,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            2 — MÉTODO
-         ══════════════════════════════════════════════ */}
+             2 — MÉTODO
+          ══════════════════════════════════════════════ */}
       <section id="section-2" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
@@ -418,8 +418,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            3 — PRODUTO
-         ══════════════════════════════════════════════ */}
+             3 — PRODUTO
+          ══════════════════════════════════════════════ */}
       <section id="section-3" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
@@ -505,8 +505,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            4 — DEPOIMENTOS
-         ══════════════════════════════════════════════ */}
+             4 — DEPOIMENTOS
+          ══════════════════════════════════════════════ */}
       <section id="section-4" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
@@ -549,8 +549,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            5 — COMUNIDADE (destaque máximo)
-         ══════════════════════════════════════════════ */}
+             5 — COMUNIDADE (destaque máximo)
+          ══════════════════════════════════════════════ */}
       <section id="section-5" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(80px,12vw,140px) clamp(16px,5vw,24px)",
@@ -840,8 +840,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            6 — SUNYAN
-         ══════════════════════════════════════════════ */}
+             6 — SUNYAN
+          ══════════════════════════════════════════════ */}
       <section id="section-6" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
@@ -890,8 +890,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            7 — FAQ
-         ══════════════════════════════════════════════ */}
+             7 — FAQ
+          ══════════════════════════════════════════════ */}
       <section id="section-7" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
@@ -921,8 +921,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            8 — CTA FINAL
-         ══════════════════════════════════════════════ */}
+             8 — CTA FINAL
+          ══════════════════════════════════════════════ */}
       <section id="section-8" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(100px,14vw,180px) clamp(16px,5vw,24px)",
@@ -961,8 +961,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-            FOOTER
-         ══════════════════════════════════════════════ */}
+             FOOTER
+          ══════════════════════════════════════════════ */}
       <footer style={{ position: "relative", zIndex: 1, padding: "clamp(36px,6vw,60px) clamp(16px,5vw,24px)", background: isLight ? "var(--bg-surface-3)" : "#060810", borderTop: "1px solid var(--border-subtle)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "clamp(16px,3vw,28px)" }}>
