@@ -7,11 +7,11 @@ import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
 import {
   LazyBackgroundSpiral3D as BackgroundSpiral3D,
-  LazySectionSpiral3D as SectionSpiral3D,
-  LazyMacbookMockup as MacbookMockup } from
+  LazySectionSpiral3D as SectionSpiral3D } from
 "@/components/layout/LazyDecorative";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
+import mockupAtualizado from "@/assets/mockup-atualizado.png";
 import { useTheme } from "@/hooks/useTheme";
 import { ArrowRight, ArrowUpRight, Shield, Clock, Infinity, Star, ChevronDown } from "lucide-react";
 
@@ -288,13 +288,21 @@ export default function LandingPage() {
               </h1>
             </div>
 
-            {/* ── 2 · MacBook (centred between headline and body on mobile) ── */}
-            
-
-
-
-
-            
+            {/* ── 2 · Mockup Atualizado (centred between headline and body on mobile) ── */}
+            <div className="order-2 lg:order-none animate-fade-up delay-300" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+              <img 
+                src={mockupAtualizado} 
+                alt="Mockup Despertar Espiral" 
+                style={{ 
+                  width: "100%", 
+                  maxWidth: "min(92vw, 600px)", 
+                  height: "auto", 
+                  display: "block", 
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.5))"
+                }} 
+              />
+            </div>
 
             {/* ── 3 · Body group (subtitle + CTAs) ── */}
             <div
