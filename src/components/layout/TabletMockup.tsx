@@ -122,7 +122,7 @@ export default function TabletMockup({ targetSection = "section-6" }: TabletMock
                   width:          "100%",
                   height:         "100%",
                   objectFit:      "cover",
-                  objectPosition: "center top",
+                  objectPosition: "50% 12%",
                   display:        "block",
                 }}
               />
