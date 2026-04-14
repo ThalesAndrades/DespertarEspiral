@@ -148,6 +148,7 @@ export default function MacbookMockup() {
     <div
       ref={wrapRef}
       aria-hidden="true"
+      className="macbook-wrapper"
       style={{
         display: "flex",
         alignItems: "center",
@@ -155,7 +156,6 @@ export default function MacbookMockup() {
         pointerEvents: "none",
         userSelect: "none",
         width: "100%",
-        maxWidth: "clamp(320px, 46vw, 580px)",
       }}
     >
       <div style={{ perspective: "1600px", perspectiveOrigin: "50% 45%", width: "100%" }}>
@@ -432,6 +432,21 @@ export default function MacbookMockup() {
         @keyframes blink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
+        }
+        .macbook-wrapper {
+          max-width: 340px;
+          margin: 0 auto;
+        }
+        @media (min-width: 640px) {
+          .macbook-wrapper {
+            max-width: 420px;
+          }
+        }
+        @media (min-width: 1024px) {
+          .macbook-wrapper {
+            max-width: 580px;
+            margin: 0;
+          }
         }
       `}</style>
     </div>
