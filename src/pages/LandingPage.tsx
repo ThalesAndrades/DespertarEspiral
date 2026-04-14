@@ -8,8 +8,8 @@ import LandingNav from "@/components/layout/LandingNav";
 import {
   LazyBackgroundSpiral3D as BackgroundSpiral3D,
   LazySectionSpiral3D as SectionSpiral3D,
-  LazyMacbookMockup as MacbookMockup,
-} from "@/components/layout/LazyDecorative";
+  LazyMacbookMockup as MacbookMockup } from
+"@/components/layout/LazyDecorative";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import { useTheme } from "@/hooks/useTheme";
@@ -23,7 +23,7 @@ function useScrollProgress(ref: React.RefObject<HTMLDivElement | null>) {
     const update = () => {
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
-      el.style.width = max > 0 ? `${Math.min((window.scrollY / max) * 100, 100).toFixed(1)}%` : "0%";
+      el.style.width = max > 0 ? `${Math.min(window.scrollY / max * 100, 100).toFixed(1)}%` : "0%";
     };
     window.addEventListener("scroll", update, { passive: true });
     update();
@@ -37,7 +37,7 @@ function useReveal() {
     const targets = document.querySelectorAll<HTMLElement>(".reveal, .reveal-left, .reveal-right");
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
-        if (e.isIntersecting) { (e.target as HTMLElement).classList.add("visible"); io.unobserve(e.target); }
+        if (e.isIntersecting) {(e.target as HTMLElement).classList.add("visible");io.unobserve(e.target);}
       }),
       { threshold: 0.07, rootMargin: "0px 0px -24px 0px" }
     );
@@ -60,7 +60,7 @@ function useActiveSection(dotsRef: React.RefObject<HTMLDivElement | null>) {
     };
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
-        if (e.isIntersecting) { const idx = els.findIndex((el) => el === e.target); if (idx !== -1) activate(idx); }
+        if (e.isIntersecting) {const idx = els.findIndex((el) => el === e.target);if (idx !== -1) activate(idx);}
       }),
       { threshold: 0.25 }
     );
@@ -70,70 +70,70 @@ function useActiveSection(dotsRef: React.RefObject<HTMLDivElement | null>) {
 }
 
 /* ── Stat card ───────────────────────────────────────────── */
-function Stat({ value, label, delay = "" }: { value: string; label: string; delay?: string }) {
+function Stat({ value, label, delay = "" }: {value: string;label: string;delay?: string;}) {
   return (
     <div className={`reveal ${delay}`} style={{ textAlign: "center", padding: "clamp(12px,2vw,20px) 8px" }}>
       <p className="font-display" style={{ fontSize: "clamp(38px,6vw,60px)", color: "var(--gold)", fontStyle: "italic", fontWeight: 300, lineHeight: 1 }}>
         {value}
       </p>
       <p className="overline" style={{ color: "var(--text-muted)", fontSize: "8px", letterSpacing: "0.28em", marginTop: "10px" }}>{label}</p>
-    </div>
-  );
+    </div>);
+
 }
 
 /* ── Data ─────────────────────────────────────────────────── */
 const testimonials = [
-  { name: "Lua Crescente",     text: "Pela primeira vez em anos me senti em casa na minha própria pele. O método da Sunyan toca onde nenhum outro chegou.", detail: "Módulo 3 — O Corpo como Sabedoria" },
-  { name: "Violeta Silvestre", text: "Esse curso não te ensina sobre autoconhecimento. Ele te faz vivê-lo. É completamente diferente de qualquer coisa que já experimentei.", detail: "Concluiu Mulher Espiral" },
-  { name: "Rosa do Deserto",   text: "Cheguei cética. Fui transformada. A profundidade do conteúdo e o cuidado de cada aula são incomparáveis.", detail: "Módulo 5 — O Feminino Sagrado" },
-];
+{ name: "Lua Crescente", text: "Pela primeira vez em anos me senti em casa na minha própria pele. O método da Sunyan toca onde nenhum outro chegou.", detail: "Módulo 3 — O Corpo como Sabedoria" },
+{ name: "Violeta Silvestre", text: "Esse curso não te ensina sobre autoconhecimento. Ele te faz vivê-lo. É completamente diferente de qualquer coisa que já experimentei.", detail: "Concluiu Mulher Espiral" },
+{ name: "Rosa do Deserto", text: "Cheguei cética. Fui transformada. A profundidade do conteúdo e o cuidado de cada aula são incomparáveis.", detail: "Módulo 5 — O Feminino Sagrado" }];
+
 
 const steps = [
-  { num: "01", title: "Reconhecer", body: "Você enxerga os padrões que te aprisionam, com olhos de compaixão — não de julgamento." },
-  { num: "02", title: "Sentir",     body: "O corpo fala. Aprendemos a ouvir o que ele carrega há anos em silêncio." },
-  { num: "03", title: "Integrar",   body: "Cada aspecto de si mesma é acolhido. A espiral avança quando você para de fugir." },
-  { num: "04", title: "Despertar",  body: "Não é um destino. É uma orientação. Uma forma de viver mais leve e alinhada." },
-];
+{ num: "01", title: "Reconhecer", body: "Você enxerga os padrões que te aprisionam, com olhos de compaixão — não de julgamento." },
+{ num: "02", title: "Sentir", body: "O corpo fala. Aprendemos a ouvir o que ele carrega há anos em silêncio." },
+{ num: "03", title: "Integrar", body: "Cada aspecto de si mesma é acolhido. A espiral avança quando você para de fugir." },
+{ num: "04", title: "Despertar", body: "Não é um destino. É uma orientação. Uma forma de viver mais leve e alinhada." }];
+
 
 const guarantees = [
-  { icon: Shield,   label: "7 dias de garantia", desc: "Devolução integral sem perguntas" },
-  { icon: Infinity, label: "Acesso vitalício",   desc: "Conteúdo sempre disponível" },
-  { icon: Clock,    label: "Suporte humanizado", desc: "Time dedicado à sua jornada" },
-];
+{ icon: Shield, label: "7 dias de garantia", desc: "Devolução integral sem perguntas" },
+{ icon: Infinity, label: "Acesso vitalício", desc: "Conteúdo sempre disponível" },
+{ icon: Clock, label: "Suporte humanizado", desc: "Time dedicado à sua jornada" }];
+
 
 const faqs = [
-  {
-    q: "Para quem é o Mulher Espiral?",
-    a: "Para mulheres que sentem que algo está faltando — mesmo quando tudo 'parece' bem por fora. Para quem carrega histórias difíceis no corpo, mas ainda acredita em transformação. Não é necessária nenhuma experiência prévia com autoconhecimento.",
-  },
-  {
-    q: "Como funciona o acesso ao curso?",
-    a: "Após a confirmação do pagamento, você recebe acesso vitalício à plataforma. Os módulos são liberados progressivamente para que você possa integrar cada etapa. Você aprende no seu ritmo, sem pressão.",
-  },
-  {
-    q: "E se eu não me identificar com o conteúdo?",
-    a: "Você tem 7 dias de garantia incondicional. Se por qualquer motivo sentir que não é o momento certo, devolvemos 100% do investimento sem burocracia e sem perguntas. Simples assim.",
-  },
-  {
-    q: "Preciso de muito tempo disponível?",
-    a: "As aulas foram criadas para a realidade da mulher moderna. Você pode progredir com 20 a 40 minutos por dia. O que importa é constância, não velocidade — a espiral avança no seu tempo.",
-  },
-  {
-    q: "Existe suporte durante a jornada?",
-    a: "Sim. Você tem acesso à comunidade exclusiva de alunas e ao suporte humanizado da nossa equipe. Ninguém percorre esse caminho sozinha.",
-  },
-  {
-    q: "Como é feito o pagamento?",
-    a: "Aceitamos PIX (aprovação instantânea), cartão de crédito em até 12× e boleto bancário. Após o pedido, você recebe as instruções detalhadas por e-mail.",
-  },
-];
+{
+  q: "Para quem é o Mulher Espiral?",
+  a: "Para mulheres que sentem que algo está faltando — mesmo quando tudo 'parece' bem por fora. Para quem carrega histórias difíceis no corpo, mas ainda acredita em transformação. Não é necessária nenhuma experiência prévia com autoconhecimento."
+},
+{
+  q: "Como funciona o acesso ao curso?",
+  a: "Após a confirmação do pagamento, você recebe acesso vitalício à plataforma. Os módulos são liberados progressivamente para que você possa integrar cada etapa. Você aprende no seu ritmo, sem pressão."
+},
+{
+  q: "E se eu não me identificar com o conteúdo?",
+  a: "Você tem 7 dias de garantia incondicional. Se por qualquer motivo sentir que não é o momento certo, devolvemos 100% do investimento sem burocracia e sem perguntas. Simples assim."
+},
+{
+  q: "Preciso de muito tempo disponível?",
+  a: "As aulas foram criadas para a realidade da mulher moderna. Você pode progredir com 20 a 40 minutos por dia. O que importa é constância, não velocidade — a espiral avança no seu tempo."
+},
+{
+  q: "Existe suporte durante a jornada?",
+  a: "Sim. Você tem acesso à comunidade exclusiva de alunas e ao suporte humanizado da nossa equipe. Ninguém percorre esse caminho sozinha."
+},
+{
+  q: "Como é feito o pagamento?",
+  a: "Aceitamos PIX (aprovação instantânea), cartão de crédito em até 12× e boleto bancário. Após o pedido, você recebe as instruções detalhadas por e-mail."
+}];
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+
+function FaqItem({ q, a }: {q: string;a: string;}) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{
       borderBottom: "1px solid var(--border-subtle)",
-      overflow: "hidden",
+      overflow: "hidden"
     }}>
       <button
         onClick={() => setOpen((o) => !o)}
@@ -141,10 +141,10 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
           gap: "16px", padding: "clamp(16px,2.5vw,22px) 0",
           background: "transparent", border: "none", cursor: "pointer",
-          textAlign: "left",
+          textAlign: "left"
         }}
-        aria-expanded={open}
-      >
+        aria-expanded={open}>
+        
         <span style={{ fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-primary)", fontWeight: 400, lineHeight: 1.5, flex: 1 }}>
           {q}
         </span>
@@ -154,47 +154,47 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           background: open ? "rgba(198,168,112,0.12)" : "transparent",
           borderColor: open ? "var(--border-mid)" : "var(--border-soft)",
-          transition: "all 0.25s ease",
+          transition: "all 0.25s ease"
         }}>
           <ChevronDown
             size={13}
             style={{
               color: open ? "var(--gold)" : "var(--text-faint)",
               transform: open ? "rotate(180deg)" : "rotate(0deg)",
-              transition: "transform 0.3s cubic-bezier(.16,1,.3,1)",
-            }}
-          />
+              transition: "transform 0.3s cubic-bezier(.16,1,.3,1)"
+            }} />
+          
         </div>
       </button>
       <div style={{
         maxHeight: open ? "300px" : "0px",
         overflow: "hidden",
-        transition: "max-height 0.4s cubic-bezier(.16,1,.3,1)",
+        transition: "max-height 0.4s cubic-bezier(.16,1,.3,1)"
       }}>
         <p style={{
           fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-secondary)",
-          lineHeight: 1.85, paddingBottom: "clamp(16px,2.5vw,22px)",
+          lineHeight: 1.85, paddingBottom: "clamp(16px,2.5vw,22px)"
         }}>
           {a}
         </p>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default function LandingPage() {
   const progressRef = useRef<HTMLDivElement>(null);
-  const dotsRef     = useRef<HTMLDivElement>(null);
-  const { theme }   = useTheme();
-  const isLight     = theme === "light";
+  const dotsRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+  const isLight = theme === "light";
 
   useScrollProgress(progressRef);
   useReveal();
   useActiveSection(dotsRef);
 
   /* ── Hero colors — fully theme-aware ── */
-  const heroBg   = isLight ? "var(--bg-surface)"   : "#060810";
-  const heroText  = isLight ? "var(--text-primary)"   : "#f5f0e8";
+  const heroBg = isLight ? "var(--bg-surface)" : "#060810";
+  const heroText = isLight ? "var(--text-primary)" : "#f5f0e8";
   const heroMuted = isLight ? "var(--text-secondary)" : "rgba(245,240,232,0.60)";
   /* Gold always uses the CSS variable so it auto-adapts per theme */
 
@@ -230,24 +230,24 @@ export default function LandingPage() {
 
       {/* Section dots */}
       <div className="spiral-tracker" ref={dotsRef} aria-hidden="true">
-        {Array.from({ length: SECTION_COUNT }, (_, i) => (
-          <button key={i}
-            onClick={() => document.getElementById(`section-${i}`)?.scrollIntoView({ behavior: "smooth" })}
-            style={{ width: i === 0 ? "20px" : "6px", height: "6px", borderRadius: "100px", background: i === 0 ? "var(--gold)" : "var(--border-soft)", border: "none", padding: 0, cursor: "pointer", transition: "all 0.35s cubic-bezier(.16,1,.3,1)", flexShrink: 0, display: "block" }}
-            aria-label={`Ir para seção ${i + 1}`}
-          />
-        ))}
+        {Array.from({ length: SECTION_COUNT }, (_, i) =>
+        <button key={i}
+        onClick={() => document.getElementById(`section-${i}`)?.scrollIntoView({ behavior: "smooth" })}
+        style={{ width: i === 0 ? "20px" : "6px", height: "6px", borderRadius: "100px", background: i === 0 ? "var(--gold)" : "var(--border-soft)", border: "none", padding: 0, cursor: "pointer", transition: "all 0.35s cubic-bezier(.16,1,.3,1)", flexShrink: 0, display: "block" }}
+        aria-label={`Ir para seção ${i + 1}`} />
+
+        )}
       </div>
 
       <LandingNav />
 
       {/* ══════════════════════════════════════════════
-          0 — HERO
-      ══════════════════════════════════════════════ */}
+           0 — HERO
+        ══════════════════════════════════════════════ */}
       <section id="section-0" style={{
         position: "relative", minHeight: "100svh",
         display: "flex", alignItems: "center", justifyContent: "center",
-        overflow: "hidden", background: heroBg,
+        overflow: "hidden", background: heroBg
       }}>
         {/* Gold radial glow — adapts per theme */}
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 80% 65% at 55% 42%, ${isLight ? "rgba(122,94,30,0.07)" : "rgba(198,168,112,0.12)"} 0%, transparent 65%)`, pointerEvents: "none", zIndex: 0 }} />
@@ -259,18 +259,18 @@ export default function LandingPage() {
         {/* Hero content */}
         <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "0 auto", padding: "0 clamp(16px,5vw,40px)", paddingTop: "clamp(72px,12vh,100px)" }}>
           {/*
-            3-item layout:
-            Mobile  (flex-col):  headline[order-1] → macbook[order-2] → body[order-3]
-            Desktop (grid 2-col): headline[col1 row1] + body[col1 row2]  |  macbook[col2 row1-2]
-          */}
+             3-item layout:
+             Mobile  (flex-col):  headline[order-1] → macbook[order-2] → body[order-3]
+             Desktop (grid 2-col): headline[col1 row1] + body[col1 row2]  |  macbook[col2 row1-2]
+            */}
           <div style={{ width: "100%", display: "grid", gap: "clamp(16px,4vw,48px)", alignItems: "center" }}
-               className="flex flex-col lg:grid lg:grid-cols-[1.05fr_0.95fr]">
+          className="flex flex-col lg:grid lg:grid-cols-[1.05fr_0.95fr]">
 
             {/* ── 1 · Headline group ── */}
             <div
               className="order-1 lg:order-none"
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
-            >
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+              
               {/* Social proof pill */}
               <div className="animate-fade-up delay-100" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "clamp(14px,2.5vw,24px)", background: "var(--gold-glow)", border: "1px solid var(--border-mid)", borderRadius: "100px", padding: "7px 16px 7px 10px" }}>
                 <div style={{ display: "flex", gap: "2px" }}>
@@ -289,18 +289,18 @@ export default function LandingPage() {
             </div>
 
             {/* ── 2 · MacBook (centred between headline and body on mobile) ── */}
-            <div
-              className="order-2 lg:order-none lg:row-span-2"
-              style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}
-            >
-              <MacbookMockup />
-            </div>
+            
+
+
+
+
+            
 
             {/* ── 3 · Body group (subtitle + CTAs) ── */}
             <div
               className="order-3 lg:order-none"
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
-            >
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+              
               <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, fontWeight: 300, textAlign: "center", marginBottom: "clamp(22px,3.5vw,36px)" }}>
                 Uma jornada de autoconhecimento profunda, estruturada e amorosa — para mulheres que sentem que existe mais.
               </p>
@@ -308,23 +308,23 @@ export default function LandingPage() {
               {/* CTAs — stack on mobile, row on desktop */}
               <div className="animate-fade-up delay-400" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "360px", marginBottom: "clamp(16px,2.5vw,24px)" }}>
                 <Link to="/checkout/mulher-espiral" className="btn-gold"
-                  style={{ justifyContent: "center", minHeight: "56px", borderRadius: "18px" }}>
+                style={{ justifyContent: "center", minHeight: "56px", borderRadius: "18px" }}>
                   Quero começar minha jornada <ArrowRight size={15} />
                 </Link>
                 <Link to="/login" className="btn-outline-gold"
-                  style={{ justifyContent: "center", minHeight: "52px", borderRadius: "18px" }}>
+                style={{ justifyContent: "center", minHeight: "52px", borderRadius: "18px" }}>
                   Já sou aluna
                 </Link>
               </div>
 
               {/* Guarantee strip */}
               <div className="animate-fade-in delay-600" style={{ display: "flex", justifyContent: "center", gap: "clamp(10px,2vw,20px)", flexWrap: "wrap" }}>
-                {guarantees.map(({ icon: Icon, label }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                {guarantees.map(({ icon: Icon, label }) =>
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <Icon size={11} style={{ color: "var(--gold-dim)" }} strokeWidth={1.5} />
                     <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</span>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -339,15 +339,15 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          1 — SOCIAL PROOF
-      ══════════════════════════════════════════════ */}
+           1 — SOCIAL PROOF
+        ══════════════════════════════════════════════ */}
       <section id="section-1" style={{
         position: "relative", zIndex: 1,
         marginTop: "-2px", overflow: "hidden",
         padding: "clamp(56px,8vw,100px) clamp(16px,5vw,24px)",
         borderBottom: "1px solid var(--border-subtle)",
         background: "var(--bg-surface-2)",
-        minHeight: "min-content",
+        minHeight: "min-content"
       }}>
         <div style={{ maxWidth: "940px", margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div className="reveal" style={{ textAlign: "center", marginBottom: "clamp(32px,5vw,56px)" }}>
@@ -359,10 +359,10 @@ export default function LandingPage() {
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "clamp(4px,2vw,16px)" }} className="sm:grid-cols-4">
-            <Stat value="1.200+"  label="Mulheres na jornada"     delay="reveal-delay-1" />
-            <Stat value="97%"     label="Recomendam o método"     delay="reveal-delay-2" />
-            <Stat value="8"       label="Módulos transformadores" delay="reveal-delay-3" />
-            <Stat value="4.9 ★"   label="Avaliação média"         delay="reveal-delay-4" />
+            <Stat value="1.200+" label="Mulheres na jornada" delay="reveal-delay-1" />
+            <Stat value="97%" label="Recomendam o método" delay="reveal-delay-2" />
+            <Stat value="8" label="Módulos transformadores" delay="reveal-delay-3" />
+            <Stat value="4.9 ★" label="Avaliação média" delay="reveal-delay-4" />
           </div>
         </div>
         {/* Bottom diamond */}
@@ -370,12 +370,12 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          2 — MÉTODO
-      ══════════════════════════════════════════════ */}
+           2 — MÉTODO
+        ══════════════════════════════════════════════ */}
       <section id="section-2" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-        background: "var(--bg-surface)",
+        background: "var(--bg-surface)"
       }}>
         <div className="glow-gold" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden="true" />
         <div style={{ position: "absolute", left: "-24px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} aria-hidden="true">
@@ -395,26 +395,26 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="reveal-right">
-            {steps.map((step, i) => (
-              <div key={step.num} style={{ display: "flex", gap: "clamp(14px,3vw,22px)", padding: "clamp(16px,2.5vw,24px) 0", borderBottom: i < steps.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+            {steps.map((step, i) =>
+            <div key={step.num} style={{ display: "flex", gap: "clamp(14px,3vw,22px)", padding: "clamp(16px,2.5vw,24px) 0", borderBottom: i < steps.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
                 <span className="font-display" style={{ fontSize: "clamp(28px,3.5vw,38px)", color: "var(--border-mid)", lineHeight: 1, fontWeight: 300, width: "clamp(36px,4vw,44px)", flexShrink: 0 }}>{step.num}</span>
                 <div>
                   <h3 className="font-label" style={{ fontSize: "9px", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold)", marginBottom: "7px" }}>{step.title}</h3>
                   <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-secondary)", lineHeight: 1.85 }}>{step.body}</p>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════
-          3 — PRODUTO
-      ══════════════════════════════════════════════ */}
+           3 — PRODUTO
+        ══════════════════════════════════════════════ */}
       <section id="section-3" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-        background: "#060810",
+        background: "#060810"
       }}>
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 60% at 35% 50%, rgba(172,128,142,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 55% 50% at 70% 40%, rgba(198,168,112,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
@@ -434,7 +434,7 @@ export default function LandingPage() {
               {/* Image */}
               <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #0b0d1c 0%, #180d18 100%)", minHeight: "clamp(200px,32vw,280px)" }}>
                 <img src={mulherEspiralHero} alt="Mulher Espiral" loading="lazy" decoding="async"
-                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block", position: "absolute", inset: 0, mixBlendMode: "luminosity", opacity: 0.88 }} />
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block", position: "absolute", inset: 0, mixBlendMode: "luminosity", opacity: 0.88 }} />
                 <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 90% 90% at 50% 100%, rgba(198,168,112,0.18) 0%, transparent 60%)", zIndex: 1 }} />
                 <div aria-hidden="true" className="hidden lg:block" style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 50%, #0e1023 100%)", zIndex: 2 }} />
                 <div aria-hidden="true" className="lg:hidden" style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0e1023 0%, transparent 50%)", zIndex: 2 }} />
@@ -452,14 +452,14 @@ export default function LandingPage() {
                   Uma jornada profunda de autoconhecimento feminino, estruturada em 8 módulos que conduzem do reconhecimento dos padrões à integração plena do seu ser.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "clamp(20px,3vw,28px)" }}>
-                  {["Acesso vitalício ao conteúdo", "Comunidade exclusiva de alunas", "Certificado de conclusão", "Suporte humanizado"].map((f) => (
-                    <div key={f} style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                  {["Acesso vitalício ao conteúdo", "Comunidade exclusiva de alunas", "Certificado de conclusão", "Suporte humanizado"].map((f) =>
+                  <div key={f} style={{ display: "flex", alignItems: "center", gap: "9px" }}>
                       <div style={{ width: "16px", height: "16px", borderRadius: "50%", background: "rgba(140,170,150,0.15)", border: "1px solid rgba(140,170,150,0.30)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <span style={{ color: "#8caa96", fontSize: "9px" }}>✓</span>
                       </div>
                       <span style={{ fontSize: "clamp(12px,1.4vw,14px)", color: "rgba(245,240,232,0.70)" }}>{f}</span>
                     </div>
-                  ))}
+                  )}
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", justifyContent: "space-between", flexWrap: "wrap", rowGap: "12px" }}>
                   <div>
@@ -480,8 +480,8 @@ export default function LandingPage() {
 
           {/* Guarantees bar */}
           <div className="reveal reveal-delay-2" style={{ display: "flex", justifyContent: "center", gap: "clamp(14px,3vw,36px)", padding: "clamp(16px,3vw,24px)", borderRadius: "clamp(14px,2vw,18px)", background: "rgba(198,168,112,0.04)", border: "1px solid rgba(198,168,112,0.10)", flexWrap: "wrap" }}>
-            {guarantees.map(({ icon: Icon, label, desc }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {guarantees.map(({ icon: Icon, label, desc }) =>
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "rgba(198,168,112,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Icon size={13} style={{ color: "#c6a870" }} strokeWidth={1.5} />
                 </div>
@@ -490,18 +490,18 @@ export default function LandingPage() {
                   <p style={{ fontSize: "11px", color: "rgba(245,240,232,0.42)", marginTop: "1px" }}>{desc}</p>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════
-          4 — DEPOIMENTOS
-      ══════════════════════════════════════════════ */}
+           4 — DEPOIMENTOS
+        ══════════════════════════════════════════════ */}
       <section id="section-4" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-        background: "var(--bg-surface)",
+        background: "var(--bg-surface)"
       }}>
         <div style={{ position: "absolute", left: "-16px", bottom: "-24px", pointerEvents: "none" }} aria-hidden="true">
           <SectionSpiral3D size={90} height={250} opacity={isLight ? 0.18 : 0.22} color={isLight ? "#7a3248" : "#8c4a5e"} emissive="#4a1828" speed={0.0003} lightBg={isLight} />
@@ -519,8 +519,8 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="grid md:grid-cols-3" style={{ gap: "clamp(12px,2vw,18px)" }}>
-            {testimonials.map((t, i) => (
-              <div key={i} className={`card-dark reveal reveal-delay-${i + 1}`} style={{ padding: "clamp(18px,3vw,32px)", marginTop: i === 1 ? "clamp(0px,2vw,28px)" : "0", display: "flex", flexDirection: "column" }}>
+            {testimonials.map((t, i) =>
+            <div key={i} className={`card-dark reveal reveal-delay-${i + 1}`} style={{ padding: "clamp(18px,3vw,32px)", marginTop: i === 1 ? "clamp(0px,2vw,28px)" : "0", display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", gap: "3px", marginBottom: "18px" }}>
                   {[...Array(5)].map((_, s) => <Star key={s} size={11} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
                 </div>
@@ -534,18 +534,18 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════
-          5 — COMUNIDADE (destaque máximo)
-      ══════════════════════════════════════════════ */}
+           5 — COMUNIDADE (destaque máximo)
+        ══════════════════════════════════════════════ */}
       <section id="section-5" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(80px,12vw,140px) clamp(16px,5vw,24px)",
-        background: "#06050f",
+        background: "#06050f"
       }}>
         {/* Multi-layer atmospheric background */}
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 90% 70% at 50% 0%, rgba(81,72,152,0.22) 0%, transparent 60%)", pointerEvents: "none" }} />
@@ -582,8 +582,8 @@ export default function LandingPage() {
             </div>
 
             <h2 className="font-display text-balance reveal-delay-1"
-              style={{ fontSize: "clamp(36px,6.5vw,88px)", fontWeight: 300, fontStyle: "italic",
-                lineHeight: 1.02, color: "#f5f0e8", marginBottom: "clamp(14px,2vw,20px)" }}>
+            style={{ fontSize: "clamp(36px,6.5vw,88px)", fontWeight: 300, fontStyle: "italic",
+              lineHeight: 1.02, color: "#f5f0e8", marginBottom: "clamp(14px,2vw,20px)" }}>
               Ninguém desperta<br />
               <span style={{ color: "rgba(164,158,208,0.90)" }}>sozinha.</span>
             </h2>
@@ -600,27 +600,27 @@ export default function LandingPage() {
             borderRadius: "clamp(16px,2vw,20px)",
             border: "1px solid rgba(81,72,152,0.30)",
             background: "rgba(81,72,152,0.08)",
-            overflow: "hidden",
+            overflow: "hidden"
           }}>
             {[
-              { value: "1.2k", label: "Alunas na comunidade" },
-              { value: "8.4k", label: "Mensagens este mês" },
-              { value: "99%", label: "Recomendam o espaço" },
-              { value: "24h", label: "Suporte sempre ativo" },
-            ].map(({ value, label }, i, arr) => (
-              <div key={label} style={{
-                flex: "1 1 0", minWidth: 0,
-                padding: "clamp(16px,2.5vw,28px) clamp(12px,2vw,24px)",
-                textAlign: "center",
-                borderRight: i < arr.length - 1 ? "1px solid rgba(81,72,152,0.20)" : "none",
-              }}>
+            { value: "1.2k", label: "Alunas na comunidade" },
+            { value: "8.4k", label: "Mensagens este mês" },
+            { value: "99%", label: "Recomendam o espaço" },
+            { value: "24h", label: "Suporte sempre ativo" }].
+            map(({ value, label }, i, arr) =>
+            <div key={label} style={{
+              flex: "1 1 0", minWidth: 0,
+              padding: "clamp(16px,2.5vw,28px) clamp(12px,2vw,24px)",
+              textAlign: "center",
+              borderRight: i < arr.length - 1 ? "1px solid rgba(81,72,152,0.20)" : "none"
+            }}>
                 <p className="font-display" style={{ fontSize: "clamp(22px,3vw,38px)", color: "rgba(164,158,208,0.95)",
-                  fontWeight: 300, fontStyle: "italic", lineHeight: 1 }}>{value}</p>
+                fontWeight: 300, fontStyle: "italic", lineHeight: 1 }}>{value}</p>
                 <p style={{ fontSize: "clamp(9px,1vw,11px)", color: "rgba(245,240,232,0.35)",
-                  letterSpacing: "0.16em", textTransform: "uppercase", fontFamily: "Montserrat,sans-serif",
-                  marginTop: "8px", fontWeight: 400 }}>{label}</p>
+                letterSpacing: "0.16em", textTransform: "uppercase", fontFamily: "Montserrat,sans-serif",
+                marginTop: "8px", fontWeight: 400 }}>{label}</p>
               </div>
-            ))}
+            )}
           </div>
 
           {/* ── Two-column layout: left info + right feed ── */}
@@ -644,25 +644,25 @@ export default function LandingPage() {
               {/* Feature list */}
               <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "clamp(28px,4vw,40px)" }}>
                 {[
-                  { color: "#8caa96", label: "Anonimato total", desc: "Nome real nunca exposto" },
-                  { color: "rgba(164,158,208,0.85)", label: "5 categorias temáticas", desc: "Conquistas · Desabafo · Dicas · Dúvidas · Geral" },
-                  { color: "#c6a870", label: "Moderação cuidadosa", desc: "Espaço seguro e respeitoso" },
-                  { color: "#c99aaa", label: "Sempre ativo", desc: "Comunidade 24h por dia" },
-                ].map(({ color, label, desc }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+                { color: "#8caa96", label: "Anonimato total", desc: "Nome real nunca exposto" },
+                { color: "rgba(164,158,208,0.85)", label: "5 categorias temáticas", desc: "Conquistas · Desabafo · Dicas · Dúvidas · Geral" },
+                { color: "#c6a870", label: "Moderação cuidadosa", desc: "Espaço seguro e respeitoso" },
+                { color: "#c99aaa", label: "Sempre ativo", desc: "Comunidade 24h por dia" }].
+                map(({ color, label, desc }) =>
+                <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
                     <div style={{ width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
-                      background: `${color}18`, border: `1px solid ${color}45`,
-                      display: "flex", alignItems: "center", justifyContent: "center", marginTop: "1px" }}>
+                    background: `${color}18`, border: `1px solid ${color}45`,
+                    display: "flex", alignItems: "center", justifyContent: "center", marginTop: "1px" }}>
                       <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color }} />
                     </div>
                     <div>
                       <p style={{ fontSize: "13px", color: "rgba(245,240,232,0.80)", fontWeight: 500,
-                        marginBottom: "2px", fontFamily: "Montserrat,sans-serif" }}>{label}</p>
+                      marginBottom: "2px", fontFamily: "Montserrat,sans-serif" }}>{label}</p>
                       <p style={{ fontSize: "11px", color: "rgba(245,240,232,0.35)",
-                        fontFamily: "Montserrat,sans-serif" }}>{desc}</p>
+                      fontFamily: "Montserrat,sans-serif" }}>{desc}</p>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
 
               <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ fontSize: "10px" }}>
@@ -686,115 +686,115 @@ export default function LandingPage() {
               </div>
 
               {[
-                {
-                  cat: "conquistas", catColor: "#8caa96", catBg: "rgba(140,170,150,0.10)",
-                  msg: "Terminei o módulo 3 hoje e chorei. Não sabia que carregar tanto podia ser libertador.",
-                  by: "Lua Crescente", time: "agora mesmo", likes: 47, comments: 12, initial: "L", initColor: "#8caa96",
-                },
-                {
-                  cat: "desabafo", catColor: "#c99aaa", catBg: "rgba(201,154,170,0.10)",
-                  msg: "Hoje foi difícil. Mas eu vim aqui, porque sei que vocês entendem sem julgamento.",
-                  by: "Violeta Silvestre", time: "há 3 min", likes: 89, comments: 28, initial: "V", initColor: "#c99aaa",
-                },
-                {
-                  cat: "dicas", catColor: "#c6a870", catBg: "rgba(198,168,112,0.10)",
-                  msg: "Criei uma rotina de 20 min antes de dormir com a aula de integração somática. Mudou tudo.",
-                  by: "Cedro Dourado", time: "há 8 min", likes: 55, comments: 19, initial: "C", initColor: "#c6a870",
-                },
-                {
-                  cat: "conquistas", catColor: "#8caa96", catBg: "rgba(140,170,150,0.10)",
-                  msg: "Concluí o curso inteiro. 97 dias depois do começo. Sou uma pessoa diferente.",
-                  by: "Rosa do Deserto", time: "há 14 min", likes: 134, comments: 41, initial: "R", initColor: "#8caa96",
-                },
-                {
-                  cat: "duvidas", catColor: "rgba(164,158,208,0.85)", catBg: "rgba(164,158,208,0.08)",
-                  msg: "Alguém mais tem dificuldade com o módulo 5? Quero entender se é resistência ou ritmo.",
-                  by: "Névoa Clara", time: "há 22 min", likes: 31, comments: 15, initial: "N", initColor: "rgba(164,158,208,0.85)",
-                },
-              ].map((post, i) => (
-                <div key={i} style={{
-                  background: i === 0 ? "rgba(81,72,152,0.14)" : "rgba(255,255,255,0.032)",
-                  border: i === 0
-                    ? "1px solid rgba(81,72,152,0.38)"
-                    : "1px solid rgba(255,255,255,0.055)",
-                  borderRadius: "clamp(12px,1.5vw,16px)",
-                  padding: "clamp(14px,2vw,20px)",
-                  transition: "border-color 0.2s",
-                  position: "relative",
-                  overflow: "hidden",
-                }}>
+              {
+                cat: "conquistas", catColor: "#8caa96", catBg: "rgba(140,170,150,0.10)",
+                msg: "Terminei o módulo 3 hoje e chorei. Não sabia que carregar tanto podia ser libertador.",
+                by: "Lua Crescente", time: "agora mesmo", likes: 47, comments: 12, initial: "L", initColor: "#8caa96"
+              },
+              {
+                cat: "desabafo", catColor: "#c99aaa", catBg: "rgba(201,154,170,0.10)",
+                msg: "Hoje foi difícil. Mas eu vim aqui, porque sei que vocês entendem sem julgamento.",
+                by: "Violeta Silvestre", time: "há 3 min", likes: 89, comments: 28, initial: "V", initColor: "#c99aaa"
+              },
+              {
+                cat: "dicas", catColor: "#c6a870", catBg: "rgba(198,168,112,0.10)",
+                msg: "Criei uma rotina de 20 min antes de dormir com a aula de integração somática. Mudou tudo.",
+                by: "Cedro Dourado", time: "há 8 min", likes: 55, comments: 19, initial: "C", initColor: "#c6a870"
+              },
+              {
+                cat: "conquistas", catColor: "#8caa96", catBg: "rgba(140,170,150,0.10)",
+                msg: "Concluí o curso inteiro. 97 dias depois do começo. Sou uma pessoa diferente.",
+                by: "Rosa do Deserto", time: "há 14 min", likes: 134, comments: 41, initial: "R", initColor: "#8caa96"
+              },
+              {
+                cat: "duvidas", catColor: "rgba(164,158,208,0.85)", catBg: "rgba(164,158,208,0.08)",
+                msg: "Alguém mais tem dificuldade com o módulo 5? Quero entender se é resistência ou ritmo.",
+                by: "Névoa Clara", time: "há 22 min", likes: 31, comments: 15, initial: "N", initColor: "rgba(164,158,208,0.85)"
+              }].
+              map((post, i) =>
+              <div key={i} style={{
+                background: i === 0 ? "rgba(81,72,152,0.14)" : "rgba(255,255,255,0.032)",
+                border: i === 0 ?
+                "1px solid rgba(81,72,152,0.38)" :
+                "1px solid rgba(255,255,255,0.055)",
+                borderRadius: "clamp(12px,1.5vw,16px)",
+                padding: "clamp(14px,2vw,20px)",
+                transition: "border-color 0.2s",
+                position: "relative",
+                overflow: "hidden"
+              }}>
                   {/* Newest post glow */}
-                  {i === 0 && (
-                    <div aria-hidden="true" style={{
-                      position: "absolute", top: 0, left: 0, right: 0, height: "1px",
-                      background: "linear-gradient(90deg, transparent, rgba(164,158,208,0.60), transparent)",
-                    }} />
-                  )}
+                  {i === 0 &&
+                <div aria-hidden="true" style={{
+                  position: "absolute", top: 0, left: 0, right: 0, height: "1px",
+                  background: "linear-gradient(90deg, transparent, rgba(164,158,208,0.60), transparent)"
+                }} />
+                }
 
                   {/* Post header */}
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                     {/* Avatar */}
                     <div style={{
-                      width: "30px", height: "30px", borderRadius: "50%", flexShrink: 0,
-                      background: `${post.initColor}18`,
-                      border: `1px solid ${post.initColor}40`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
+                    width: "30px", height: "30px", borderRadius: "50%", flexShrink: 0,
+                    background: `${post.initColor}18`,
+                    border: `1px solid ${post.initColor}40`,
+                    display: "flex", alignItems: "center", justifyContent: "center"
+                  }}>
                       <span style={{ fontSize: "12px", color: post.initColor,
-                        fontFamily: "Montserrat,sans-serif", fontWeight: 600 }}>{post.initial}</span>
+                      fontFamily: "Montserrat,sans-serif", fontWeight: 600 }}>{post.initial}</span>
                     </div>
                     {/* Name + time */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: "12px", color: "rgba(245,240,232,0.75)",
-                        fontFamily: "Montserrat,sans-serif", fontWeight: 500,
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.by}</p>
+                      fontFamily: "Montserrat,sans-serif", fontWeight: 500,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.by}</p>
                       <p style={{ fontSize: "10px", color: "rgba(245,240,232,0.28)",
-                        fontFamily: "Montserrat,sans-serif" }}>{post.time}</p>
+                      fontFamily: "Montserrat,sans-serif" }}>{post.time}</p>
                     </div>
                     {/* Category badge */}
                     <span style={{
-                      fontSize: "8px", letterSpacing: "0.18em", textTransform: "uppercase",
-                      color: post.catColor, background: post.catBg,
-                      border: `1px solid ${post.catColor}35`,
-                      borderRadius: "100px", padding: "3px 9px",
-                      fontFamily: "Montserrat,sans-serif", fontWeight: 500, flexShrink: 0,
-                    }}>{post.cat}</span>
+                    fontSize: "8px", letterSpacing: "0.18em", textTransform: "uppercase",
+                    color: post.catColor, background: post.catBg,
+                    border: `1px solid ${post.catColor}35`,
+                    borderRadius: "100px", padding: "3px 9px",
+                    fontFamily: "Montserrat,sans-serif", fontWeight: 500, flexShrink: 0
+                  }}>{post.cat}</span>
                   </div>
 
                   {/* Post body */}
                   <p style={{ fontSize: "clamp(12px,1.4vw,14px)", color: "rgba(245,240,232,0.62)",
-                    lineHeight: 1.70, marginBottom: "12px",
-                    fontFamily: "Montserrat,sans-serif" }}>{post.msg}</p>
+                  lineHeight: 1.70, marginBottom: "12px",
+                  fontFamily: "Montserrat,sans-serif" }}>{post.msg}</p>
 
                   {/* Post footer: likes + comments */}
                   <div style={{ display: "flex", alignItems: "center", gap: "16px", paddingTop: "10px",
-                    borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: "5px",
-                      fontSize: "11px", color: "rgba(245,240,232,0.32)",
-                      fontFamily: "Montserrat,sans-serif" }}>
+                    fontSize: "11px", color: "rgba(245,240,232,0.32)",
+                    fontFamily: "Montserrat,sans-serif" }}>
                       <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <path d="M8 13.5C8 13.5 2 9.3 2 5.5C2 3.57 3.57 2 5.5 2C6.62 2 7.6 2.55 8 3.43C8.4 2.55 9.38 2 10.5 2C12.43 2 14 3.57 14 5.5C14 9.3 8 13.5 8 13.5Z"
-                          stroke="rgba(201,154,170,0.55)" strokeWidth="1.2" strokeLinejoin="round"/>
+                      stroke="rgba(201,154,170,0.55)" strokeWidth="1.2" strokeLinejoin="round" />
                       </svg>
                       {post.likes}
                     </span>
                     <span style={{ display: "flex", alignItems: "center", gap: "5px",
-                      fontSize: "11px", color: "rgba(245,240,232,0.32)",
-                      fontFamily: "Montserrat,sans-serif" }}>
+                    fontSize: "11px", color: "rgba(245,240,232,0.32)",
+                    fontFamily: "Montserrat,sans-serif" }}>
                       <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <path d="M13 2H3C2.45 2 2 2.45 2 3V10C2 10.55 2.45 11 3 11H5L8 14L11 11H13C13.55 11 14 10.55 14 10V3C14 2.45 13.55 2 13 2Z"
-                          stroke="rgba(164,158,208,0.45)" strokeWidth="1.2" strokeLinejoin="round"/>
+                      stroke="rgba(164,158,208,0.45)" strokeWidth="1.2" strokeLinejoin="round" />
                       </svg>
                       {post.comments}
                     </span>
-                    {i === 0 && (
-                      <span style={{ marginLeft: "auto", fontSize: "9px",
-                        color: "rgba(140,170,150,0.70)", letterSpacing: "0.14em",
-                        textTransform: "uppercase", fontFamily: "Montserrat,sans-serif" }}>novo</span>
-                    )}
+                    {i === 0 &&
+                  <span style={{ marginLeft: "auto", fontSize: "9px",
+                    color: "rgba(140,170,150,0.70)", letterSpacing: "0.14em",
+                    textTransform: "uppercase", fontFamily: "Montserrat,sans-serif" }}>novo</span>
+                  }
                   </div>
                 </div>
-              ))}
+              )}
 
               {/* Feed CTA */}
               <div style={{
@@ -802,18 +802,18 @@ export default function LandingPage() {
                 border: "1px dashed rgba(81,72,152,0.35)",
                 padding: "clamp(16px,2vw,22px)",
                 textAlign: "center",
-                background: "rgba(81,72,152,0.05)",
+                background: "rgba(81,72,152,0.05)"
               }}>
                 <p style={{ fontSize: "clamp(13px,1.4vw,14px)", color: "rgba(245,240,232,0.40)",
                   fontFamily: "Montserrat,sans-serif", marginBottom: "12px", lineHeight: 1.6 }}>
                   Sua voz também pertence aqui.
                 </p>
                 <Link to="/checkout/mulher-espiral"
-                  style={{ display: "inline-flex", alignItems: "center", gap: "8px",
-                    fontSize: "10px", color: "rgba(164,158,208,0.90)",
-                    letterSpacing: "0.18em", textTransform: "uppercase",
-                    fontFamily: "Montserrat,sans-serif", fontWeight: 500,
-                    textDecoration: "none", transition: "color 0.2s" }}>
+                style={{ display: "inline-flex", alignItems: "center", gap: "8px",
+                  fontSize: "10px", color: "rgba(164,158,208,0.90)",
+                  letterSpacing: "0.18em", textTransform: "uppercase",
+                  fontFamily: "Montserrat,sans-serif", fontWeight: 500,
+                  textDecoration: "none", transition: "color 0.2s" }}>
                   Fazer parte da comunidade <ArrowRight size={12} />
                 </Link>
               </div>
@@ -831,20 +831,20 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          6 — SUNYAN
-      ══════════════════════════════════════════════ */}
+           6 — SUNYAN
+        ══════════════════════════════════════════════ */}
       <section id="section-6" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-        background: "var(--bg-surface)",
+        background: "var(--bg-surface)"
       }}>
         <div className="glow-gold" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden="true" />
         <div style={{ position: "relative", maxWidth: "1060px", margin: "0 auto", display: "grid", gap: "clamp(32px,5vw,72px)", alignItems: "center" }} className="grid md:grid-cols-2">
           <div className="reveal-left" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
             <div style={{ position: "relative", width: "clamp(200px,30vw,360px)", aspectRatio: "3/4", borderRadius: "clamp(18px,2.5vw,26px)", overflow: "hidden", border: "1px solid var(--border-soft)", boxShadow: "var(--shadow-lg)", flexShrink: 0 }}>
               <img src={sunyanPortrait} alt="Sunyan Nunes — Criadora do Método Espiral" loading="lazy" decoding="async"
-                width="360" height="480"
-                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", display: "block" }} />
+              width="360" height="480"
+              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", display: "block" }} />
               <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "44px 20px 20px", background: "linear-gradient(to top, rgba(6,8,15,0.90) 0%, rgba(6,8,15,0.30) 55%, transparent 100%)" }}>
                 <p style={{ fontFamily: "Cormorant Garamond,serif", fontSize: "20px", color: "#c6a870", fontStyle: "italic", fontWeight: 300, textAlign: "center", lineHeight: 1.2 }}>Sunyan Nunes</p>
                 <p style={{ fontFamily: "Montserrat,sans-serif", fontSize: "8px", letterSpacing: "0.20em", textTransform: "uppercase", color: "rgba(198,168,112,0.58)", textAlign: "center", marginTop: "4px" }}>Criadora do Método Espiral</p>
@@ -866,12 +866,12 @@ export default function LandingPage() {
               "Não sou guru. Sou uma companheira de jornada que já percorreu o caminho e voltou para te mostrar que é possível."
             </p>
             <div style={{ display: "flex", gap: "clamp(8px,1.5vw,12px)", flexWrap: "wrap", marginBottom: "clamp(20px,3vw,32px)" }}>
-              {[["1.2k", "alunas"], ["4.9", "avaliação"], ["97%", "recomendam"]].map(([val, lbl]) => (
-                <div key={lbl} className="card-dark" style={{ padding: "clamp(12px,2vw,16px) clamp(14px,2vw,18px)", textAlign: "center", flex: "1 1 80px" }}>
+              {[["1.2k", "alunas"], ["4.9", "avaliação"], ["97%", "recomendam"]].map(([val, lbl]) =>
+              <div key={lbl} className="card-dark" style={{ padding: "clamp(12px,2vw,16px) clamp(14px,2vw,18px)", textAlign: "center", flex: "1 1 80px" }}>
                   <p className="font-display" style={{ fontSize: "clamp(20px,2.5vw,26px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>{val}</p>
                   <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: "5px" }}>{lbl}</p>
                 </div>
-              ))}
+              )}
             </div>
             <Link to="/checkout/mulher-espiral" className="btn-gold">
               Quero aprender com Sunyan <ArrowRight size={14} />
@@ -881,12 +881,12 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          7 — FAQ
-      ══════════════════════════════════════════════ */}
+           7 — FAQ
+        ══════════════════════════════════════════════ */}
       <section id="section-7" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-        background: "var(--bg-surface-2)",
+        background: "var(--bg-surface-2)"
       }}>
         <div style={{ position: "relative", maxWidth: "720px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "clamp(36px,6vw,56px)" }}>
@@ -896,9 +896,9 @@ export default function LandingPage() {
             </h2>
           </div>
           <div className="reveal reveal-delay-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-            {faqs.map((faq, i) => (
-              <FaqItem key={i} q={faq.q} a={faq.a} />
-            ))}
+            {faqs.map((faq, i) =>
+            <FaqItem key={i} q={faq.q} a={faq.a} />
+            )}
           </div>
           <div className="reveal reveal-delay-3" style={{ textAlign: "center", marginTop: "clamp(28px,4vw,44px)" }}>
             <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-muted)", marginBottom: "20px" }}>
@@ -912,13 +912,13 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          8 — CTA FINAL
-      ══════════════════════════════════════════════ */}
+           8 — CTA FINAL
+        ══════════════════════════════════════════════ */}
       <section id="section-8" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(100px,14vw,180px) clamp(16px,5vw,24px)",
         textAlign: "center",
-        background: isLight ? "var(--bg-surface-3)" : "#060810",
+        background: isLight ? "var(--bg-surface-3)" : "#060810"
       }}>
         <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", pointerEvents: "none" }} aria-hidden="true">
           <SectionSpiral3D size={160} height={430} opacity={isLight ? 0.10 : 0.13} color={isLight ? "#8f6e28" : "#c6a870"} emissive="#3a1c08" speed={0.00024} withRings lightBg={isLight} />
@@ -939,21 +939,21 @@ export default function LandingPage() {
           </p>
           <div className="reveal reveal-delay-4" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
             <Link to="/checkout/mulher-espiral" className="btn-gold"
-              style={{ padding: "17px clamp(32px,5vw,60px)", fontSize: "10px", width: "100%", maxWidth: "440px", justifyContent: "center" }}>
+            style={{ padding: "17px clamp(32px,5vw,60px)", fontSize: "10px", width: "100%", maxWidth: "440px", justifyContent: "center" }}>
               Quero começar minha jornada <ArrowRight size={15} />
             </Link>
           </div>
           <div className="reveal reveal-delay-5" style={{ display: "flex", justifyContent: "center", gap: "clamp(12px,3vw,24px)", marginTop: "clamp(24px,3vw,36px)", flexWrap: "wrap" }}>
-            {guarantees.map(({ label }) => (
-              <span key={label} className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.22em", textTransform: "uppercase" }}>✓ {label}</span>
-            ))}
+            {guarantees.map(({ label }) =>
+            <span key={label} className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.22em", textTransform: "uppercase" }}>✓ {label}</span>
+            )}
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════
-          FOOTER
-      ══════════════════════════════════════════════ */}
+           FOOTER
+        ══════════════════════════════════════════════ */}
       <footer style={{ position: "relative", zIndex: 1, padding: "clamp(36px,6vw,60px) clamp(16px,5vw,24px)", background: isLight ? "var(--bg-surface-3)" : "#060810", borderTop: "1px solid var(--border-subtle)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "clamp(16px,3vw,28px)" }}>
@@ -962,13 +962,13 @@ export default function LandingPage() {
               <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-faint)" }}>por Sunyan Nunes</p>
             </div>
             <nav style={{ display: "flex", gap: "clamp(14px,2.5vw,24px)", flexWrap: "wrap" }}>
-              {[["Método","#section-2"],["Jornadas","#section-3"],["Comunidade","#section-5"],["Entrar","/login"]].map(([label,href]) => (
-                <a key={label} href={href} className="font-label"
-                  style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-muted)")}
-                >{label}</a>
-              ))}
+              {[["Método", "#section-2"], ["Jornadas", "#section-3"], ["Comunidade", "#section-5"], ["Entrar", "/login"]].map(([label, href]) =>
+              <a key={label} href={href} className="font-label"
+              style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
+              onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.color = "var(--gold)"}
+              onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"}>
+                {label}</a>
+              )}
             </nav>
             <p className="font-label" style={{ fontSize: "9px", color: "var(--text-faint)", letterSpacing: "0.12em" }}>contato@despertarespiral.com</p>
           </div>
@@ -978,6 +978,6 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
-    </div>
-  );
+    </div>);
+
 }
