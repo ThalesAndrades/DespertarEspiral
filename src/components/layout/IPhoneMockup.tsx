@@ -58,7 +58,7 @@ export default function IPhoneMockup() {
         <div
           className="iphone-inner"
           style={{
-            width: "clamp(160px, 42vw, 240px)",
+            width: "clamp(130px, 36vw, 240px)",
             transformStyle: "preserve-3d",
             transform: "rotateY(-10deg) rotateX(6deg)",
             transition: "transform 0.06s linear",
@@ -202,7 +202,7 @@ export default function IPhoneMockup() {
 
       <div
         style={{
-          width: "clamp(120px, 28vw, 200px)",
+          width: "clamp(90px, 24vw, 200px)",
           height: "20px",
           background: "radial-gradient(ellipse 80% 100% at 50% 0%, rgba(198,168,112,0.14) 0%, transparent 70%)",
           filter: "blur(6px)",

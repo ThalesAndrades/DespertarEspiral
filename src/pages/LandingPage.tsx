@@ -223,7 +223,7 @@ export default function LandingPage() {
       ══════════════════════════════════════════════ */}
       <section id="section-0" style={{
         position: "relative", minHeight: "100svh",
-        display: "flex", alignItems: "center", justifyContent: "center",
+        display: "flex", flexDirection: "column",
         overflow: "hidden", background: heroBg,
       }}>
         {/* Gold radial glow — adapts per theme */}
@@ -234,7 +234,7 @@ export default function LandingPage() {
         <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "200px", background: `linear-gradient(to bottom, transparent, ${heroBg})`, pointerEvents: "none", zIndex: 3 }} />
 
         {/* Hero content */}
-        <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "0 auto", padding: "0 clamp(16px,5vw,40px)", paddingTop: "clamp(72px,12vh,100px)" }}>
+        <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "auto", padding: "clamp(100px,14vh,120px) clamp(16px,5vw,40px) clamp(60px,10vh,100px)" }}>
           <div style={{ width: "100%", display: "grid", gap: "clamp(32px,6vw,72px)", alignItems: "center" }} className="grid lg:grid-cols-[1.05fr_0.95fr]">
             <div style={{ width: "100%", maxWidth: "100%" }}>
 
@@ -254,7 +254,7 @@ export default function LandingPage() {
               <span style={{ color: "var(--gold)" }}>É encontrar-se<br />pela primeira vez.</span>
             </h1>
 
-            <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginBottom: "clamp(12px,3vw,22px)" }}>
+            <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginTop: "clamp(20px,4vw,32px)", marginBottom: "clamp(24px,5vw,40px)" }}>
               <IPhoneMockup />
             </div>
 
