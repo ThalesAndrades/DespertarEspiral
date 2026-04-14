@@ -1,10 +1,10 @@
 /**
  * MacbookMockup — Real MacBook Pro photo with platform UI overlay on screen.
- * The screen area is detected via % offsets on the photo, and the mini
- * dashboard UI is absolutely positioned over it.
+ * Boot animation: IntersectionObserver triggers screen fade-in + 120ms stagger
+ * on every UI element when MacBook enters the viewport.
  * Parallax mouse tilt on desktop (passive listeners, rAF).
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import macbookPhoto from "@/assets/macbook-mockup.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 
@@ -17,8 +17,8 @@ const LESSONS = [
 ];
 
 function useTypingCycle() {
-  const [idx, setIdx]   = useState(0);
-  const [text, setText] = useState("");
+  const [idx, setIdx]     = useState(0);
+  const [text, setText]   = useState("");
   const [phase, setPhase] = useState<"typing" | "hold" | "erasing">("typing");
 
   useEffect(() => {
@@ -48,22 +48,50 @@ function useTypingCycle() {
 }
 
 /* ── Progress bar animated on mount ───────────────────────── */
-function AnimatedProgress({ target }: { target: number }) {
+function AnimatedProgress({ target, booted }: { target: number; booted: boolean }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => setVal(target), 400);
+    if (!booted) return;
+    const t = setTimeout(() => setVal(target), 600);
     return () => clearTimeout(t);
-  }, [target]);
+  }, [target, booted]);
   return (
     <div style={{ width: "48px", height: "3px", borderRadius: "100px", background: "rgba(198,168,112,0.12)" }}>
-      <div style={{ width: `${val}%`, height: "100%", borderRadius: "100px", background: "#c6a870", transition: "width 1.4s cubic-bezier(.16,1,.3,1)" }} />
+      <div style={{ width: `${val}%`, height: "100%", borderRadius: "100px", background: "#c6a870", transition: "width 1.6s cubic-bezier(.16,1,.3,1)" }} />
     </div>
   );
 }
 
+/* ── Boot stagger helper ─────────────────────────────────── */
+function bootStyle(booted: boolean, delay: number, extra?: React.CSSProperties): React.CSSProperties {
+  return {
+    opacity: booted ? 1 : 0,
+    transform: booted ? "translateY(0)" : "translateY(4px)",
+    transition: `opacity 0.45s ease ${delay}ms, transform 0.45s ease ${delay}ms`,
+    ...extra,
+  };
+}
+
 export default function MacbookMockup() {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const wrapRef     = useRef<HTMLDivElement>(null);
+  const [booted, setBooted] = useState(false);
   const lessonTitle = useTypingCycle();
+
+  /* ── IntersectionObserver — trigger boot on viewport entry ── */
+  const triggerBoot = useCallback(() => setBooted(true), []);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) { triggerBoot(); io.disconnect(); }
+      },
+      { threshold: 0.18 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [triggerBoot]);
 
   /* ── Parallax tilt ── */
   useEffect(() => {
@@ -100,6 +128,21 @@ export default function MacbookMockup() {
       parent.removeEventListener("mouseleave", onLeave);
     };
   }, []);
+
+  const SIDEBAR_ITEMS = [
+    { label: "Dashboard",  active: false },
+    { label: "Meu Curso",  active: true  },
+    { label: "Comunidade", active: false },
+    { label: "Progresso",  active: false },
+  ];
+
+  const LESSONS_LIST = [
+    { title: "Introdução ao Módulo",   done: true,  active: false },
+    { title: "Reconhecendo Padrões",   done: true,  active: false },
+    { title: "A Voz do Corpo",         done: true,  active: false },
+    { title: "O Corpo como Sabedoria", done: false, active: true  },
+    { title: "Integração Somática",    done: false, active: false },
+  ];
 
   return (
     <div
@@ -162,22 +205,25 @@ export default function MacbookMockup() {
               zIndex: 2,
               overflow: "hidden",
               borderRadius: "2px",
+              /* Screen boots from black to platform */
               background: "#070915",
+              opacity: booted ? 1 : 0,
+              transition: "opacity 0.55s ease 60ms",
             }}
           >
             {/* ── Mini platform UI ── */}
             <div style={{ display: "flex", width: "100%", height: "100%", fontFamily: "system-ui, -apple-system, sans-serif" }}>
 
               {/* ── Sidebar ── */}
-              <div style={{
+              <div style={bootStyle(booted, 80, {
                 width: "22%", height: "100%", flexShrink: 0,
                 background: "#0c0f22",
                 borderRight: "1px solid rgba(198,168,112,0.07)",
                 display: "flex", flexDirection: "column",
                 padding: "8px 6px 8px", gap: "2px",
-              }}>
+              })}>
                 {/* Logo */}
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "3px 5px 8px" }}>
+                <div style={bootStyle(booted, 100, { display: "flex", alignItems: "center", gap: "4px", padding: "3px 5px 8px" })}>
                   <svg width="9" height="9" viewBox="0 0 64 64" fill="none" aria-hidden="true">
                     <path d="M32 58C14 58 6 46 6 32C6 18 17 8 30 8C42 8 51 17 51 29C51 39 44 47 34 47C26 47 20 40 20 32C20 25 25 20 32 20C38 20 42 25 42 30C42 35 38 39 34 39"
                       stroke="#c6a870" strokeWidth="2.5" strokeLinecap="round" />
@@ -185,17 +231,12 @@ export default function MacbookMockup() {
                   <span style={{ fontSize: "4.5px", letterSpacing: "0.14em", color: "rgba(198,168,112,0.70)", fontWeight: 600, textTransform: "uppercase" }}>Espiral</span>
                 </div>
 
-                {[
-                  { label: "Dashboard",  active: false },
-                  { label: "Meu Curso",  active: true  },
-                  { label: "Comunidade", active: false },
-                  { label: "Progresso",  active: false },
-                ].map(({ label, active }) => (
-                  <div key={label} style={{
+                {SIDEBAR_ITEMS.map(({ label, active }, i) => (
+                  <div key={label} style={bootStyle(booted, 160 + i * 120, {
                     padding: "4px 5px", borderRadius: "4px",
                     background: active ? "rgba(198,168,112,0.10)" : "transparent",
                     borderLeft: active ? "1.5px solid #c6a870" : "1.5px solid transparent",
-                  }}>
+                  })}>
                     <span style={{ fontSize: "4px", color: active ? "#c6a870" : "rgba(198,168,112,0.38)", fontWeight: active ? 600 : 400 }}>
                       {label}
                     </span>
@@ -205,11 +246,11 @@ export default function MacbookMockup() {
                 <div style={{ flex: 1 }} />
 
                 {/* User row */}
-                <div style={{
+                <div style={bootStyle(booted, 700, {
                   display: "flex", alignItems: "center", gap: "4px",
                   padding: "5px 5px 0",
                   borderTop: "1px solid rgba(198,168,112,0.07)",
-                }}>
+                })}>
                   <div style={{
                     width: "10px", height: "10px", borderRadius: "50%",
                     background: "rgba(198,168,112,0.15)",
@@ -230,30 +271,30 @@ export default function MacbookMockup() {
               <div style={{ flex: 1, height: "100%", background: "#070915", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
                 {/* Top bar */}
-                <div style={{
+                <div style={bootStyle(booted, 180, {
                   height: "18px", flexShrink: 0,
                   borderBottom: "1px solid rgba(198,168,112,0.07)",
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   padding: "0 8px",
-                }}>
+                })}>
                   <span style={{ fontSize: "4.5px", color: "#c6a870", letterSpacing: "0.09em" }}>
                     Mulher Espiral — Módulo 3
                   </span>
                   <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
-                    <AnimatedProgress target={55} />
+                    <AnimatedProgress target={55} booted={booted} />
                     <span style={{ fontSize: "3.5px", color: "rgba(198,168,112,0.55)" }}>55%</span>
                   </div>
                 </div>
 
                 {/* Video player area */}
-                <div style={{
+                <div style={bootStyle(booted, 280, {
                   position: "relative",
                   width: "100%",
                   flexShrink: 0,
                   overflow: "hidden",
                   background: "#030508",
                   aspectRatio: "16/9",
-                }}>
+                })}>
                   <img
                     src={sunyanPortrait}
                     alt=""
@@ -302,28 +343,25 @@ export default function MacbookMockup() {
                   </div>
                 </div>
 
-                {/* Lesson list */}
-                <div style={{
-                  flex: 1, overflow: "hidden",
-                  padding: "5px 7px",
-                  display: "flex", flexDirection: "column", gap: "2px",
-                }}>
-                  <p style={{ fontSize: "3.5px", color: "rgba(198,168,112,0.45)", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: "4px" }}>
+                {/* Lesson list header */}
+                <div style={bootStyle(booted, 420, {
+                  padding: "5px 7px 2px",
+                  flexShrink: 0,
+                })}>
+                  <p style={{ fontSize: "3.5px", color: "rgba(198,168,112,0.45)", letterSpacing: "0.16em", textTransform: "uppercase" }}>
                     Conteúdo do módulo
                   </p>
-                  {[
-                    { title: "Introdução ao Módulo",   done: true,  active: false },
-                    { title: "Reconhecendo Padrões",   done: true,  active: false },
-                    { title: "A Voz do Corpo",         done: true,  active: false },
-                    { title: "O Corpo como Sabedoria", done: false, active: true  },
-                    { title: "Integração Somática",    done: false, active: false },
-                  ].map(({ title, done, active }) => (
-                    <div key={title} style={{
+                </div>
+
+                {/* Lesson list items — staggered */}
+                <div style={{ flex: 1, overflow: "hidden", padding: "2px 7px 4px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {LESSONS_LIST.map(({ title, done, active }, i) => (
+                    <div key={title} style={bootStyle(booted, 480 + i * 120, {
                       display: "flex", alignItems: "center", gap: "4px",
                       padding: "2.5px 4px", borderRadius: "3px",
                       background: active ? "rgba(198,168,112,0.07)" : "transparent",
                       borderLeft: active ? "1.5px solid #c6a870" : "1.5px solid transparent",
-                    }}>
+                    })}>
                       {/* Status dot */}
                       <div style={{
                         width: "6px", height: "6px", borderRadius: "50%", flexShrink: 0,
@@ -353,13 +391,13 @@ export default function MacbookMockup() {
                 </div>
 
                 {/* Community pulse strip */}
-                <div style={{
+                <div style={bootStyle(booted, 1080, {
                   flexShrink: 0,
                   borderTop: "1px solid rgba(198,168,112,0.07)",
                   padding: "4px 7px",
                   display: "flex", alignItems: "center", gap: "6px",
                   background: "rgba(164,158,208,0.04)",
-                }}>
+                })}>
                   <span style={{ fontSize: "3px", color: "rgba(164,158,208,0.60)", letterSpacing: "0.14em", textTransform: "uppercase" }}>Comunidade</span>
                   <div style={{ flex: 1, display: "flex", gap: "4px", overflow: "hidden" }}>
                     {["conquista", "desabafo", "dica"].map((cat, i) => (
