@@ -78,6 +78,16 @@ async function fetchProfile(userId: string) {
 
 /* ─────────────────────────────────────────── */
 const AuthContext = createContext<AuthContextType | null>(null);
+const fallbackAuth: AuthContextType = {
+  user: null,
+  loading: false,
+  sendOtp: async () => ({ error: "AuthProvider não inicializado" }),
+  verifyOtpAndRegister: async () => ({ error: "AuthProvider não inicializado" }),
+  loginWithPassword: async () => ({ error: "AuthProvider não inicializado" }),
+  loginWithGoogle: async () => ({ error: "AuthProvider não inicializado" }),
+  logout: async () => {},
+  refreshUser: async () => {},
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]       = useState<AuthUser | null>(null);
@@ -213,6 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+  if (ctx) return ctx;
+  if (import.meta.env.DEV) throw new Error("useAuth must be used within AuthProvider");
+  return fallbackAuth;
 }
