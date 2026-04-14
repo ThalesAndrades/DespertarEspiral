@@ -17,6 +17,9 @@ import macbookPhoto from "@/assets/macbook-mockup.png";
 import platformUI from "@/assets/platform-screen-v2.jpg";
 
 /* ── Screen calibration constants ─────────────────────────── */
+// Defina DEBUG_SCREEN = true para exibir o marcador da região da tela
+const DEBUG_SCREEN = true;
+
 const SCREEN = {
   left:   "13.1%",
   top:    "3.4%",
@@ -129,6 +132,49 @@ export default function MacbookMockup() {
             style={{ width: "100%", height: "auto", display: "block" }}
           />
 
+          {/* ── DEBUG: marcador da região da tela ── */}
+          {DEBUG_SCREEN && (
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left:   SCREEN.left,
+                top:    SCREEN.top,
+                width:  SCREEN.width,
+                height: SCREEN.height,
+                zIndex: 20,
+                pointerEvents: "none",
+                border: "2px solid #ff3b3b",
+                borderRadius: SCREEN.radius,
+                boxShadow: "inset 0 0 0 1px rgba(255,59,59,0.35), 0 0 0 2px rgba(255,59,59,0.20)",
+                boxSizing: "border-box",
+              }}
+            >
+              {/* Cantos de mira */}
+              {["tl","tr","bl","br"].map((pos) => (
+                <div key={pos} aria-hidden="true" style={{
+                  position: "absolute",
+                  width: "12px", height: "12px",
+                  borderColor: "#ff3b3b",
+                  borderStyle: "solid",
+                  borderWidth: pos.startsWith("t") ? "2px 0 0" : "0 0 2px",
+                  ...(pos.endsWith("l") ? { left: -1, borderLeftWidth: "2px" } : { right: -1, borderRightWidth: "2px" }),
+                  ...(pos.startsWith("t") ? { top: -1 } : { bottom: -1 }),
+                }} />
+              ))}
+              {/* Label com os valores atuais */}
+              <div style={{
+                position: "absolute", top: "4px", left: "4px",
+                background: "rgba(255,59,59,0.85)", borderRadius: "4px",
+                padding: "2px 6px", fontSize: "8px", fontFamily: "monospace",
+                color: "#fff", whiteSpace: "nowrap", lineHeight: 1.6,
+                pointerEvents: "none",
+              }}>
+                L {SCREEN.left} · T {SCREEN.top} · W {SCREEN.width} · H {SCREEN.height}
+              </div>
+            </div>
+          )}
+
           {/* ── Screen overlay — clipped flush to white area ── */}
           <div
             style={{
@@ -155,7 +201,7 @@ export default function MacbookMockup() {
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                objectFit: "fill",
                 objectPosition: "top left",
                 display: "block",
                 /* Boot scale-in: slight zoom from 1.04 → 1.00 */
