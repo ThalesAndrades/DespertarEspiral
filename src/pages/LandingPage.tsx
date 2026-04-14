@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
 import { BackgroundSpiral3D, SectionSpiral3D } from "@/components/layout/Spiral3D";
-import TabletMockup from "@/components/layout/TabletMockup";
+import IPhoneMockup from "@/components/layout/IPhoneMockup";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import { useTheme } from "@/hooks/useTheme";
@@ -230,20 +230,13 @@ export default function LandingPage() {
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 80% 65% at 55% 42%, ${isLight ? "rgba(122,94,30,0.07)" : "rgba(198,168,112,0.12)"} 0%, transparent 65%)`, pointerEvents: "none", zIndex: 0 }} />
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 45% 50% at 22% 75%, ${isLight ? "rgba(100,70,80,0.05)" : "rgba(172,128,142,0.07)"} 0%, transparent 60%)`, pointerEvents: "none", zIndex: 0 }} />
 
-        {/* Tablet — desktop only */}
-        <div className="hidden lg:flex" style={{ position: "absolute", right: "max(-32px, calc(50% - 660px))", top: "50%", transform: "translateY(-52%)", zIndex: 2, alignItems: "center", pointerEvents: "none" }}>
-          <div style={{ pointerEvents: "all" }}>
-            <TabletMockup targetSection="section-6" />
-          </div>
-        </div>
-
         {/* Hero bottom fade — transitions to next section */}
         <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "200px", background: `linear-gradient(to bottom, transparent, ${heroBg})`, pointerEvents: "none", zIndex: 3 }} />
 
         {/* Hero content */}
         <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "0 auto", padding: "0 clamp(16px,5vw,40px)", paddingTop: "clamp(72px,12vh,100px)" }}>
-          {/* On mobile: full width. On desktop: 54% to leave room for tablet mockup */}
-          <div className="lg:max-w-[54%]" style={{ width: "100%", maxWidth: "100%" }}>
+          <div style={{ width: "100%", display: "grid", gap: "clamp(32px,6vw,72px)", alignItems: "center" }} className="grid lg:grid-cols-[1.05fr_0.95fr]">
+            <div style={{ width: "100%", maxWidth: "100%" }}>
 
             {/* Social proof pill */}
             <div className="animate-fade-up delay-100" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "clamp(16px,3vw,28px)", background: "var(--gold-glow)", border: "1px solid var(--border-mid)", borderRadius: "100px", padding: "7px 16px 7px 10px" }}>
@@ -260,6 +253,10 @@ export default function LandingPage() {
               não é voltar.<br />
               <span style={{ color: "var(--gold)" }}>É encontrar-se<br />pela primeira vez.</span>
             </h1>
+
+            <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginBottom: "clamp(12px,3vw,22px)" }}>
+              <IPhoneMockup />
+            </div>
 
             <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300 }}>
               Uma jornada de autoconhecimento profunda, estruturada e amorosa — para mulheres que sentem que existe mais.
@@ -304,6 +301,11 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
+            </div>
+            </div>
+
+            <div className="hidden lg:flex" style={{ justifyContent: "flex-end", pointerEvents: "none", marginTop: "12px" }}>
+              <IPhoneMockup />
             </div>
           </div>
         </div>
@@ -570,7 +572,7 @@ export default function LandingPage() {
           <div className="reveal-left" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
             <div style={{ position: "relative", width: "clamp(200px,30vw,360px)", aspectRatio: "3/4", borderRadius: "clamp(18px,2.5vw,26px)", overflow: "hidden", border: "1px solid var(--border-soft)", boxShadow: "var(--shadow-lg)", flexShrink: 0 }}>
               <img src={sunyanPortrait} alt="Sunyan Nunes — Criadora do Método Espiral" loading="lazy" decoding="async"
-                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", display: "block" }} />
               <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "44px 20px 20px", background: "linear-gradient(to top, rgba(6,8,15,0.90) 0%, rgba(6,8,15,0.30) 55%, transparent 100%)" }}>
                 <p style={{ fontFamily: "Cormorant Garamond,serif", fontSize: "20px", color: "#c6a870", fontStyle: "italic", fontWeight: 300, textAlign: "center", lineHeight: 1.2 }}>Sunyan Nunes</p>
                 <p style={{ fontFamily: "Montserrat,sans-serif", fontSize: "8px", letterSpacing: "0.20em", textTransform: "uppercase", color: "rgba(198,168,112,0.58)", textAlign: "center", marginTop: "4px" }}>Criadora do Método Espiral</p>
