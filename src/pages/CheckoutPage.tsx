@@ -73,7 +73,7 @@ export default function CheckoutPage() {
     if (error) {
       let msg = error.message;
       if (error instanceof FunctionsHttpError) {
-        try { const t = await error.context?.text(); msg = `[${error.context?.status}] ${t || error.message}`; } catch {}
+        try { const t = await error.context?.text(); msg = `[${error.context?.status}] ${t || error.message}`; } catch (e) { /* ignore */ }
       }
       toast.error(msg);
       setLoading(false);

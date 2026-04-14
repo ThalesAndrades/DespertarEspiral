@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
-import { CheckCircle, ArrowRight, Mail, Copy, Check, Star, Shield, Infinity, Clock, BookOpen, Users, Award } from "lucide-react";
+import { CheckCircle, ArrowRight, Mail, Copy, Check, Star, Shield, Infinity as InfinityIcon, Clock, BookOpen, Users, Award } from "lucide-react";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -266,7 +266,7 @@ export default function ThankYouPage() {
         }}>
           {[
             { icon: Shield,   label: "7 dias de garantia"   },
-            { icon: Infinity, label: "Acesso vitalício"      },
+            { icon: InfinityIcon, label: "Acesso vitalício"      },
             { icon: Users,    label: "Comunidade exclusiva"  },
             { icon: Clock,    label: "Suporte humanizado"    },
           ].map(({ icon: Icon, label }) => (

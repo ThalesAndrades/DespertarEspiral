@@ -13,7 +13,7 @@ import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import mockupAtualizado from "@/assets/mockup-atualizado.png";
 import { useTheme } from "@/hooks/useTheme";
-import { ArrowRight, ArrowUpRight, Shield, Clock, Infinity, Star, ChevronDown } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Shield, Clock, Infinity as InfinityIcon, Star, ChevronDown } from "lucide-react";
 
 /* ── Scroll progress ──────────────────────────────────────── */
 function useScrollProgress(ref: React.RefObject<HTMLDivElement | null>) {
@@ -97,7 +97,7 @@ const steps = [
 
 const guarantees = [
 { icon: Shield, label: "7 dias de garantia", desc: "Devolução integral sem perguntas" },
-{ icon: Infinity, label: "Acesso vitalício", desc: "Conteúdo sempre disponível" },
+{ icon: InfinityIcon, label: "Acesso vitalício", desc: "Conteúdo sempre disponível" },
 { icon: Clock, label: "Suporte humanizado", desc: "Time dedicado à sua jornada" }];
 
 

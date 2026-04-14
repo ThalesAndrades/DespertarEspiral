@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type Theme = "dark" | "light";
 
@@ -18,7 +18,7 @@ let _listeners: (() => void)[] = [];
 function applyTheme(t: Theme) {
   _theme = t;
   document.documentElement.setAttribute("data-theme", t);
-  try { localStorage.setItem("theme", t); } catch {}
+  try { localStorage.setItem("theme", t); } catch (e) { /* ignore */ }
   _listeners.forEach((fn) => fn());
 }
 
@@ -28,7 +28,8 @@ function subscribe(fn: () => void) {
 }
 
 export function useTheme() {
-  const rerender = () => {};
+  const [, setTick] = useState(0);
+  const rerender = () => setTick(t => t + 1);
 
   useEffect(() => {
     const unsub = subscribe(rerender);
