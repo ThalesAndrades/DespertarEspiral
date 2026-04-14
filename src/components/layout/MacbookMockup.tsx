@@ -18,6 +18,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import macbookPhoto from "@/assets/macbook-mockup.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 
+/* ─────────────────────────────────────────────────────────
+   DEV CALIBRATION MODE
+   Toggle with the floating button bottom-right of the mockup.
+   Copy the printed values into the SCREEN constant and remove
+   the entire CALIBRATION block before shipping to production.
+───────────────────────────────────────────────────────── */
+const CALIBRATION_ENABLED = true; // ← set false to hide controls
+
 /* ── Animated typing ─────────────────────────────────────── */
 const LESSONS = [
   "O Corpo como Sabedoria",
@@ -118,10 +126,152 @@ const LESSONS_LIST = [
   { title: "Integração Somática",    done: false, active: false },
 ];
 
+/* ── Calibration panel ─────────────────────────────────── */
+function CalibrationPanel({
+  left, top, width, height,
+  onChange,
+}: {
+  left: number; top: number; width: number; height: number;
+  onChange: (k: "left" | "top" | "width" | "height", v: number) => void;
+}) {
+  const fields: { key: "left" | "top" | "width" | "height"; label: string; min: number; max: number }[] = [
+    { key: "left",   label: "Left",   min: 0, max: 30 },
+    { key: "top",    label: "Top",    min: 0, max: 20 },
+    { key: "width",  label: "Width",  min: 50, max: 100 },
+    { key: "height", label: "Height", min: 40, max: 90 },
+  ];
+  const val = { left, top, width, height };
+
+  return (
+    <div style={{
+      position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
+      transform: "translateX(-50%)",
+      background: "rgba(7,9,21,0.96)",
+      border: "1px solid rgba(198,168,112,0.35)",
+      borderRadius: "8px",
+      padding: "14px 16px",
+      zIndex: 9999,
+      minWidth: "280px",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.70)",
+      backdropFilter: "blur(12px)",
+      pointerEvents: "all",
+    }}>
+      <p style={{ fontSize: "10px", color: "#c6a870", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "12px", fontWeight: 600 }}>
+        🎯 Screen Calibration
+      </p>
+
+      {fields.map(({ key, label, min, max }) => (
+        <div key={key} style={{ marginBottom: "10px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+            <label style={{ fontSize: "10px", color: "rgba(245,240,232,0.70)", fontWeight: 500 }}>{label}</label>
+            <span style={{
+              fontSize: "10px", color: "#c6a870", fontWeight: 700,
+              background: "rgba(198,168,112,0.10)", borderRadius: "4px",
+              padding: "1px 5px", fontVariantNumeric: "tabular-nums",
+            }}>
+              {val[key].toFixed(1)}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={min} max={max} step={0.1}
+            value={val[key]}
+            onChange={e => onChange(key, parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#c6a870", cursor: "pointer" }}
+          />
+        </div>
+      ))}
+
+      {/* Copy values */}
+      <div style={{
+        marginTop: "12px",
+        background: "rgba(198,168,112,0.06)",
+        border: "1px solid rgba(198,168,112,0.18)",
+        borderRadius: "6px",
+        padding: "8px 10px",
+      }}>
+        <p style={{ fontSize: "9px", color: "rgba(198,168,112,0.55)", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.12em" }}>Copie para SCREEN:</p>
+        <pre style={{ fontSize: "9px", color: "#c6a870", margin: 0, lineHeight: 1.6, fontFamily: "monospace" }}>
+{`left:   "${left.toFixed(1)}%",
+top:    "${top.toFixed(1)}%",
+width:  "${width.toFixed(1)}%",
+height: "${height.toFixed(1)}%",`}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
+/* ── Grid 10×10 overlay ─────────────────────────────────── */
+function CalibrationGrid() {
+  const lines = Array.from({ length: 9 }, (_, i) => i + 1); // 9 inner lines = 10 cells
+  return (
+    <div style={{
+      position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50,
+    }}>
+      {/* Vertical lines */}
+      {lines.map(i => (
+        <div key={`v${i}`} style={{
+          position: "absolute", top: 0, bottom: 0,
+          left: `${i * 10}%`,
+          width: "1px",
+          background: i === 5 ? "rgba(198,168,112,0.60)" : "rgba(198,168,112,0.25)",
+        }} />
+      ))}
+      {/* Horizontal lines */}
+      {lines.map(i => (
+        <div key={`h${i}`} style={{
+          position: "absolute", left: 0, right: 0,
+          top: `${i * 10}%`,
+          height: "1px",
+          background: i === 5 ? "rgba(198,168,112,0.60)" : "rgba(198,168,112,0.25)",
+        }} />
+      ))}
+      {/* Percentage labels on axes */}
+      {[10,20,30,40,50,60,70,80,90].map(p => (
+        <span key={`xl${p}`} style={{
+          position: "absolute", top: "1px", left: `${p}%`,
+          transform: "translateX(-50%)",
+          fontSize: "5px", color: "rgba(198,168,112,0.70)",
+          fontFamily: "monospace", pointerEvents: "none",
+          background: "rgba(0,0,0,0.4)", padding: "0 1px", borderRadius: "1px",
+        }}>{p}</span>
+      ))}
+      {[10,20,30,40,50,60,70,80,90].map(p => (
+        <span key={`yl${p}`} style={{
+          position: "absolute", left: "1px", top: `${p}%`,
+          transform: "translateY(-50%)",
+          fontSize: "5px", color: "rgba(198,168,112,0.70)",
+          fontFamily: "monospace", pointerEvents: "none",
+          background: "rgba(0,0,0,0.4)", padding: "0 1px", borderRadius: "1px",
+        }}>{p}</span>
+      ))}
+    </div>
+  );
+}
+
 export default function MacbookMockup() {
   const wrapRef  = useRef<HTMLDivElement>(null);
   const [booted, setBooted] = useState(false);
   const lessonTitle = useTypingCycle();
+
+  /* ── Calibration state ── */
+  const [calOpen,  setCalOpen]  = useState(false);
+  const [calLeft,   setCalLeft]  = useState(parseFloat(SCREEN.left));
+  const [calTop,    setCalTop]   = useState(parseFloat(SCREEN.top));
+  const [calWidth,  setCalWidth] = useState(parseFloat(SCREEN.width));
+  const [calHeight, setCalHeight]= useState(parseFloat(SCREEN.height));
+
+  const handleCalChange = (k: "left" | "top" | "width" | "height", v: number) => {
+    if (k === "left")   setCalLeft(v);
+    if (k === "top")    setCalTop(v);
+    if (k === "width")  setCalWidth(v);
+    if (k === "height") setCalHeight(v);
+  };
+
+  const liveScreen = CALIBRATION_ENABLED && calOpen
+    ? { left: `${calLeft}%`, top: `${calTop}%`, width: `${calWidth}%`, height: `${calHeight}%`, radius: SCREEN.radius }
+    : SCREEN;
 
   /* ── Boot trigger ── */
   const triggerBoot = useCallback(() => setBooted(true), []);
@@ -188,6 +338,9 @@ export default function MacbookMockup() {
             filter: "drop-shadow(0 28px 56px rgba(0,0,0,0.60)) drop-shadow(0 0 32px rgba(198,168,112,0.07))",
           }}
         >
+          {/* ── Calibration grid (full image overlay) ── */}
+          {CALIBRATION_ENABLED && calOpen && <CalibrationGrid />}
+
           {/* ── MacBook photo ── */}
           <img
             src={macbookPhoto}
@@ -202,13 +355,14 @@ export default function MacbookMockup() {
           <div
             style={{
               position: "absolute",
-              left:   SCREEN.left,
-              top:    SCREEN.top,
-              width:  SCREEN.width,
-              height: SCREEN.height,
+              left:   liveScreen.left,
+              top:    liveScreen.top,
+              width:  liveScreen.width,
+              height: liveScreen.height,
               zIndex: 2,
               overflow: "hidden",
-              borderRadius: SCREEN.radius,
+              borderRadius: liveScreen.radius,
+              outline: CALIBRATION_ENABLED && calOpen ? "1.5px dashed rgba(198,168,112,0.80)" : "none",
               background: "#07091580",
               opacity: booted ? 1 : 0,
               transition: "opacity 0.55s ease 60ms",
@@ -421,6 +575,36 @@ export default function MacbookMockup() {
           </div>
         </div>
       </div>
+
+      {/* ── Calibration toggle button ── */}
+      {CALIBRATION_ENABLED && (
+        <div style={{ position: "relative", display: "flex", justifyContent: "center", marginTop: "6px" }}>
+          {calOpen && (
+            <CalibrationPanel
+              left={calLeft} top={calTop} width={calWidth} height={calHeight}
+              onChange={handleCalChange}
+            />
+          )}
+          <button
+            onClick={() => { setCalOpen(o => !o); setBooted(true); }}
+            style={{
+              pointerEvents: "all",
+              fontSize: "10px",
+              fontWeight: 600,
+              color: calOpen ? "#070915" : "#c6a870",
+              background: calOpen ? "#c6a870" : "rgba(198,168,112,0.12)",
+              border: "1px solid rgba(198,168,112,0.40)",
+              borderRadius: "100px",
+              padding: "4px 12px",
+              cursor: "pointer",
+              letterSpacing: "0.10em",
+              transition: "all 0.2s",
+            }}
+          >
+            {calOpen ? "✕ Fechar calibração" : "⊞ Calibrar tela"}
+          </button>
+        </div>
+      )}
 
       <style>{`
         @keyframes blink {
