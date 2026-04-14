@@ -189,18 +189,12 @@ export default function LandingPage() {
   useReveal();
   useActiveSection(dotsRef);
 
-  /* Hero always dark for drama */
-  const heroBg = "#060810";
+  /* ── Hero colors — fully theme-aware ── */
+  const heroBg   = isLight ? "var(--bg-surface)"   : "#060810";
+  const heroText  = isLight ? "var(--text-primary)"   : "#f5f0e8";
+  const heroMuted = isLight ? "var(--text-secondary)" : "rgba(245,240,232,0.60)";
+  /* Gold always uses the CSS variable so it auto-adapts per theme */
 
-  /* Section-1 bridge: dark→surface in light mode, transparent in dark */
-  const s1Bg = isLight
-    ? "linear-gradient(to bottom, #060810 0%, var(--bg-surface) 48%)"
-    : "var(--bg-surface-2)";
-
-  /* Accent text on dark hero surfaces */
-  const heroText  = "#f5f0e8";
-  const heroMuted = "rgba(245,240,232,0.60)";
-  const heroGold  = "#c6a870";
 
   return (
     <div style={{ background: "var(--bg-surface)", color: "var(--text-primary)", minHeight: "100dvh", overflowX: "hidden", position: "relative" }}>
@@ -210,14 +204,6 @@ export default function LandingPage() {
 
       {/* Background crystal */}
       <BackgroundSpiral3D />
-
-      {/* Light mode: cream strip behind nav */}
-      {isLight && (
-        <div aria-hidden="true" style={{
-          position: "fixed", top: 0, left: 0, right: 0,
-          height: "68px", background: "var(--nav-bg)", zIndex: 99, pointerEvents: "none",
-        }} />
-      )}
 
       {/* Section dots */}
       <div className="spiral-tracker" ref={dotsRef} aria-hidden="true">
@@ -240,9 +226,9 @@ export default function LandingPage() {
         display: "flex", alignItems: "center", justifyContent: "center",
         overflow: "hidden", background: heroBg,
       }}>
-        {/* Gold radial glow */}
-        <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 65% at 55% 42%, rgba(198,168,112,0.12) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-        <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 45% 50% at 22% 75%, rgba(172,128,142,0.07) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
+        {/* Gold radial glow — adapts per theme */}
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 80% 65% at 55% 42%, ${isLight ? "rgba(122,94,30,0.07)" : "rgba(198,168,112,0.12)"} 0%, transparent 65%)`, pointerEvents: "none", zIndex: 0 }} />
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 45% 50% at 22% 75%, ${isLight ? "rgba(100,70,80,0.05)" : "rgba(172,128,142,0.07)"} 0%, transparent 60%)`, pointerEvents: "none", zIndex: 0 }} />
 
         {/* Tablet — desktop only */}
         <div className="hidden lg:flex" style={{ position: "absolute", right: "max(-32px, calc(50% - 660px))", top: "50%", transform: "translateY(-52%)", zIndex: 2, alignItems: "center", pointerEvents: "none" }}>
@@ -251,19 +237,20 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Hero bottom fade — always to heroBg */}
-        <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "220px", background: `linear-gradient(to bottom, transparent, ${heroBg})`, pointerEvents: "none", zIndex: 3 }} />
+        {/* Hero bottom fade — transitions to next section */}
+        <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "200px", background: `linear-gradient(to bottom, transparent, ${heroBg})`, pointerEvents: "none", zIndex: 3 }} />
 
         {/* Hero content */}
-        <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "0 auto", padding: "0 clamp(20px,5vw,40px)", paddingTop: "80px" }}>
-          <div style={{ maxWidth: "clamp(300px, 54%, 580px)" }}>
+        <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "0 auto", padding: "0 clamp(16px,5vw,40px)", paddingTop: "clamp(72px,12vh,100px)" }}>
+          {/* On mobile: full width. On desktop: 54% to leave room for tablet mockup */}
+          <div className="lg:max-w-[54%]" style={{ width: "100%", maxWidth: "100%" }}>
 
             {/* Social proof pill */}
-            <div className="animate-fade-up delay-100" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "clamp(16px,3vw,28px)", background: "rgba(198,168,112,0.10)", border: "1px solid rgba(198,168,112,0.22)", borderRadius: "100px", padding: "7px 16px 7px 10px" }}>
+            <div className="animate-fade-up delay-100" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "clamp(16px,3vw,28px)", background: "var(--gold-glow)", border: "1px solid var(--border-mid)", borderRadius: "100px", padding: "7px 16px 7px 10px" }}>
               <div style={{ display: "flex", gap: "2px" }}>
-                {[...Array(5)].map((_, i) => <Star key={i} size={9} fill={heroGold} style={{ color: heroGold }} />)}
+                {[...Array(5)].map((_, i) => <Star key={i} size={9} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
               </div>
-              <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "rgba(198,168,112,0.88)" }}>
+              <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--gold)" }}>
                 +1.200 mulheres transformadas
               </span>
             </div>
@@ -271,7 +258,7 @@ export default function LandingPage() {
             <h1 className="animate-fade-up delay-200 text-balance" style={{ fontSize: "clamp(38px,5.8vw,84px)", lineHeight: 1.02, fontStyle: "italic", fontWeight: 300, marginBottom: "clamp(16px,3vw,28px)", color: heroText }}>
               Reconectar-se<br />
               não é voltar.<br />
-              <span style={{ color: heroGold }}>É encontrar-se<br />pela primeira vez.</span>
+              <span style={{ color: "var(--gold)" }}>É encontrar-se<br />pela primeira vez.</span>
             </h1>
 
             <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300 }}>
@@ -280,7 +267,7 @@ export default function LandingPage() {
 
             {/* Desktop CTAs */}
             <div className="hidden lg:flex animate-fade-up delay-400" style={{ gap: "12px", alignItems: "center", flexWrap: "wrap", marginBottom: "28px" }}>
-              <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ color: "#060810" }}>
+              <Link to="/checkout/mulher-espiral" className="btn-gold">
                 Quero começar minha jornada <ArrowRight size={14} />
               </Link>
               <Link to="/login" className="btn-outline-gold" style={{ color: "rgba(245,240,232,0.85)", borderColor: "rgba(245,240,232,0.24)" }}>
@@ -292,8 +279,8 @@ export default function LandingPage() {
             <div className="hidden lg:flex animate-fade-in delay-600" style={{ gap: "20px", flexWrap: "wrap" }}>
               {guarantees.map(({ icon: Icon, label }) => (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                  <Icon size={12} style={{ color: "rgba(198,168,112,0.65)" }} strokeWidth={1.5} />
-                  <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(198,168,112,0.55)" }}>{label}</span>
+                  <Icon size={12} style={{ color: "var(--gold-dim)" }} strokeWidth={1.5} />
+                  <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</span>
                 </div>
               ))}
             </div>
@@ -301,19 +288,19 @@ export default function LandingPage() {
             {/* Mobile CTAs — full-width */}
             <div className="lg:hidden animate-fade-in delay-500" style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
               <Link to="/checkout/mulher-espiral" className="btn-gold"
-                style={{ width: "100%", justifyContent: "center", color: "#060810", minHeight: "56px", borderRadius: "18px" }}>
+                style={{ width: "100%", justifyContent: "center", minHeight: "56px", borderRadius: "18px" }}>
                 Quero começar minha jornada <ArrowRight size={15} />
               </Link>
               <Link to="/login" className="btn-outline-gold"
-                style={{ width: "100%", justifyContent: "center", minHeight: "52px", borderRadius: "18px", color: heroMuted, borderColor: "rgba(245,240,232,0.22)" }}>
+                style={{ width: "100%", justifyContent: "center", minHeight: "52px", borderRadius: "18px" }}>
                 Já sou aluna
               </Link>
               {/* Guarantee pills */}
               <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap", marginTop: "12px" }}>
                 {guarantees.map(({ icon: Icon, label }) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <Icon size={10} style={{ color: "rgba(198,168,112,0.55)" }} strokeWidth={1.5} />
-                    <span className="font-label" style={{ fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(198,168,112,0.50)" }}>{label}</span>
+                    <Icon size={10} style={{ color: "var(--gold-dim)" }} strokeWidth={1.5} />
+                    <span className="font-label" style={{ fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</span>
                   </div>
                 ))}
               </div>
@@ -336,18 +323,14 @@ export default function LandingPage() {
         marginTop: "-2px", overflow: "hidden",
         padding: "clamp(56px,8vw,100px) clamp(16px,5vw,24px)",
         borderBottom: "1px solid var(--border-subtle)",
-        background: isLight ? "transparent" : "var(--bg-surface-2)",
+        background: "var(--bg-surface-2)",
       }}>
-        {/* Light mode: dark-to-cream bridge */}
-        {isLight && (
-          <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: s1Bg, zIndex: 0, pointerEvents: "none" }} />
-        )}
         <div style={{ maxWidth: "940px", margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div className="reveal" style={{ textAlign: "center", marginBottom: "clamp(32px,5vw,56px)" }}>
             <div style={{ display: "flex", justifyContent: "center", gap: "4px", marginBottom: "12px" }}>
               {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
             </div>
-            <p className="font-display" style={{ fontSize: "clamp(16px,2.4vw,22px)", fontStyle: "italic", color: isLight ? "var(--bg-surface)" : "var(--text-secondary)", fontWeight: 300, maxWidth: "560px", margin: "0 auto", lineHeight: 1.5 }}>
+            <p className="font-display" style={{ fontSize: "clamp(16px,2.4vw,22px)", fontStyle: "italic", color: "var(--text-secondary)", fontWeight: 300, maxWidth: "560px", margin: "0 auto", lineHeight: 1.5 }}>
               "A experiência mais transformadora que já vivi."
             </p>
           </div>
@@ -463,7 +446,7 @@ export default function LandingPage() {
                     </div>
                     <p className="font-label" style={{ fontSize: "9px", color: "rgba(140,170,150,0.78)", letterSpacing: "0.12em", marginTop: "4px" }}>ou 12× de R$ 97,00</p>
                   </div>
-                  <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ color: "#060810" }}>
+                  <Link to="/checkout/mulher-espiral" className="btn-gold">
                     Quero começar <ArrowRight size={14} />
                   </Link>
                 </div>
@@ -660,35 +643,35 @@ export default function LandingPage() {
       <section id="section-8" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(100px,14vw,180px) clamp(16px,5vw,24px)",
-        textAlign: "center", background: "#060810",
+        textAlign: "center",
+        background: isLight ? "var(--bg-surface-3)" : "#060810",
       }}>
         <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", pointerEvents: "none" }} aria-hidden="true">
-          <SectionSpiral3D size={160} height={430} opacity={0.13} color="#c6a870" emissive="#3a1c08" speed={0.00024} withRings />
+          <SectionSpiral3D size={160} height={430} opacity={isLight ? 0.10 : 0.13} color={isLight ? "#8f6e28" : "#c6a870"} emissive="#3a1c08" speed={0.00024} withRings lightBg={isLight} />
         </div>
-        <div className="animate-glow" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 65% 55% at 50% 50%, rgba(198,168,112,0.10) 0%, transparent 68%)", pointerEvents: "none" }} aria-hidden="true" />
+        <div className="animate-glow" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 65% 55% at 50% 50%, var(--gold-glow) 0%, transparent 68%)", pointerEvents: "none" }} aria-hidden="true" />
         <div style={{ position: "relative", maxWidth: "680px", margin: "0 auto" }}>
           <div className="reveal" style={{ display: "flex", justifyContent: "center", gap: "4px", marginBottom: "24px" }}>
-            {[...Array(5)].map((_, i) => <Star key={i} size={13} fill="#c6a870" style={{ color: "#c6a870" }} />)}
+            {[...Array(5)].map((_, i) => <Star key={i} size={13} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
           </div>
-          <p className="overline reveal reveal-delay-1" style={{ color: "rgba(198,168,112,0.65)", marginBottom: "20px", letterSpacing: "0.32em" }}>
+          <p className="overline reveal reveal-delay-1" style={{ color: "var(--gold)", marginBottom: "20px", letterSpacing: "0.32em" }}>
             Você chegou até aqui por um motivo
           </p>
-          <h2 className="font-display text-balance reveal reveal-delay-2" style={{ fontSize: "clamp(34px,6.5vw,82px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.04, marginBottom: "22px", color: "#f5f0e8" }}>
+          <h2 className="font-display text-balance reveal reveal-delay-2" style={{ fontSize: "clamp(34px,6.5vw,82px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.04, marginBottom: "22px", color: "var(--text-primary)" }}>
             Algo dentro de você reconhece esse chamado.
           </h2>
-          <p className="reveal reveal-delay-3" style={{ fontSize: "clamp(14px,1.8vw,17px)", color: "rgba(245,240,232,0.50)", lineHeight: 1.85, marginBottom: "clamp(32px,5vw,52px)" }}>
+          <p className="reveal reveal-delay-3" style={{ fontSize: "clamp(14px,1.8vw,17px)", color: "var(--text-secondary)", lineHeight: 1.85, marginBottom: "clamp(32px,5vw,52px)" }}>
             Não é coincidência. É reconhecimento.
           </p>
-          {/* Mobile: full-width CTA */}
           <div className="reveal reveal-delay-4" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
             <Link to="/checkout/mulher-espiral" className="btn-gold"
-              style={{ padding: "17px clamp(32px,5vw,60px)", fontSize: "10px", color: "#060810", width: "100%", maxWidth: "440px", justifyContent: "center" }}>
+              style={{ padding: "17px clamp(32px,5vw,60px)", fontSize: "10px", width: "100%", maxWidth: "440px", justifyContent: "center" }}>
               Quero começar minha jornada <ArrowRight size={15} />
             </Link>
           </div>
           <div className="reveal reveal-delay-5" style={{ display: "flex", justifyContent: "center", gap: "clamp(12px,3vw,24px)", marginTop: "clamp(24px,3vw,36px)", flexWrap: "wrap" }}>
             {guarantees.map(({ label }) => (
-              <span key={label} className="font-label" style={{ fontSize: "8px", color: "rgba(198,168,112,0.40)", letterSpacing: "0.22em", textTransform: "uppercase" }}>✓ {label}</span>
+              <span key={label} className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.22em", textTransform: "uppercase" }}>✓ {label}</span>
             ))}
           </div>
         </div>
@@ -697,26 +680,26 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════
           FOOTER
       ══════════════════════════════════════════════ */}
-      <footer style={{ position: "relative", zIndex: 1, padding: "clamp(36px,6vw,60px) clamp(16px,5vw,24px)", background: "#060810", borderTop: "1px solid rgba(198,168,112,0.10)" }}>
+      <footer style={{ position: "relative", zIndex: 1, padding: "clamp(36px,6vw,60px) clamp(16px,5vw,24px)", background: isLight ? "var(--bg-surface-3)" : "#060810", borderTop: "1px solid var(--border-subtle)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "clamp(16px,3vw,28px)" }}>
             <div>
-              <p className="font-label" style={{ fontSize: "11px", letterSpacing: "0.32em", textTransform: "uppercase", color: "#c6a870", fontWeight: 500, marginBottom: "5px" }}>DESPERTAR ESPIRAL</p>
-              <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(245,240,232,0.25)" }}>por Sunyan Nunes</p>
+              <p className="font-label" style={{ fontSize: "11px", letterSpacing: "0.32em", textTransform: "uppercase", color: "var(--gold)", fontWeight: 500, marginBottom: "5px" }}>DESPERTAR ESPIRAL</p>
+              <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-faint)" }}>por Sunyan Nunes</p>
             </div>
             <nav style={{ display: "flex", gap: "clamp(14px,2.5vw,24px)", flexWrap: "wrap" }}>
               {[["Método","#section-2"],["Jornadas","#section-3"],["Comunidade","#section-5"],["Entrar","/login"]].map(([label,href]) => (
                 <a key={label} href={href} className="font-label"
-                  style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "rgba(198,168,112,0.40)", textDecoration: "none", transition: "color 0.2s" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#c6a870")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(198,168,112,0.40)")}
+                  style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-muted)")}
                 >{label}</a>
               ))}
             </nav>
-            <p className="font-label" style={{ fontSize: "9px", color: "rgba(245,240,232,0.22)", letterSpacing: "0.12em" }}>contato@despertarespiral.com</p>
+            <p className="font-label" style={{ fontSize: "9px", color: "var(--text-faint)", letterSpacing: "0.12em" }}>contato@despertarespiral.com</p>
           </div>
-          <hr style={{ border: "none", height: "1px", background: "linear-gradient(90deg, transparent, rgba(198,168,112,0.18), transparent)", margin: "clamp(24px,4vw,40px) 0 clamp(20px,3vw,28px)" }} />
-          <p className="font-label" style={{ textAlign: "center", fontSize: "8px", color: "rgba(245,240,232,0.18)", letterSpacing: "0.18em", textTransform: "uppercase" }}>
+          <hr className="divider-gold" style={{ margin: "clamp(24px,4vw,40px) 0 clamp(20px,3vw,28px)" }} />
+          <p className="font-label" style={{ textAlign: "center", fontSize: "8px", color: "var(--text-faint)", letterSpacing: "0.18em", textTransform: "uppercase" }}>
             © {new Date().getFullYear()} Despertar Espiral — Todos os direitos reservados.
           </p>
         </div>

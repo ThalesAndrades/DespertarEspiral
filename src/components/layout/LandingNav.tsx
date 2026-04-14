@@ -41,11 +41,12 @@ export default function LandingNav() {
         left: 0,
         right: 0,
         zIndex: 100,
-        transition: "background 0.45s ease, border-bottom 0.45s ease, backdrop-filter 0.45s ease",
+        transition: "background 0.4s ease, border-bottom 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease",
         background: scrolled ? "var(--nav-bg)" : "transparent",
         backdropFilter: scrolled ? "blur(24px)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(24px)" : "none",
         borderBottom: scrolled ? "1px solid var(--border-subtle)" : "1px solid transparent",
+        boxShadow: scrolled ? "var(--shadow-sm)" : "none",
       }}
     >
       <div
@@ -111,12 +112,12 @@ export default function LandingNav() {
           )}
         </div>
 
-        {/* Mobile: hamburger only — ThemeToggle is inside mobile menu to avoid duplication */}
+        {/* Mobile: hamburger — color adapts to theme */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }} className="md:hidden">
           <button
             style={{
               padding: "8px",
-              color: "var(--gold)",
+              color: "var(--text-primary)",
               background: "transparent",
               border: "none",
               cursor: "pointer",
