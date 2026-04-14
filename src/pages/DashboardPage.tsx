@@ -219,7 +219,6 @@ export default function DashboardPage() {
                 {/* Thumbnail */}
                 <div style={{ position: "relative", height: "clamp(160px,28vw,220px)", overflow: "hidden" }}>
                   <img src={mainProduct.thumbnail_url || FALLBACK} alt={mainProduct.title}
-                    loading="lazy" decoding="async"
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.95) 0%, rgba(11,13,28,0.2) 55%, transparent 100%)" }} />
                   {/* Play button */}
@@ -284,7 +283,7 @@ export default function DashboardPage() {
                 <Link key={p.id} to={`/products/${p.slug}`} style={{ textDecoration: "none" }}>
                   <div className="card-dark" style={{ display: "flex", gap: "12px", padding: "12px 14px", alignItems: "center" }}>
                     <div style={{ width: "52px", height: "52px", borderRadius: "10px", overflow: "hidden", flexShrink: 0 }}>
-                      <img src={p.thumbnail_url || FALLBACK} alt={p.title} loading="lazy" decoding="async" width="52" height="52" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <img src={p.thumbnail_url || FALLBACK} alt={p.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: "14px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</p>

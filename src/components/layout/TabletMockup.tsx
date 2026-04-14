@@ -118,9 +118,6 @@ export default function TabletMockup({ targetSection = "section-6" }: TabletMock
                 alt="Sunyan Nunes — Mulher Espiral"
                 loading="eager"
                 decoding="async"
-                fetchPriority="high"
-                width="320"
-                height="416"
                 style={{
                   width:          "100%",
                   height:         "100%",

@@ -191,7 +191,6 @@ export default function AdminProductsPage() {
               {/* Desktop: single row */}
               <div className="hidden md:flex" style={{ alignItems: "center", gap: "16px", padding: "14px 18px" }}>
                 <img src={product.thumbnail_url || FALLBACK} alt={product.title}
-                  loading="lazy" decoding="async" width="56" height="56"
                   style={{ width: "56px", height: "56px", borderRadius: "10px", objectFit: "cover", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
@@ -230,7 +229,6 @@ export default function AdminProductsPage() {
               <div className="md:hidden" style={{ padding: "14px" }}>
                 <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "12px" }}>
                   <img src={product.thumbnail_url || FALLBACK} alt={product.title}
-                    loading="lazy" decoding="async" width="50" height="50"
                     style={{ width: "50px", height: "50px", borderRadius: "10px", objectFit: "cover", flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginBottom: "4px" }}>

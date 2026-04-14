@@ -304,7 +304,6 @@ function OrderSummary({
       {!compact && (
         <div style={{ overflow: "hidden", borderRadius: "12px", aspectRatio: "16/9", marginBottom: "18px", background: "var(--bg-surface-2)" }}>
           <img src={(p.thumbnail as string) || FALLBACK} alt={(p.title as string) || "Produto"}
-            loading="lazy" decoding="async"
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </div>
       )}
@@ -313,7 +312,6 @@ function OrderSummary({
         <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "14px" }}>
           <div style={{ width: "56px", height: "56px", borderRadius: "10px", overflow: "hidden", flexShrink: 0 }}>
             <img src={(p.thumbnail as string) || FALLBACK} alt={(p.title as string) || "Produto"}
-              loading="lazy" decoding="async" width="56" height="56"
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           </div>
           <div>
