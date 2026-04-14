@@ -19,7 +19,7 @@ export default function LandingNav() {
 
   const navLinks = [
     { label: "Método",     href: "#section-2" },
-    { label: "Jornadas",   href: "#section-3" },
+    { label: "Ecossistema", href: "#section-3" },
     { label: "Comunidade", href: "#section-5" },
   ];
 

@@ -88,8 +88,8 @@ const testimonials = [
 const steps = [
   { num: "01", title: "Reconhecer", body: "Você enxerga os padrões que te aprisionam, com olhos de compaixão — não de julgamento." },
   { num: "02", title: "Sentir",     body: "O corpo fala. Aprendemos a ouvir o que ele carrega há anos em silêncio." },
-  { num: "03", title: "Integrar",   body: "Cada aspecto de si mesma é acolhido. A espiral avança quando você para de fugir." },
-  { num: "04", title: "Despertar",  body: "Não é um destino. É uma orientação. Uma forma de viver mais leve e alinhada." },
+  { num: "03", title: "Integrar",   body: "Cada aspecto de si é acolhido. A espiral avança quando você para de fugir." },
+  { num: "04", title: "Despertar",  body: "Não é um destino. É uma orientação. Uma forma de viver com mais leveza e alinhamento." },
 ];
 
 const guarantees = [
@@ -104,8 +104,8 @@ const faqs = [
     a: "Para mulheres que sentem que algo está faltando — mesmo quando tudo 'parece' bem por fora. Para quem carrega histórias difíceis no corpo, mas ainda acredita em transformação. Não é necessária nenhuma experiência prévia com autoconhecimento.",
   },
   {
-    q: "Como funciona o acesso ao curso?",
-    a: "Após a confirmação do pagamento, você recebe acesso vitalício à plataforma. Os módulos são liberados progressivamente para que você possa integrar cada etapa. Você aprende no seu ritmo, sem pressão.",
+    q: "Como funciona o acesso aos cursos?",
+    a: "Após a confirmação do pagamento, você recebe acesso à plataforma. Os módulos são liberados progressivamente para que você possa integrar cada etapa. Você aprende no seu ritmo, sem pressão.",
   },
   {
     q: "E se eu não me identificar com o conteúdo?",
@@ -113,11 +113,11 @@ const faqs = [
   },
   {
     q: "Preciso de muito tempo disponível?",
-    a: "As aulas foram criadas para a realidade da mulher moderna. Você pode progredir com 20 a 40 minutos por dia. O que importa é constância, não velocidade — a espiral avança no seu tempo.",
+    a: "As aulas foram criadas para a sua realidade. Você pode progredir com 20 a 40 minutos por dia. O que importa é constância, não velocidade — a espiral avança no seu tempo.",
   },
   {
     q: "Existe suporte durante a jornada?",
-    a: "Sim. Você tem acesso à comunidade exclusiva de alunas e ao suporte humanizado da nossa equipe. Ninguém percorre esse caminho sozinha.",
+    a: "Sim. Você tem acesso à comunidade exclusiva e ao suporte humanizado da nossa equipe. Ninguém percorre esse caminho só.",
   },
   {
     q: "Como é feito o pagamento?",
@@ -244,7 +244,7 @@ export default function LandingPage() {
                 {[...Array(5)].map((_, i) => <Star key={i} size={9} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
               </div>
               <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--gold)" }}>
-                +1.200 mulheres transformadas
+                +1.200 vidas transformadas
               </span>
             </div>
 
@@ -259,7 +259,7 @@ export default function LandingPage() {
             </div>
 
             <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300 }}>
-              Uma jornada de autoconhecimento profunda, estruturada e amorosa — para mulheres que sentem que existe mais.
+              Uma jornada de autoconhecimento profunda, estruturada e amorosa — para quem sente que existe mais.
             </p>
 
             {/* Desktop CTAs */}
@@ -268,7 +268,7 @@ export default function LandingPage() {
                 Quero começar minha jornada <ArrowRight size={14} />
               </Link>
               <Link to="/login" className="btn-outline-gold" style={{ color: "rgba(245,240,232,0.85)", borderColor: "rgba(245,240,232,0.24)" }}>
-                Já sou aluna
+                Já faço parte
               </Link>
             </div>
 
@@ -290,7 +290,7 @@ export default function LandingPage() {
               </Link>
               <Link to="/login" className="btn-outline-gold"
                 style={{ width: "100%", justifyContent: "center", minHeight: "52px", borderRadius: "18px" }}>
-                Já sou aluna
+                Já faço parte
               </Link>
               {/* Guarantee pills */}
               <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap", marginTop: "12px" }}>
@@ -337,7 +337,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "clamp(4px,2vw,16px)" }} className="sm:grid-cols-4">
-            <Stat value="1.200+"  label="Mulheres na jornada"     delay="reveal-delay-1" />
+            <Stat value="1.200+"  label="Vidas transformadas"     delay="reveal-delay-1" />
             <Stat value="97%"     label="Recomendam o método"     delay="reveal-delay-2" />
             <Stat value="8"       label="Módulos transformadores" delay="reveal-delay-3" />
             <Stat value="4.9 ★"   label="Avaliação média"         delay="reveal-delay-4" />
@@ -366,7 +366,7 @@ export default function LandingPage() {
               A espiral como metáfora do seu caminho interior
             </h2>
             <p style={{ fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-secondary)", lineHeight: 1.92, marginBottom: "32px" }}>
-              Cada volta representa um nível mais profundo de consciência. Não é linearidade — é aprofundamento. Você volta ao mesmo ponto, mas sempre mais inteira.
+              Cada volta representa um nível mais profundo de consciência. Não é linearidade — é aprofundamento. Você volta ao mesmo ponto, com uma nova consciência.
             </p>
             <Link to="/checkout/mulher-espiral" className="btn-outline-gold">
               Conhecer o método <ArrowUpRight size={13} />
@@ -401,7 +401,7 @@ export default function LandingPage() {
         </div>
         <div style={{ position: "relative", maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "clamp(36px,6vw,72px)" }}>
-            <p className="overline reveal" style={{ color: "#c99aaa", marginBottom: "16px" }}>Jornadas</p>
+            <p className="overline reveal" style={{ color: "#c99aaa", marginBottom: "16px" }}>Ecossistema</p>
             <h2 className="font-display text-balance reveal reveal-delay-1" style={{ fontSize: "clamp(30px,5.5vw,68px)", fontWeight: 300, fontStyle: "italic", color: "#f5f0e8" }}>
               Escolha o caminho que ressoa com você
             </h2>
@@ -457,7 +457,7 @@ export default function LandingPage() {
           </div>
 
           {/* Guarantees bar */}
-          <div className="reveal reveal-delay-2" style={{ display: "flex", justifyContent: "center", gap: "clamp(14px,3vw,36px)", padding: "clamp(16px,3vw,24px)", borderRadius: "clamp(14px,2vw,18px)", background: "rgba(198,168,112,0.04)", border: "1px solid rgba(198,168,112,0.10)", flexWrap: "wrap" }}>
+          <div className="reveal reveal-delay-2" style={{ display: "flex", justifyContent: "center", gap: "clamp(14px,3vw,36px)", padding: "clamp(16px,3vw,24px)", borderRadius: "clamp(14px,2vw,18px)", background: "rgba(198,168,112,0.04)", border: "1px solid rgba(198,168,112,0.10)", flexWrap: "wrap", marginBottom: "clamp(48px,8vw,80px)" }}>
             {guarantees.map(({ icon: Icon, label, desc }) => (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "rgba(198,168,112,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -469,6 +469,66 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Marketplace / Ecossistema */}
+          <div className="reveal reveal-delay-3" style={{ marginBottom: "clamp(32px,5vw,56px)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
+              <h3 className="font-display" style={{ fontSize: "clamp(24px,3.5vw,42px)", fontWeight: 300, fontStyle: "italic", color: "#f5f0e8", whiteSpace: "nowrap" }}>
+                Ecossistema Despertar
+              </h3>
+              <div style={{ height: "1px", flex: 1, background: "linear-gradient(90deg, rgba(198,168,112,0.2), transparent)" }} />
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3" style={{ gap: "clamp(16px,2vw,24px)" }}>
+              {/* Product 1 */}
+              <div className="card-dark" style={{ padding: "clamp(20px,3vw,32px)", display: "flex", flexDirection: "column", background: "rgba(6,8,15,0.6)" }}>
+                <span className="badge-gold" style={{ alignSelf: "flex-start", marginBottom: "16px" }}>Áudio / Meditação</span>
+                <h4 style={{ fontSize: "18px", color: "#f5f0e8", marginBottom: "8px" }}>Frequência da Presença</h4>
+                <p style={{ fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, flex: 1, marginBottom: "24px" }}>
+                  Pacote com 12 meditações guiadas para ancoramento diário e regulação do sistema nervoso.
+                </p>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "12px" }}>
+                  <div>
+                    <p className="font-label" style={{ fontSize: "8px", color: "rgba(245,240,232,0.32)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "4px" }}>Investimento</p>
+                    <p className="font-display" style={{ fontSize: "24px", color: "#c6a870", fontWeight: 300, lineHeight: 1 }}>R$ 97</p>
+                  </div>
+                  <Link to="/checkout/frequencia" className="btn-outline-gold" style={{ padding: "8px 16px", fontSize: "10px" }}>Ver mais</Link>
+                </div>
+              </div>
+
+              {/* Product 2 */}
+              <div className="card-dark" style={{ padding: "clamp(20px,3vw,32px)", display: "flex", flexDirection: "column", background: "rgba(6,8,15,0.6)" }}>
+                <span className="badge-lavender" style={{ alignSelf: "flex-start", marginBottom: "16px" }}>E-book + Workbook</span>
+                <h4 style={{ fontSize: "18px", color: "#f5f0e8", marginBottom: "8px" }}>O Mapa da Sombra</h4>
+                <p style={{ fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, flex: 1, marginBottom: "24px" }}>
+                  Um guia prático para identificar e integrar padrões inconscientes que bloqueiam seu fluxo.
+                </p>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "12px" }}>
+                  <div>
+                    <p className="font-label" style={{ fontSize: "8px", color: "rgba(245,240,232,0.32)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "4px" }}>Investimento</p>
+                    <p className="font-display" style={{ fontSize: "24px", color: "#c6a870", fontWeight: 300, lineHeight: 1 }}>R$ 47</p>
+                  </div>
+                  <Link to="/checkout/mapa-sombra" className="btn-outline-gold" style={{ padding: "8px 16px", fontSize: "10px" }}>Ver mais</Link>
+                </div>
+              </div>
+
+              {/* Product 3 */}
+              <div className="card-dark" style={{ padding: "clamp(20px,3vw,32px)", display: "flex", flexDirection: "column", background: "rgba(6,8,15,0.6)" }}>
+                <span className="badge-rose" style={{ alignSelf: "flex-start", marginBottom: "16px" }}>Masterclass</span>
+                <h4 style={{ fontSize: "18px", color: "#f5f0e8", marginBottom: "8px" }}>A Arte de Soltar</h4>
+                <p style={{ fontSize: "13px", color: "rgba(245,240,232,0.6)", lineHeight: 1.6, flex: 1, marginBottom: "24px" }}>
+                  Aula profunda sobre desapego, aceitação e como parar de lutar contra o que não pode ser mudado.
+                </p>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "12px" }}>
+                  <div>
+                    <p className="font-label" style={{ fontSize: "8px", color: "rgba(245,240,232,0.32)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "4px" }}>Investimento</p>
+                    <p className="font-display" style={{ fontSize: "24px", color: "#c6a870", fontWeight: 300, lineHeight: 1 }}>R$ 147</p>
+                  </div>
+                  <Link to="/checkout/arte-soltar" className="btn-outline-gold" style={{ padding: "8px 16px", fontSize: "10px" }}>Ver mais</Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -488,7 +548,7 @@ export default function LandingPage() {
           <div style={{ textAlign: "center", marginBottom: "clamp(36px,6vw,64px)" }}>
             <p className="overline reveal" style={{ color: "var(--gold)", marginBottom: "16px" }}>Transformações reais</p>
             <h2 className="font-display text-balance reveal reveal-delay-1" style={{ fontSize: "clamp(26px,5vw,56px)", fontWeight: 300, color: "var(--text-primary)" }}>
-              Mulheres que percorreram a espiral
+              Quem já percorreu a espiral
             </h2>
             <div style={{ display: "flex", alignItems: "center", gap: "16px", justifyContent: "center", marginTop: "20px" }}>
               <div style={{ height: "1px", width: "40px", background: "var(--border-subtle)" }} />
@@ -530,12 +590,12 @@ export default function LandingPage() {
           <SectionSpiral3D size={90} height={250} opacity={isLight ? 0.18 : 0.22} color={isLight ? "#3d3890" : "#514898"} emissive="#201860" speed={0.00032} lightBg={isLight} />
         </div>
         <div style={{ position: "relative", maxWidth: "960px", margin: "0 auto", textAlign: "center" }}>
-          <span className="badge-lavender reveal" style={{ marginBottom: "24px", display: "inline-flex" }}>Espaço exclusivo para alunas</span>
+          <span className="badge-lavender reveal" style={{ marginBottom: "24px", display: "inline-flex" }}>Espaço seguro de troca</span>
           <h2 className="font-display text-balance reveal reveal-delay-1" style={{ fontSize: "clamp(30px,5.5vw,70px)", fontWeight: 300, fontStyle: "italic", marginBottom: "18px", color: "var(--text-primary)" }}>
-            Ninguém desperta sozinha.
+            Ninguém desperta só.
           </h2>
           <p className="reveal reveal-delay-2" style={{ fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-secondary)", maxWidth: "500px", margin: "0 auto clamp(36px,5vw,52px)", lineHeight: 1.88 }}>
-            Um fórum anônimo e seguro para mulheres em jornada. Aqui você pode ser quem realmente é.
+            Um fórum anônimo e seguro para quem está na jornada. Aqui você pode ser quem realmente é.
           </p>
           <div className="grid md:grid-cols-3" style={{ gap: "clamp(10px,2vw,16px)", marginBottom: "clamp(32px,5vw,48px)", textAlign: "left" }}>
             {[
@@ -588,13 +648,13 @@ export default function LandingPage() {
             <p className="overline" style={{ color: "var(--gold)", marginBottom: "18px" }}>A guia da jornada</p>
             <h2 style={{ fontSize: "clamp(26px,4.5vw,52px)", fontWeight: 300, lineHeight: 1.1, marginBottom: "18px", color: "var(--text-primary)" }}>Sunyan Nunes</h2>
             <p style={{ fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-secondary)", lineHeight: 1.90, marginBottom: "16px" }}>
-              Terapeuta, facilitadora e criadora do Método Espiral. Por mais de 8 anos acompanha mulheres no processo de reencontro com sua essência — uma abordagem que une profundidade emocional, sabedoria do corpo e espiritualidade prática.
+              Terapeuta, facilitadora e criadora do Método Espiral. Por mais de 8 anos acompanha pessoas no processo de reencontro com sua essência — uma abordagem que une profundidade emocional, sabedoria do corpo e espiritualidade prática.
             </p>
             <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-muted)", lineHeight: 1.90, fontStyle: "italic", marginBottom: "clamp(20px,3vw,32px)" }}>
               "Não sou guru. Sou uma companheira de jornada que já percorreu o caminho e voltou para te mostrar que é possível."
             </p>
             <div style={{ display: "flex", gap: "clamp(8px,1.5vw,12px)", flexWrap: "wrap", marginBottom: "clamp(20px,3vw,32px)" }}>
-              {[["1.2k", "alunas"], ["4.9", "avaliação"], ["97%", "recomendam"]].map(([val, lbl]) => (
+              {[["1.2k", "alunos"], ["4.9", "avaliação"], ["97%", "recomendam"]].map(([val, lbl]) => (
                 <div key={lbl} className="card-dark" style={{ padding: "clamp(12px,2vw,16px) clamp(14px,2vw,18px)", textAlign: "center", flex: "1 1 80px" }}>
                   <p className="font-display" style={{ fontSize: "clamp(20px,2.5vw,26px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>{val}</p>
                   <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: "5px" }}>{lbl}</p>
@@ -690,7 +750,7 @@ export default function LandingPage() {
               <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-faint)" }}>por Sunyan Nunes</p>
             </div>
             <nav style={{ display: "flex", gap: "clamp(14px,2.5vw,24px)", flexWrap: "wrap" }}>
-              {[["Método","#section-2"],["Jornadas","#section-3"],["Comunidade","#section-5"],["Entrar","/login"]].map(([label,href]) => (
+              {[["Método","#section-2"],["Ecossistema","#section-3"],["Comunidade","#section-5"],["Entrar","/login"]].map(([label,href]) => (
                 <a key={label} href={href} className="font-label"
                   style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
                   onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
