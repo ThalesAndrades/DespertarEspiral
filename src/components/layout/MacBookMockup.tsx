@@ -1,4 +1,4 @@
-import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
+import macbookMockupNew from "@/assets/macbook-mockup-new.png";
 
 export default function MacBookMockup() {
   return (
@@ -15,7 +15,7 @@ export default function MacBookMockup() {
       }}
     >
       <img
-        src={mulherEspiralHero}
+        src={macbookMockupNew}
         alt="Plataforma Mulher Espiral no MacBook"
         loading="lazy"
         decoding="async"
