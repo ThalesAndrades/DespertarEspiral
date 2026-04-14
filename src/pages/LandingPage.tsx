@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
 import { BackgroundSpiral3D, SectionSpiral3D } from "@/components/layout/Spiral3D";
-import IPhoneMockup from "@/components/layout/IPhoneMockup";
+import MacBookMockup from "@/components/layout/MacBookMockup";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero.png";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import { useTheme } from "@/hooks/useTheme";
@@ -254,8 +254,8 @@ export default function LandingPage() {
               <span style={{ color: "var(--gold)" }}>É encontrar-se<br />pela primeira vez.</span>
             </h1>
 
-            <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginTop: "clamp(20px,4vw,32px)", marginBottom: "clamp(24px,5vw,40px)" }}>
-              <IPhoneMockup />
+            <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginTop: "clamp(24px,4vw,36px)", marginBottom: "clamp(24px,5vw,40px)" }}>
+              <MacBookMockup />
             </div>
 
             <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300 }}>
@@ -304,8 +304,8 @@ export default function LandingPage() {
             </div>
             </div>
 
-            <div className="hidden lg:flex" style={{ justifyContent: "flex-end", pointerEvents: "none", marginTop: "12px" }}>
-              <IPhoneMockup />
+            <div className="hidden lg:flex" style={{ justifyContent: "flex-end", pointerEvents: "none", marginTop: "12px", width: "100%", maxWidth: "640px" }}>
+              <MacBookMockup />
             </div>
           </div>
         </div>
