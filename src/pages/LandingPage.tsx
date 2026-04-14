@@ -239,10 +239,10 @@ export default function LandingPage() {
         {/* Hero content */}
         <div style={{ position: "relative", zIndex: 4, width: "100%", maxWidth: "1160px", margin: "0 auto", padding: "0 clamp(16px,5vw,40px)", paddingTop: "clamp(72px,12vh,100px)" }}>
           <div style={{ width: "100%", display: "grid", gap: "clamp(32px,6vw,72px)", alignItems: "center" }} className="grid lg:grid-cols-[1.05fr_0.95fr]">
-            <div style={{ width: "100%", maxWidth: "100%" }}>
+            <div style={{ width: "100%", maxWidth: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start" }} className="lg:items-start items-center">
 
             {/* Social proof pill */}
-            <div className="animate-fade-up delay-100" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "clamp(16px,3vw,28px)", background: "var(--gold-glow)", border: "1px solid var(--border-mid)", borderRadius: "100px", padding: "7px 16px 7px 10px" }}>
+            <div className="animate-fade-up delay-100" style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "clamp(16px,3vw,28px)", background: "var(--gold-glow)", border: "1px solid var(--border-mid)", borderRadius: "100px", padding: "7px 16px 7px 10px", alignSelf: "center", justifySelf: "center" }}>
               <div style={{ display: "flex", gap: "2px" }}>
                 {[...Array(5)].map((_, i) => <Star key={i} size={9} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
               </div>
@@ -251,22 +251,22 @@ export default function LandingPage() {
               </span>
             </div>
 
-            <h1 className="animate-fade-up delay-200 text-balance" style={{ fontSize: "clamp(38px,5.8vw,84px)", lineHeight: 1.02, fontStyle: "italic", fontWeight: 300, marginBottom: "clamp(16px,3vw,28px)", color: heroText }}>
+            <h1 className="animate-fade-up delay-200 text-balance" style={{ fontSize: "clamp(38px,5.8vw,84px)", lineHeight: 1.02, fontStyle: "italic", fontWeight: 300, marginBottom: "clamp(16px,3vw,28px)", color: heroText, textAlign: "center" }}>
               Reconectar-se<br />
               não é voltar.<br />
               <span style={{ color: "var(--gold)" }}>É encontrar-se<br />pela primeira vez.</span>
             </h1>
 
-            <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginBottom: "clamp(12px,3vw,22px)" }}>
+            <div className="lg:hidden animate-fade-in delay-300" style={{ display: "flex", justifyContent: "center", marginBottom: "clamp(12px,3vw,22px)", width: "100%" }}>
               <MacbookMockup />
             </div>
 
-            <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300 }}>
+            <p className="animate-fade-up delay-300" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: heroMuted, maxWidth: "440px", lineHeight: 1.88, marginBottom: "clamp(24px,4vw,40px)", fontWeight: 300, textAlign: "center", margin: "0 auto clamp(24px,4vw,40px)" }}>
               Uma jornada de autoconhecimento profunda, estruturada e amorosa — para mulheres que sentem que existe mais.
             </p>
 
             {/* Desktop CTAs */}
-            <div className="hidden lg:flex animate-fade-up delay-400" style={{ gap: "12px", alignItems: "center", flexWrap: "wrap", marginBottom: "28px" }}>
+            <div className="hidden lg:flex animate-fade-up delay-400" style={{ gap: "12px", alignItems: "center", flexWrap: "wrap", marginBottom: "28px", justifyContent: "center" }}>
               <Link to="/checkout/mulher-espiral" className="btn-gold">
                 Quero começar minha jornada <ArrowRight size={14} />
               </Link>
@@ -276,7 +276,7 @@ export default function LandingPage() {
             </div>
 
             {/* Desktop guarantee strip */}
-            <div className="hidden lg:flex animate-fade-in delay-600" style={{ gap: "20px", flexWrap: "wrap" }}>
+            <div className="hidden lg:flex animate-fade-in delay-600" style={{ gap: "20px", flexWrap: "wrap", justifyContent: "center" }}>
               {guarantees.map(({ icon: Icon, label }) => (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                   <Icon size={12} style={{ color: "var(--gold-dim)" }} strokeWidth={1.5} />
@@ -286,7 +286,7 @@ export default function LandingPage() {
             </div>
 
             {/* Mobile CTAs — full-width */}
-            <div className="lg:hidden animate-fade-in delay-500" style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+            <div className="lg:hidden animate-fade-in delay-500" style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px", alignItems: "center" }}>
               <Link to="/checkout/mulher-espiral" className="btn-gold"
                 style={{ width: "100%", justifyContent: "center", minHeight: "56px", borderRadius: "18px" }}>
                 Quero começar minha jornada <ArrowRight size={15} />
