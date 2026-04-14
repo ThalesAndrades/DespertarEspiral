@@ -434,23 +434,30 @@ export default function MacbookMockup() {
           50% { opacity: 0; }
         }
         .macbook-wrapper {
-          max-width: 300px;
+          /* Mobile base: quase full-width com margem respirável */
+          max-width: min(92vw, 380px);
           margin: 0 auto;
         }
         @media (min-width: 480px) {
           .macbook-wrapper {
-            max-width: 360px;
+            max-width: 460px;
           }
         }
         @media (min-width: 640px) {
           .macbook-wrapper {
-            max-width: 430px;
+            max-width: 560px;
           }
         }
         @media (min-width: 1024px) {
           .macbook-wrapper {
-            max-width: 580px;
+            /* Desktop: grande o suficiente para impacto visual */
+            max-width: min(50vw, 760px);
             margin: 0 auto;
+          }
+        }
+        @media (min-width: 1280px) {
+          .macbook-wrapper {
+            max-width: min(48vw, 820px);
           }
         }
       `}</style>

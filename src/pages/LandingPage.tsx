@@ -201,6 +201,26 @@ export default function LandingPage() {
 
   return (
     <div style={{ background: "var(--bg-surface)", color: "var(--text-primary)", minHeight: "100dvh", overflowX: "hidden", position: "relative" }}>
+      {/* ── Scroll-snap: mobile only ───────────────────── */}
+      <style>{`
+        @media (max-width: 639px) {
+          html {
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+          }
+          /* Each named section snaps to top */
+          #section-0, #section-1, #section-2,
+          #section-3, #section-4, #section-5,
+          #section-6, #section-7, #section-8 {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+          }
+          /* Hero always fills viewport so snap is comfortable */
+          #section-0 {
+            min-height: 100svh;
+          }
+        }
+      `}</style>
 
       {/* Scroll progress */}
       <div ref={progressRef} className="scroll-progress-line" aria-hidden="true" style={{ width: "0%" }} />
@@ -327,6 +347,7 @@ export default function LandingPage() {
         padding: "clamp(56px,8vw,100px) clamp(16px,5vw,24px)",
         borderBottom: "1px solid var(--border-subtle)",
         background: "var(--bg-surface-2)",
+        minHeight: "min-content",
       }}>
         <div style={{ maxWidth: "940px", margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div className="reveal" style={{ textAlign: "center", marginBottom: "clamp(32px,5vw,56px)" }}>
