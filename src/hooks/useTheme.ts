@@ -1,49 +1,43 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 
 type Theme = "dark" | "light";
 
-const STORAGE_KEY = "de_theme";
-
 function getInitialTheme(): Theme {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    const stored = localStorage.getItem("theme");
     if (stored === "light" || stored === "dark") return stored;
-  } catch {}
-  return "dark";
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
 }
 
 let _theme: Theme = getInitialTheme();
-let _listeners: Array<() => void> = [];
+let _listeners: (() => void)[] = [];
 
 function applyTheme(t: Theme) {
-  document.documentElement.setAttribute("data-theme", t);
-}
-
-applyTheme(_theme);
-
-function setGlobalTheme(t: Theme) {
   _theme = t;
-  try { localStorage.setItem(STORAGE_KEY, t); } catch {}
-  applyTheme(t);
+  document.documentElement.setAttribute("data-theme", t);
+  try { localStorage.setItem("theme", t); } catch {}
   _listeners.forEach((fn) => fn());
 }
 
+function subscribe(fn: () => void) {
+  _listeners.push(fn);
+  return () => { _listeners = _listeners.filter((l) => l !== fn); };
+}
+
 export function useTheme() {
-  const [theme, setLocalTheme] = useState<Theme>(_theme);
+  const rerender = () => {};
 
   useEffect(() => {
-    const fn = () => setLocalTheme(_theme);
-    _listeners.push(fn);
-    return () => { _listeners = _listeners.filter((l) => l !== fn); };
+    const unsub = subscribe(rerender);
+    return unsub;
   }, []);
 
-  const toggle = useCallback(() => {
-    setGlobalTheme(_theme === "dark" ? "light" : "dark");
-  }, []);
-
-  const set = useCallback((t: Theme) => {
-    setGlobalTheme(t);
-  }, []);
-
-  return { theme, toggle, set };
+  return {
+    theme: _theme,
+    setTheme: (t: Theme) => applyTheme(t),
+    toggle: () => applyTheme(_theme === "dark" ? "light" : "dark"),
+  };
 }

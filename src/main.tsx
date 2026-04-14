@@ -7,11 +7,19 @@ import App from "./App";
 import { AuthProvider } from "@/hooks/useAuth";
 import "./index.css";
 
+/* ── React Query — optimized defaults ── */
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 60_000,         // 1 min — less refetching
+      gcTime: 5 * 60_000,        // 5 min garbage collection
+      refetchOnWindowFocus: false, // prevent surprise refetches on mobile tab switch
+    },
+  },
 });
 
-/* Detect initial theme to pass correct colors to Toaster before React hydration */
+/* ── Theme detection — sync before paint ── */
 const initialTheme = ((): "dark" | "light" => {
   try {
     const stored = localStorage.getItem("theme");
@@ -19,6 +27,9 @@ const initialTheme = ((): "dark" | "light" => {
     return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   } catch { return "dark"; }
 })();
+
+/* Apply theme attribute immediately to prevent flash */
+document.documentElement.setAttribute("data-theme", initialTheme);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -29,10 +40,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Toaster
             position="top-right"
             theme={initialTheme}
+            richColors={false}
+            closeButton
             toastOptions={{
+              duration: 4000,
               style: {
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "14px",
+                borderRadius: "14px",
               },
               classNames: {
                 toast: "toaster-brand",
