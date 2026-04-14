@@ -289,17 +289,18 @@ export default function LandingPage() {
             </div>
 
             {/* ── 2 · Mockup Atualizado (centred between headline and body on mobile) ── */}
-            <div className="order-2 lg:order-none animate-fade-up delay-300" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+            <div className="order-2 lg:order-none animate-fade-up delay-300" style={{ display: "flex", justifyContent: "center", width: "100%", position: "relative", zIndex: 10 }}>
               <img 
                 src={mockupAtualizado} 
                 alt="Mockup Despertar Espiral" 
+                className="lg:scale-[1.20] xl:scale-[1.30] transition-transform duration-1000"
                 style={{ 
                   width: "100%", 
-                  maxWidth: "min(92vw, 600px)", 
+                  maxWidth: "min(92vw, 640px)", 
                   height: "auto", 
                   display: "block", 
                   objectFit: "contain",
-                  filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.5))"
+                  filter: "drop-shadow(0 32px 48px rgba(0,0,0,0.16)) drop-shadow(0 16px 24px rgba(0,0,0,0.10)) drop-shadow(0 6px 10px rgba(0,0,0,0.06))"
                 }} 
               />
             </div>
