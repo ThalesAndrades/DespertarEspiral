@@ -204,13 +204,13 @@ export default function MacbookMockup() {
           <div
             style={{
               position: "absolute",
-              left:   "11.0%",
-              top:    "2.2%",
-              width:  "78.0%",
-              height: "65.5%",
+              left:   "12.8%",
+              top:    "3.2%",
+              width:  "74.4%",
+              height: "62.5%",
               zIndex: 2,
               overflow: "hidden",
-              borderRadius: "3px 3px 0 0",
+              borderRadius: "2px 2px 0 0",
               /* Screen boots from black to platform */
               background: "#070915",
               opacity: booted ? 1 : 0,
