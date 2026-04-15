@@ -312,14 +312,13 @@ export default function LandingPage() {
                 loading="eager"
                 decoding="async"
                 fetchPriority="high"
-                className="w-full max-w-[640px] sm:max-w-[720px] lg:max-w-[980px] xl:max-w-[1120px] 2xl:max-w-[1280px] lg:scale-[1.40] xl:scale-[1.52] 2xl:scale-[1.65] lg:translate-x-12 xl:translate-x-20 2xl:translate-x-28 transition-transform duration-1000 object-contain"
+                className="w-full max-w-[560px] sm:max-w-[640px] lg:max-w-[820px] xl:max-w-[920px] 2xl:max-w-[1040px] object-contain"
                 style={{
                   width: "100%",
                   height: "auto",
                   display: "block",
                   objectFit: "contain",
                   filter: "drop-shadow(0 26px 42px rgba(0,0,0,0.18)) drop-shadow(0 12px 20px rgba(0,0,0,0.12))",
-                  animation: "none",
                 }} />
               
             </div>
