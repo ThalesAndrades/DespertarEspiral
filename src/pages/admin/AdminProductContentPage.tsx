@@ -1,17 +1,28 @@
 /**
  * AdminProductContentPage — Real Supabase CRUD for modules & lessons
+ * + Certificate configuration panel per product
  * Mobile-first: accordion cards, sticky header, floating save
  */
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save } from "lucide-react";
 import { toast } from "sonner";
 
 interface LessonRow { id: string; title: string; type: string; content: string; duration_min: number; sort_order: number; is_free: boolean; }
 interface ModuleRow { id: string; title: string; sort_order: number; lessons: LessonRow[]; }
-interface ProductInfo { id: string; title: string; subtitle: string | null; }
+
+interface CertConfig {
+  instructorName?: string;
+  instructorTitle?: string;
+  courseTagline?: string;
+  certDescription?: string;
+  signatureLabel?: string;
+  institutionLabel?: string;
+  footerNote?: string;
+}
+interface ProductInfo { id: string; title: string; subtitle: string | null; certificate_config?: CertConfig; }
 
 const LESSON_TYPES = ["video", "text", "pdf", "audio"] as const;
 
@@ -36,6 +47,9 @@ export default function AdminProductContentPage() {
   const [newLesson,     setNewLesson]     = useState({ title: "", type: "video" as typeof LESSON_TYPES[number], content: "", duration_min: 0, is_free: false });
   const [addingLesson,  setAddingLesson]  = useState(false);
   const [deleting,      setDeleting]      = useState<string | null>(null);
+  const [certConfig,    setCertConfig]    = useState<CertConfig>({});
+  const [savingCert,    setSavingCert]    = useState(false);
+  const [certOpen,      setCertOpen]      = useState(false);
 
   /* Load product + modules + lessons */
   useEffect(() => {
@@ -43,8 +57,16 @@ export default function AdminProductContentPage() {
     (async () => {
       setLoading(true);
 
-      const { data: prod } = await supabase.from("products").select("id, title, subtitle").eq("id", id).single();
-      if (prod) setProduct(prod as ProductInfo);
+      const { data: prod } = await supabase
+        .from("products")
+        .select("id, title, subtitle, certificate_config")
+        .eq("id", id)
+        .single();
+
+      if (prod) {
+        setProduct(prod as ProductInfo);
+        setCertConfig((prod as ProductInfo).certificate_config ?? {});
+      }
 
       const { data: mods } = await supabase.from("modules").select("id, title, sort_order").eq("product_id", id).order("sort_order");
 
@@ -133,6 +155,16 @@ export default function AdminProductContentPage() {
       toast.success("Aula removida.");
     }
     setDeleting(null);
+  };
+
+  /* Save certificate config */
+  const saveCertConfig = async () => {
+    if (!id) return;
+    setSavingCert(true);
+    const { error } = await supabase.from("products").update({ certificate_config: certConfig }).eq("id", id);
+    if (error) toast.error("Erro ao salvar configuração.");
+    else toast.success("Configuração do certificado salva. ✦");
+    setSavingCert(false);
   };
 
   if (loading) return (
@@ -320,6 +352,116 @@ export default function AdminProductContentPage() {
             <Plus size={14} /> Adicionar módulo
           </button>
         )}
+
+        {/* ══ Certificate Configuration Panel ══ */}
+        <div className="card-dark" style={{ marginTop: "24px", overflow: "hidden" }}>
+          <button
+            onClick={() => setCertOpen((p) => !p)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: "12px",
+              padding: "clamp(14px,2.5vw,18px)",
+              background: "transparent", border: "none", cursor: "pointer", textAlign: "left", minHeight: "60px",
+            }}
+          >
+            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(198,168,112,0.10)", border: "1px solid rgba(198,168,112,0.20)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Award size={15} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+            </div>
+            <div style={{ flex: 1, textAlign: "left" }}>
+              <p style={{ fontSize: "15px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "2px" }}>
+                Configurar Certificado
+              </p>
+              <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                Personalize o texto, assinatura e identidade do certificado de conclusão
+              </p>
+            </div>
+            {certOpen
+              ? <ChevronDown  size={14} style={{ color: "var(--border-mid)", flexShrink: 0 }} />
+              : <ChevronRight size={14} style={{ color: "var(--border-mid)", flexShrink: 0 }} />
+            }
+          </button>
+
+          {certOpen && (
+            <div style={{ borderTop: "1px solid var(--border-subtle)", padding: "clamp(16px,3vw,24px)", display: "flex", flexDirection: "column", gap: "16px", background: "rgba(198,168,112,0.02)" }}>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.75 }}>
+                Estas informações aparecem no certificado gerado automaticamente quando uma aluna conclui 100% das aulas do curso.
+              </p>
+
+              {/* Field grid */}
+              <div style={{ display: "grid", gap: "14px" }} className="grid sm:grid-cols-2">
+                {[
+                  { key: "instructorName",   label: "Nome da mentora / instrutora",     ph: "Sunyan Nunes" },
+                  { key: "signatureLabel",   label: "Legenda da assinatura",             ph: "Assinatura da mentora" },
+                  { key: "institutionLabel", label: "Nome da instituição",               ph: "Despertar Espiral" },
+                  { key: "courseTagline",    label: "Tagline do curso no certificado",   ph: "Método de Reconexão e Cura" },
+                ].map(({ key, label, ph }) => (
+                  <div key={key}>
+                    <label style={LABEL_STYLE}>{label}</label>
+                    <input
+                      type="text"
+                      value={(certConfig as Record<string, string>)[key] ?? ""}
+                      onChange={(e) => setCertConfig((c) => ({ ...c, [key]: e.target.value }))}
+                      placeholder={ph}
+                      className="input-dark"
+                      style={{ borderRadius: "10px" }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label style={LABEL_STYLE}>Título / cargo da mentora</label>
+                <input
+                  type="text"
+                  value={certConfig.instructorTitle ?? ""}
+                  onChange={(e) => setCertConfig((c) => ({ ...c, instructorTitle: e.target.value }))}
+                  placeholder="Mentora & Fundadora · Despertar Espiral"
+                  className="input-dark"
+                  style={{ borderRadius: "10px" }}
+                />
+              </div>
+
+              <div>
+                <label style={LABEL_STYLE}>Nota de rodapé do certificado</label>
+                <textarea
+                  value={certConfig.footerNote ?? ""}
+                  onChange={(e) => setCertConfig((c) => ({ ...c, footerNote: e.target.value }))}
+                  placeholder="Este certificado atesta a conclusão integral do programa, com dedicação, presença e comprometimento."
+                  className="input-dark"
+                  rows={2}
+                  style={{ borderRadius: "10px", resize: "none" }}
+                />
+              </div>
+
+              <div>
+                <label style={LABEL_STYLE}>Descrição personalizada (opcional)</label>
+                <textarea
+                  value={certConfig.certDescription ?? ""}
+                  onChange={(e) => setCertConfig((c) => ({ ...c, certDescription: e.target.value }))}
+                  placeholder="Certificamos que [nome] concluiu o programa [curso]…"
+                  className="input-dark"
+                  rows={3}
+                  style={{ borderRadius: "10px", resize: "none" }}
+                />
+                <p style={{ fontSize: "11px", color: "var(--text-faint)", marginTop: "5px" }}>
+                  Deixe em branco para usar o texto gerado automaticamente com nome, curso e carga horária.
+                </p>
+              </div>
+
+              <button
+                onClick={saveCertConfig}
+                className="btn-gold"
+                style={{ alignSelf: "flex-start", padding: "11px 26px", fontSize: "9px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "7px" }}
+                disabled={savingCert}
+              >
+                {savingCert
+                  ? <><Loader2 size={12} style={{ animation: "spin 0.8s linear infinite" }} /> Salvando…</>
+                  : <><Save size={12} /> Salvar configuração</>
+                }
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
       <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
     </AdminLayout>

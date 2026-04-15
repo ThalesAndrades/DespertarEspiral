@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MOCK_PRODUCTS } from "@/constants/mockData";
 import {
   ChevronDown, ChevronRight, Play, FileText, File, Volume2,
-  CheckCircle, ArrowLeft, BookOpen, Clock, TrendingUp,
+  CheckCircle, ArrowLeft, BookOpen, Clock, Award,
 } from "lucide-react";
 
 const lessonIcon: Record<string, React.ElementType> = {
@@ -139,6 +139,7 @@ export default function CourseViewPage() {
   const totalLessons   = allLessons.length;
   const completedCount = allLessons.filter((l: { id: string }) => completed.has(l.id)).length;
   const progress       = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+  const isCourseComplete = progress === 100 && totalLessons > 0;
 
   const toggleModule = (id: string) =>
     setOpenModules((p) => ({ ...p, [id]: !p[id] }));
@@ -216,22 +217,32 @@ export default function CourseViewPage() {
                 </div>
               </div>
 
-              {nextLesson && (
-                <Link
-                  to={`/products/${slug}/lesson/${nextLesson.id}`}
-                  className="btn-gold"
-                  style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap" }}
-                >
-                  <Play size={12} fill="#060810" style={{ color: "#060810" }} />
-                  {completedCount === 0 ? "Começar" : "Continuar"}
-                </Link>
-              )}
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {isCourseComplete ? (
+                  <Link
+                    to={`/products/${slug}/certificado`}
+                    className="btn-gold"
+                    style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "6px" }}
+                  >
+                    <Award size={13} /> Ver certificado
+                  </Link>
+                ) : nextLesson ? (
+                  <Link
+                    to={`/products/${slug}/lesson/${nextLesson.id}`}
+                    className="btn-gold"
+                    style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap" }}
+                  >
+                    <Play size={12} fill="#060810" style={{ color: "#060810" }} />
+                    {completedCount === 0 ? "Começar" : "Continuar"}
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
 
         {/* ── Module progress quick view ── */}
-        {products.length > 0 && (
+        {product.modules.length > 0 && (
           <div style={{ padding: "0 clamp(14px,4vw,24px)", margin: "clamp(8px,1.5vw,12px) 0" }}>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {product.modules.slice(0, 4).map((mod: { id: string; title: string; lessons: { id: string }[] }, i: number) => {
@@ -261,6 +272,7 @@ export default function CourseViewPage() {
               { icon: Play,     val: `${totalLessons}`,             lbl: "aulas" },
               { icon: CheckCircle, val: `${completedCount}`,        lbl: "concluídas" },
               { icon: Clock,    val: progress > 0 ? `${progress}%` : "0%", lbl: "progresso" },
+              ...(isCourseComplete ? [{ icon: Award, val: "✦", lbl: "certificado" }] : []),
             ].map(({ icon: Icon, val, lbl }) => (
               <div
                 key={lbl}
@@ -281,6 +293,39 @@ export default function CourseViewPage() {
           </div>
           <style>{`.scroll-x-hide::-webkit-scrollbar { display: none; }`}</style>
         </div>
+
+        {/* ── Certificate CTA — shown when 100% complete ── */}
+        {isCourseComplete && (
+          <div style={{ padding: "0 clamp(14px,4vw,24px)", marginBottom: "clamp(8px,1.5vw,14px)" }}>
+            <Link
+              to={`/products/${slug}/certificado`}
+              style={{ textDecoration: "none", display: "block" }}
+            >
+              <div style={{
+                display: "flex", alignItems: "center", gap: "14px",
+                padding: "clamp(14px,2.5vw,20px) clamp(16px,3vw,22px)",
+                borderRadius: "clamp(14px,2vw,18px)",
+                background: "linear-gradient(135deg, rgba(198,168,112,0.12) 0%, rgba(198,168,112,0.05) 100%)",
+                border: "1px solid rgba(198,168,112,0.35)",
+              }}>
+                <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(198,168,112,0.12)", border: "1px solid rgba(198,168,112,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Award size={20} style={{ color: "var(--gold)" }} strokeWidth={1.3} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: "clamp(14px,1.8vw,16px)", color: "var(--gold)", fontWeight: 600, marginBottom: "3px" }}>
+                    🎉 Parabéns! Curso concluído.
+                  </p>
+                  <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    Seu certificado de conclusão está disponível para download.
+                  </p>
+                </div>
+                <span className="btn-gold" style={{ padding: "9px 16px", fontSize: "9px", borderRadius: "10px", flexShrink: 0, whiteSpace: "nowrap" }}>
+                  Ver certificado
+                </span>
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* ── Module accordion ── */}
         <div style={{ padding: "0 clamp(14px,4vw,24px)" }}>
