@@ -1,10 +1,11 @@
 // Edge Function: checkout-session
-// Creates a pending order and registers the buyer in Sequenzy for email marketing automation
+// Creates a pending order, integrates with Asaas (PIX/cartão/boleto) and Sequenzy
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
 
 const SEQUENZY_BASE = "https://api.sequenzy.com/api/v1";
-const SITE_URL = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
+const ASAAS_BASE    = "https://api.asaas.com/v3"; // use https://sandbox.asaas.com/api/v3 for sandbox
+const SITE_URL      = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
 
 function jsonResponse(req: Request, status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -19,6 +20,7 @@ function jsonResponse(req: Request, status: number, body: unknown) {
   });
 }
 
+/* ── Sequenzy helper ── */
 async function sequenzyRequest(
   apiKey: string,
   method: string,
@@ -28,25 +30,148 @@ async function sequenzyRequest(
   try {
     const res = await fetch(`${SEQUENZY_BASE}${endpoint}`, {
       method,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
     });
     const text = await res.text();
     let json: unknown;
     try { json = JSON.parse(text); } catch { json = null; }
-    if (!res.ok) {
-      console.warn(`Sequenzy [${method}] ${endpoint} → ${res.status}`);
-    }
+    if (!res.ok) console.warn(`Sequenzy [${method}] ${endpoint} → ${res.status}`);
     return { ok: res.ok, status: res.status, data: json };
   } catch (err) {
-    console.error(`Sequenzy [${method}] ${endpoint} error:`, err);
+    console.error(`Sequenzy error:`, err);
     return { ok: false, status: 0, data: null };
   }
 }
 
+/* ── Asaas helper ── */
+async function asaasRequest(
+  apiKey: string,
+  method: string,
+  endpoint: string,
+  body?: Record<string, unknown>
+) {
+  try {
+    const res = await fetch(`${ASAAS_BASE}${endpoint}`, {
+      method,
+      headers: {
+        "access_token": apiKey,
+        "Content-Type": "application/json",
+        "User-Agent": "DespertarEspiral/1.0",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const text = await res.text();
+    let json: Record<string, unknown> | null = null;
+    try { json = JSON.parse(text); } catch { json = null; }
+    if (!res.ok) {
+      console.warn(`Asaas [${method}] ${endpoint} → ${res.status}: ${text.slice(0, 300)}`);
+    }
+    return { ok: res.ok, status: res.status, data: json };
+  } catch (err) {
+    console.error("Asaas request error:", err);
+    return { ok: false, status: 0, data: null };
+  }
+}
+
+/* ── Ensure/create Asaas customer ── */
+async function upsertAsaasCustomer(
+  apiKey: string,
+  email: string,
+  name: string,
+  cpfCnpj?: string
+): Promise<string | null> {
+  // Check if customer already exists by email
+  const searchRes = await asaasRequest(apiKey, "GET", `/customers?email=${encodeURIComponent(email)}&limit=1`);
+  if (searchRes.ok && searchRes.data) {
+    const existing = (searchRes.data as Record<string, unknown>).data;
+    if (Array.isArray(existing) && existing.length > 0) {
+      return (existing[0] as Record<string, unknown>).id as string;
+    }
+  }
+
+  // Create new customer
+  const createBody: Record<string, unknown> = {
+    name: name || email.split("@")[0],
+    email,
+    notificationDisabled: false,
+  };
+  if (cpfCnpj) createBody.cpfCnpj = cpfCnpj;
+
+  const createRes = await asaasRequest(apiKey, "POST", "/customers", createBody);
+  if (createRes.ok && createRes.data) {
+    return (createRes.data as Record<string, unknown>).id as string | null;
+  }
+  console.error("Failed to create Asaas customer");
+  return null;
+}
+
+/* ── Create Asaas payment ── */
+async function createAsaasPayment(
+  apiKey: string,
+  customerId: string,
+  amount: number,
+  paymentMethod: string,
+  description: string,
+  orderId: string,
+  dueDate: string
+): Promise<{ invoiceUrl?: string; pixQrCode?: string; pixKey?: string; barCode?: string; billingType: string; asaasId?: string } | null> {
+
+  const billingType = paymentMethod === "credit" ? "CREDIT_CARD"
+    : paymentMethod === "boleto"  ? "BOLETO"
+    : "PIX";
+
+  const body: Record<string, unknown> = {
+    customer:    customerId,
+    billingType,
+    value:       amount,
+    dueDate,
+    description,
+    externalReference: orderId,
+    fine:        { value: 1 },   // 1% mora
+    interest:    { value: 0.033 }, // 1% ao mês (0.033% ao dia)
+    postalService: false,
+  };
+
+  if (billingType === "CREDIT_CARD") {
+    // For credit card, Asaas needs installments config or redirect to hosted checkout
+    body.installmentCount = 12;
+    body.installmentValue = parseFloat((amount / 12).toFixed(2));
+  }
+
+  const res = await asaasRequest(apiKey, "POST", "/payments", body);
+  if (!res.ok || !res.data) return null;
+
+  const data = res.data as Record<string, unknown>;
+  const result: { invoiceUrl?: string; pixQrCode?: string; pixKey?: string; barCode?: string; billingType: string; asaasId?: string } = {
+    billingType,
+    asaasId: data.id as string,
+    invoiceUrl: data.invoiceUrl as string | undefined,
+  };
+
+  // For PIX: fetch QR code
+  if (billingType === "PIX" && data.id) {
+    const qrRes = await asaasRequest(apiKey, "GET", `/payments/${data.id}/pixQrCode`);
+    if (qrRes.ok && qrRes.data) {
+      const qrData = qrRes.data as Record<string, unknown>;
+      result.pixQrCode = qrData.encodedImage as string | undefined;
+      result.pixKey    = qrData.payload as string | undefined;
+    }
+  }
+
+  // For BOLETO: fetch barcode
+  if (billingType === "BOLETO" && data.id) {
+    const lineRes = await asaasRequest(apiKey, "GET", `/payments/${data.id}/identificationField`);
+    if (lineRes.ok && lineRes.data) {
+      result.barCode = ((lineRes.data as Record<string, unknown>).identificationField as string | undefined);
+    }
+    result.invoiceUrl = data.bankSlipUrl as string | undefined ?? data.invoiceUrl as string | undefined;
+  }
+
+  return result;
+}
+
+/* ── Main handler ── */
 Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -60,21 +185,18 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(req, 415, { error: "Content-Type deve ser application/json" });
     }
 
-    const { productSlug, email, name, userId, paymentMethod } = await req.json();
+    const { productSlug, email, name, paymentMethod, cpfCnpj } = await req.json();
 
     // Input validation
     if (!productSlug || !email) {
       return jsonResponse(req, 400, { error: "productSlug e email são obrigatórios" });
     }
-
-    // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return jsonResponse(req, 400, { error: "Formato de e-mail inválido" });
     }
-
-    const allowedPaymentMethods = ["pix", "credit", "boleto", null, undefined];
-    if (!allowedPaymentMethods.includes(paymentMethod)) {
+    const validMethods = ["pix", "credit", "boleto", null, undefined];
+    if (!validMethods.includes(paymentMethod)) {
       return jsonResponse(req, 400, { error: "Método de pagamento inválido" });
     }
 
@@ -83,7 +205,7 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Do not trust client-supplied userId; if a valid JWT is present, derive it from the token.
+    // Derive userId from JWT if present
     let resolvedUserId: string | null = null;
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
@@ -101,11 +223,10 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (productError || !product) {
-      console.error("Product not found:", productError);
-      return jsonResponse(req, 404, { error: "Produto não encontrado" });
+      return jsonResponse(req, 404, { error: "Produto não encontrado ou inativo" });
     }
 
-    // 2. Create pending order in DB
+    // 2. Create pending order
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -125,87 +246,124 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(req, 500, { error: "Erro ao registrar pedido" });
     }
 
-    // Avoid logging PII (email/name) in plain text logs.
-    console.log(`Order created: ${order.id} | product: ${product.slug}`);
+    console.log(`Order created: ${order.id} | product: ${product.slug} | method: ${paymentMethod ?? "pix"}`);
 
-    // 3. Sequenzy email marketing automation (non-blocking — don't await all)
+    // 3. Asaas integration
+    const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
+    let asaasData: { invoiceUrl?: string; pixQrCode?: string; pixKey?: string; barCode?: string; billingType?: string; asaasId?: string } | null = null;
+
+    if (asaasApiKey) {
+      const firstName  = (name?.split(" ")[0] || email.split("@")[0]).trim();
+      const customerId = await upsertAsaasCustomer(asaasApiKey, email.toLowerCase().trim(), name?.trim() || firstName, cpfCnpj);
+
+      if (customerId) {
+        // Due date: today + 3 days for boleto/PIX, today for credit
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + (paymentMethod === "boleto" ? 3 : paymentMethod === "credit" ? 0 : 1));
+        const dueDateStr = dueDate.toISOString().slice(0, 10);
+
+        asaasData = await createAsaasPayment(
+          asaasApiKey,
+          customerId,
+          parseFloat(product.price),
+          paymentMethod || "pix",
+          `${product.title} — Despertar Espiral`,
+          order.id,
+          dueDateStr
+        );
+
+        if (asaasData?.asaasId) {
+          // Store asaas payment reference in order
+          await supabaseAdmin
+            .from("orders")
+            .update({
+              asaas_payment_id: asaasData.asaasId,
+              sequenzy_session_id: asaasData.invoiceUrl ?? null,
+            })
+            .eq("id", order.id);
+        }
+      } else {
+        console.warn("Could not create/find Asaas customer — payment link skipped");
+      }
+    } else {
+      console.warn("ASAAS_API_KEY not configured — payment gateway skipped");
+    }
+
+    // 4. Sequenzy email marketing (non-blocking)
     const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
     if (sequenzyApiKey) {
       const firstName = (name?.split(" ")[0] || email.split("@")[0]).trim();
       const lastName  = name?.split(" ").slice(1).join(" ").trim() || "";
+      const amountFmt = `R$ ${parseFloat(product.price).toFixed(2).replace(".", ",")}`;
 
-      // 3a. Create/update subscriber with custom attributes
-      await sequenzyRequest(sequenzyApiKey, "POST", "/subscribers", {
-        email,
-        firstName,
-        lastName,
-        customAttributes: {
-          product_slug:  product.slug,
-          product_title: product.title,
-          order_id:      order.id,
-          amount:        product.price,
-          checkout_at:   new Date().toISOString(),
-          status:        "checkout_pendente",
-        },
-      });
-
-      // 3b. Add segmentation tags
-      await sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/tags/bulk", {
-        email,
-        tags: ["checkout-iniciado", `produto-${product.slug}`, "lead-quente", "plataforma-despertar"],
-      });
-
-      // 3c. Trigger automation event
-      await sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/events", {
-        email,
-        event: "checkout_iniciado",
-        properties: {
-          product_title:    product.title,
-          product_slug:     product.slug,
-          amount:           product.price,
-          order_id:         order.id,
-          payment_method:   paymentMethod || "pix",
-          checkout_url:     `${SITE_URL}/checkout/${product.slug}`,
-        },
-      });
-
-      // 3d. Send transactional email via Sequenzy template "checkout-confirmado"
-      // (configure this template in Sequenzy dashboard)
-      const emailRes = await sequenzyRequest(sequenzyApiKey, "POST", "/transactional/send", {
-        to: email,
-        slug: "checkout-confirmado",
-        variables: {
+      await Promise.allSettled([
+        sequenzyRequest(sequenzyApiKey, "POST", "/subscribers", {
+          email,
           firstName,
-          productTitle:    product.title,
-          productSubtitle: product.subtitle || "Método de Reconexão e Cura",
-          orderId:         order.id.slice(0, 8).toUpperCase(),
-          amount:          `R$ ${parseFloat(product.price).toFixed(2).replace(".", ",")}`,
-          pixKey:          "contato@despertarespiral.com",
-          supportEmail:    "contato@despertarespiral.com",
-        },
-      });
-
-      if (!emailRes.ok) {
-        console.warn("Transactional email failed (template may not exist yet):", emailRes.status);
-      }
-    } else {
-      console.warn("SEQUENZY_API_KEY not set — email automation skipped");
+          lastName,
+          customAttributes: {
+            product_slug:  product.slug,
+            product_title: product.title,
+            order_id:      order.id,
+            amount:        product.price,
+            checkout_at:   new Date().toISOString(),
+            status:        "checkout_pendente",
+          },
+        }),
+        sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/tags/bulk", {
+          email,
+          tags: ["checkout-iniciado", `produto-${product.slug}`, "lead-quente", "plataforma-despertar"],
+        }),
+        sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/events", {
+          email,
+          event: "checkout_iniciado",
+          properties: {
+            product_title:  product.title,
+            product_slug:   product.slug,
+            amount:         product.price,
+            order_id:       order.id,
+            payment_method: paymentMethod || "pix",
+          },
+        }),
+        sequenzyRequest(sequenzyApiKey, "POST", "/transactional/send", {
+          to: email,
+          slug: "checkout-confirmado",
+          variables: {
+            firstName,
+            productTitle:    product.title,
+            productSubtitle: product.subtitle || "Método de Reconexão e Cura",
+            orderId:         order.id.slice(0, 8).toUpperCase(),
+            amount:          amountFmt,
+            // Include Asaas payment data in email if available
+            pixKey:          asaasData?.pixKey || "contato@despertarespiral.com",
+            invoiceUrl:      asaasData?.invoiceUrl || `${SITE_URL}/obrigado`,
+            supportEmail:    "contato@despertarespiral.com",
+          },
+        }),
+      ]);
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        orderId:  order.id,
-        product: {
-          title:    product.title,
-          subtitle: product.subtitle,
-          slug:     product.slug,
-          price:    product.price,
-        },
-        message: "Pedido registrado. Instruções de pagamento enviadas por e-mail.",
-      }),
-      { status: 200, headers: { ...corsHeadersFor(req), "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" } }
-    );
+    return jsonResponse(req, 200, {
+      success: true,
+      orderId:  order.id,
+      product: {
+        title:    product.title,
+        subtitle: product.subtitle,
+        slug:     product.slug,
+        price:    product.price,
+      },
+      // Pass payment details to frontend for ThankYouPage
+      payment: asaasData ? {
+        invoiceUrl: asaasData.invoiceUrl,
+        pixQrCode:  asaasData.pixQrCode,
+        pixKey:     asaasData.pixKey,
+        barCode:    asaasData.barCode,
+        billingType: asaasData.billingType,
+        asaasId:    asaasData.asaasId,
+      } : null,
+      message: "Pedido registrado. Instruções de pagamento enviadas por e-mail.",
+    });
+
   } catch (err) {
     console.error("checkout-session unexpected error:", err);
     return jsonResponse(req, 500, { error: "Erro interno do servidor" });

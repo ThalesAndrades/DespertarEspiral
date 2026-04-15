@@ -1,5 +1,5 @@
 import courseThumb2 from "@/assets/course-thumb-2.jpg";
-import mulherEspiralCover from "@/assets/mulher-espiral-cover.svg";
+import mulherEspiralProduct from "@/assets/mulher-espiral-hero.jpg";
 import type { Product, CommunityPost, Order, User } from "@/types";
 
 export const MOCK_PRODUCTS: Product[] = [
@@ -10,7 +10,7 @@ export const MOCK_PRODUCTS: Product[] = [
     subtitle: "Método de Reconexão e Cura",
     description: "Uma jornada guiada de autoconhecimento feminino com aulas práticas, reflexões e integrações simples para o dia a dia.",
     price: 497.00,
-    thumbnail: mulherEspiralCover,
+    thumbnail: mulherEspiralProduct,
     is_published: true,
     created_at: "2026-01-15T00:00:00Z",
     modules: [
@@ -94,5 +94,3 @@ export const MOCK_ADMIN_USERS: User[] = [
   { id: "u4", name: "Júlia Santos", email: "julia.santos@provedor.com.br", role: "member", anonymous_name: "Violeta Silvestre", created_at: "2026-04-13T08:00:00Z", products: [] },
   { id: "u5", name: "Paula Mendes", email: "paula.mendes@provedor.com.br", role: "member", anonymous_name: "Cedro Dourado", created_at: "2026-04-14T11:00:00Z", products: ["despertar-das-emocoes"] },
 ];
-
-

@@ -1,6 +1,6 @@
 /**
- * CheckoutPage — Mobile-first, theme-aware
- * Stacked layout on mobile (summary first), split grid on desktop
+ * CheckoutPage — Mobile-first, theme-aware, Asaas-integrated
+ * Improved flow: live form validation, Asaas payment link surfaced on success
  */
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { MOCK_PRODUCTS } from "@/constants/mockData";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import MulherEspiralMark from "@/components/layout/MulherEspiralMark";
+import mulherEspiralProductImg from "@/assets/mulher-espiral-hero.jpg";
 import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,10 +26,12 @@ const LABEL: React.CSSProperties = {
 };
 
 const PAYMENT_METHODS = [
-  { id: "pix",    label: "PIX",         sub: "Aprovação imediata", icon: Zap },
-  { id: "credit", label: "Cartão",      sub: "12× sem juros",      icon: Shield },
-  { id: "boleto", label: "Boleto",      sub: "Vence em 3 dias",    icon: Star },
+  { id: "pix",    label: "PIX",    sub: "Aprovação imediata", icon: Zap },
+  { id: "credit", label: "Cartão", sub: "12× sem juros",      icon: Shield },
+  { id: "boleto", label: "Boleto", sub: "Vence em 3 dias",    icon: Star },
 ];
+
+function validateEmail(e: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
 export default function CheckoutPage() {
   const { slug }  = useParams<{ slug: string }>();
@@ -37,8 +40,11 @@ export default function CheckoutPage() {
 
   const [product,       setProduct]       = useState(MOCK_PRODUCTS.find((p) => p.slug === slug) ?? MOCK_PRODUCTS[0]);
   const [form,          setForm]          = useState({ name: user?.name ?? "", email: user?.email ?? "" });
+  const [errors,        setErrors]        = useState<{ name?: string; email?: string }>({});
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit" | "boleto">("pix");
   const [loading,       setLoading]       = useState(false);
+  const [step,          setStep]          = useState<"form" | "success">("form");
+  const [successData,   setSuccessData]   = useState<{ orderId: string; invoiceUrl?: string; pixKey?: string; pixQrCode?: string; barCode?: string } | null>(null);
 
   useEffect(() => {
     if (user) setForm({ name: user.name, email: user.email });
@@ -59,39 +65,168 @@ export default function CheckoutPage() {
       });
   }, [slug]);
 
-  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
+    setErrors((err) => ({ ...err, [field]: undefined }));
+  };
+
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!form.name.trim()) e.name = "Nome obrigatório";
+    if (!form.email.trim()) e.email = "E-mail obrigatório";
+    else if (!validateEmail(form.email)) e.email = "E-mail inválido";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email) { toast.error("Preencha nome e e-mail."); return; }
+    if (!validate()) return;
     setLoading(true);
 
-    const { data, error } = await supabase.functions.invoke("checkout-session", {
-      body: { productSlug: slug, email: form.email, name: form.name, userId: user?.id ?? null, paymentMethod },
-    });
+    const body: Record<string, unknown> = {
+      productSlug: slug,
+      email: form.email.trim().toLowerCase(),
+      name: form.name.trim(),
+      userId: user?.id ?? null,
+      paymentMethod,
+    };
+
+    const { data, error } = await supabase.functions.invoke("checkout-session", { body });
 
     if (error) {
       let msg = error.message;
       if (error instanceof FunctionsHttpError) {
-        try { const t = await error.context?.text(); msg = `[${error.context?.status}] ${t || error.message}`; } catch (e) { /* ignore */ }
+        try { const t = await error.context?.text(); msg = `[${error.context?.status}] ${t || error.message}`; } catch { /* ignore */ }
       }
       toast.error(msg);
       setLoading(false);
       return;
     }
 
-    toast.success("Pedido registrado! Verifique seu e-mail. ✦");
+    toast.success("Pedido registrado! ✦");
+
+    // If we have an invoice URL from Asaas, redirect there immediately for credit card
+    if (paymentMethod === "credit" && data?.payment?.invoiceUrl) {
+      const qs = new URLSearchParams({
+        orderId: data.orderId ?? "",
+        slug: product.slug,
+        title: product.title,
+        email: form.email,
+        method: paymentMethod,
+        invoiceUrl: data.payment.invoiceUrl,
+      });
+      navigate(`/obrigado?${qs.toString()}`);
+      setLoading(false);
+      return;
+    }
+
+    // For PIX/boleto: show success state inline with payment details
+    setSuccessData({
+      orderId:    data.orderId ?? "",
+      invoiceUrl: data.payment?.invoiceUrl,
+      pixKey:     data.payment?.pixKey,
+      pixQrCode:  data.payment?.pixQrCode,
+      barCode:    data.payment?.barCode,
+    });
+    setStep("success");
+    setLoading(false);
+  };
+
+  // Success state — inline payment instructions
+  if (step === "success" && successData) {
     const qs = new URLSearchParams({
-      orderId: data.orderId ?? "",
+      orderId: successData.orderId,
       slug: product.slug,
       title: product.title,
       email: form.email,
       method: paymentMethod,
+      ...(successData.invoiceUrl ? { invoiceUrl: successData.invoiceUrl } : {}),
+      ...(successData.pixKey     ? { pixKey: successData.pixKey } : {}),
     });
-    navigate(`/obrigado?${qs.toString()}`);
-    setLoading(false);
-  };
+
+    return (
+      <div style={{ minHeight: "100dvh", background: "var(--bg-surface)", color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
+        <div style={{ maxWidth: "480px", width: "100%", textAlign: "center" }}>
+          <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(140,170,150,0.12)", border: "1px solid rgba(140,170,150,0.30)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <CheckCircle size={30} style={{ color: "var(--sage)" }} strokeWidth={1.2} />
+          </div>
+          <p className="overline" style={{ color: "var(--gold)", marginBottom: "10px" }}>Pedido registrado</p>
+          <h1 className="font-display" style={{ fontSize: "clamp(26px,4vw,38px)", fontWeight: 300, marginBottom: "14px" }}>
+            {paymentMethod === "pix" ? "Realize o PIX" : "Pague o boleto"}
+          </h1>
+
+          {/* PIX details */}
+          {paymentMethod === "pix" && (
+            <div className="card-dark" style={{ padding: "20px", marginBottom: "16px", textAlign: "left" }}>
+              <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "10px" }}>
+                Chave PIX
+              </p>
+              {successData.pixKey ? (
+                <div>
+                  <code style={{ fontSize: "13px", color: "var(--text-primary)", wordBreak: "break-all", display: "block", marginBottom: "10px" }}>
+                    {successData.pixKey}
+                  </code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(successData.pixKey!); toast.success("Chave copiada!"); }}
+                    className="btn-outline-gold" style={{ fontSize: "9px", padding: "8px 18px", minHeight: "40px" }}>
+                    Copiar chave PIX
+                  </button>
+                </div>
+              ) : (
+                <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.7 }}>
+                  Realize o PIX para: <strong style={{ color: "var(--text-primary)" }}>contato@despertarespiral.com</strong><br />
+                  Envie o comprovante com <strong style={{ color: "var(--gold)" }}>#{successData.orderId.slice(0, 8).toUpperCase()}</strong> para o mesmo e-mail.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Boleto details */}
+          {paymentMethod === "boleto" && (
+            <div className="card-dark" style={{ padding: "20px", marginBottom: "16px", textAlign: "left" }}>
+              <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "10px" }}>
+                Boleto bancário
+              </p>
+              {successData.barCode && (
+                <div style={{ marginBottom: "10px" }}>
+                  <code style={{ fontSize: "11px", color: "var(--text-secondary)", wordBreak: "break-all", display: "block", marginBottom: "8px", letterSpacing: "0.04em" }}>
+                    {successData.barCode}
+                  </code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(successData.barCode!); toast.success("Código de barras copiado!"); }}
+                    className="btn-outline-gold" style={{ fontSize: "9px", padding: "8px 18px", minHeight: "40px" }}>
+                    Copiar código
+                  </button>
+                </div>
+              )}
+              {successData.invoiceUrl && (
+                <a href={successData.invoiceUrl} target="_blank" rel="noopener noreferrer" className="btn-gold"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "9px", padding: "10px 22px", marginTop: successData.barCode ? "10px" : "0" }}>
+                  Abrir boleto <ArrowRight size={12} />
+                </a>
+              )}
+              {!successData.barCode && !successData.invoiceUrl && (
+                <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.7 }}>
+                  O boleto foi enviado para <strong style={{ color: "var(--text-primary)" }}>{form.email}</strong>. Pague em até 3 dias úteis.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <button onClick={() => navigate(`/obrigado?${qs.toString()}`)} className="btn-gold"
+              style={{ width: "100%", justifyContent: "center" }}>
+              Ver página de confirmação <ArrowRight size={13} />
+            </button>
+            <Link to="/dashboard" className="btn-ghost" style={{ justifyContent: "center" }}>
+              Ir para minha área
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const savings = (product as { original_price?: number }).original_price
     ? (product as { original_price?: number }).original_price! - product.price
@@ -100,7 +235,7 @@ export default function CheckoutPage() {
   return (
     <div style={{ minHeight: "100dvh", background: "var(--bg-surface)", color: "var(--text-primary)" }}>
 
-      {/* ── Top bar ── */}
+      {/* Top bar */}
       <header style={{
         position: "sticky", top: 0, zIndex: 50,
         background: "var(--nav-bg)",
@@ -120,7 +255,7 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      {/* Urgency strip */}
+      {/* Trust strip */}
       <div style={{
         background: "linear-gradient(135deg, rgba(198,168,112,0.10) 0%, rgba(201,154,170,0.06) 100%)",
         borderBottom: "1px solid var(--border-subtle)",
@@ -130,8 +265,8 @@ export default function CheckoutPage() {
       }}>
         {[
           { icon: Users, text: "280+ mulheres em jornada" },
-          { icon: Star,  text: "4.8 ★ avaliação média" },
-          { icon: Shield, text: "7 dias de garantia incondicional" },
+          { icon: Star,  text: "4.8 ★ avaliação" },
+          { icon: Shield, text: "7 dias de garantia" },
         ].map(({ icon: Icon, text }) => (
           <div key={text} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <Icon size={11} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
@@ -142,7 +277,6 @@ export default function CheckoutPage() {
 
       <div style={{ maxWidth: "1020px", margin: "0 auto", padding: "clamp(20px,4vw,40px) clamp(16px,5vw,24px) clamp(40px,6vw,80px)" }}>
 
-        {/* Back */}
         <button onClick={() => navigate(-1)}
           style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginBottom: "clamp(20px,3vw,32px)", background: "transparent", border: "none", cursor: "pointer", fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)", padding: 0, minHeight: "44px", transition: "color 0.2s" }}
           onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
@@ -151,33 +285,22 @@ export default function CheckoutPage() {
           <ArrowLeft size={13} /> Voltar
         </button>
 
-        {/* Mobile: Order summary (top) */}
+        {/* Mobile summary */}
         <div className="lg:hidden" style={{ marginBottom: "clamp(20px,4vw,32px)" }}>
           <OrderSummary product={product} savings={savings} compact />
         </div>
 
         <div style={{ display: "grid", gap: "clamp(24px,4vw,40px)" }} className="grid lg:grid-cols-5">
 
-          {/* ── Form col (span 3) ── */}
+          {/* Form */}
           <div style={{ gridColumn: "span 3" }}>
             <p className="overline" style={{ color: "var(--gold)", marginBottom: "8px" }}>Finalizar pedido</p>
             <h1 className="font-display" style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 300, marginBottom: "8px", color: "var(--text-primary)" }}>
               {user ? `Olá, ${user.name.split(" ")[0]}` : "Seus dados"}
             </h1>
             <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-secondary)", lineHeight: 1.78, marginBottom: "clamp(20px,3vw,28px)" }}>
-              Preencha seus dados para registrar o pedido. As instruções de pagamento chegam no seu e-mail.
+              Preencha seus dados para registrar o pedido. As instruções de pagamento chegam ao seu e-mail.
             </p>
-            <div className="flow-card" style={{ padding: "14px 16px", marginBottom: "clamp(16px,2.5vw,24px)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "6px" }}>
-                <span className="step-chip">01</span>
-                <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--gold)" }}>
-                  Fluxo simples de compra
-                </p>
-              </div>
-              <p className="reading-note" style={{ margin: 0 }}>
-                Primeiro registramos seu pedido, depois enviamos o meio de pagamento e, por fim, liberamos seu acesso automaticamente.
-              </p>
-            </div>
 
             {user && (
               <div className="card-dark" style={{ padding: "14px 18px", marginBottom: "clamp(16px,2.5vw,24px)", display: "flex", alignItems: "center", gap: "10px" }}>
@@ -188,45 +311,45 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            <form onSubmit={handleCheckout} style={{ display: "flex", flexDirection: "column", gap: "clamp(14px,2vw,18px)" }}>
+            <form onSubmit={handleCheckout} noValidate style={{ display: "flex", flexDirection: "column", gap: "clamp(14px,2vw,18px)" }}>
               <div style={{ display: "grid", gap: "clamp(12px,2vw,16px)" }} className="grid sm:grid-cols-2">
                 <div>
                   <label style={LABEL}>Nome completo</label>
-                  <input type="text" value={form.name} onChange={set("name")} placeholder="Seu nome" className="input-dark" disabled={!!user} autoComplete="name" style={{ borderRadius: "14px" }} />
+                  <input type="text" value={form.name} onChange={set("name")} placeholder="Seu nome" className="input-dark" disabled={!!user} autoComplete="name"
+                    style={{ borderRadius: "14px", borderColor: errors.name ? "rgba(201,80,80,0.6)" : undefined }} />
+                  {errors.name && <p style={{ fontSize: "11px", color: "#e07070", marginTop: "4px" }}>{errors.name}</p>}
                 </div>
                 <div>
                   <label style={LABEL}>E-mail</label>
-                  <input type="email" value={form.email} onChange={set("email")} placeholder="seu@email.com" className="input-dark" disabled={!!user} autoComplete="email" style={{ borderRadius: "14px" }} />
+                  <input type="email" value={form.email} onChange={set("email")} placeholder="seu@email.com" className="input-dark" disabled={!!user} autoComplete="email"
+                    style={{ borderRadius: "14px", borderColor: errors.email ? "rgba(201,80,80,0.6)" : undefined }} />
+                  {errors.email && <p style={{ fontSize: "11px", color: "#e07070", marginTop: "4px" }}>{errors.email}</p>}
                 </div>
               </div>
 
               {!user && (
                 <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.65 }}>
                   Já tem conta?{" "}
-                  <Link to="/login" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>Entrar</Link>{" "}
+                  <Link to={`/login?next=/checkout/${slug}`} style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>Entrar</Link>{" "}
                   para preencher automaticamente.
                 </p>
               )}
 
-              {/* Payment method selector */}
+              {/* Payment selector */}
               <div>
                 <label style={LABEL}>Forma de pagamento</label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
                   {PAYMENT_METHODS.map(({ id, label, sub, icon: Icon }) => {
                     const active = paymentMethod === id;
                     return (
-                      <button
-                        key={id} type="button"
-                        onClick={() => setPaymentMethod(id as "pix" | "credit" | "boleto")}
+                      <button key={id} type="button" onClick={() => setPaymentMethod(id as "pix" | "credit" | "boleto")}
                         style={{
                           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                           gap: "5px", padding: "14px 8px",
                           borderRadius: "14px", border: `1.5px solid ${active ? "var(--gold)" : "var(--border-soft)"}`,
                           background: active ? "rgba(198,168,112,0.08)" : "var(--input-bg)",
-                          cursor: "pointer", transition: "all 0.2s ease",
-                          minHeight: "72px",
-                        }}
-                      >
+                          cursor: "pointer", transition: "all 0.2s ease", minHeight: "72px",
+                        }}>
                         <Icon size={16} style={{ color: active ? "var(--gold)" : "var(--text-faint)" }} strokeWidth={1.5} />
                         <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: active ? "var(--gold)" : "var(--text-primary)", fontWeight: active ? 600 : 400 }}>{label}</span>
                         <span style={{ fontSize: "10px", color: active ? "var(--text-secondary)" : "var(--text-faint)" }}>{sub}</span>
@@ -234,33 +357,41 @@ export default function CheckoutPage() {
                     );
                   })}
                 </div>
+
+                {/* Method tip */}
                 {paymentMethod === "pix" && (
-                  <p style={{ fontSize: "12px", color: "var(--sage)", marginTop: "8px", display: "flex", alignItems: "center", gap: "5px" }}>
-                    <Zap size={10} /> Você receberá a chave PIX por e-mail após o registro.
-                  </p>
+                  <div style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "10px", background: "rgba(140,170,150,0.07)", border: "1px solid rgba(140,170,150,0.18)" }}>
+                    <p style={{ fontSize: "12px", color: "var(--sage)", display: "flex", alignItems: "center", gap: "5px" }}>
+                      <Zap size={11} /> Chave PIX enviada por e-mail e gerada automaticamente após o pedido.
+                    </p>
+                  </div>
                 )}
                 {paymentMethod === "credit" && (
-                  <p style={{ fontSize: "12px", color: "var(--lavender)", marginTop: "8px" }}>
-                    Link de pagamento seguro enviado por e-mail após o registro.
-                  </p>
+                  <div style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "10px", background: "rgba(164,158,208,0.07)", border: "1px solid rgba(164,158,208,0.18)" }}>
+                    <p style={{ fontSize: "12px", color: "var(--lavender)" }}>
+                      Você será redirecionada para a página de pagamento seguro do cartão após confirmar o pedido.
+                    </p>
+                  </div>
                 )}
                 {paymentMethod === "boleto" && (
-                  <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "8px" }}>
-                    Boleto gerado e enviado por e-mail. Vencimento em 3 dias úteis.
-                  </p>
+                  <div style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "10px", background: "rgba(206,200,190,0.07)", border: "1px solid var(--border-subtle)" }}>
+                    <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                      Boleto gerado automaticamente. Vencimento em 3 dias úteis.
+                    </p>
+                  </div>
                 )}
               </div>
 
               {/* How it works */}
-              <div className="card-dark" style={{ padding: "clamp(16px,2.5vw,22px)" }}>
-                <p className="overline" style={{ color: "var(--text-muted)", marginBottom: "14px", fontSize: "8px" }}>Como funciona</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "clamp(10px,1.5vw,14px)" }}>
+              <div className="card-dark" style={{ padding: "clamp(14px,2.5vw,20px)" }}>
+                <p className="overline" style={{ color: "var(--text-muted)", marginBottom: "12px", fontSize: "8px" }}>Como funciona</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {[
-                    { n: "01", t: "Registre seu pedido", d: "Seus dados são registrados com segurança." },
-                    { n: "02", t: "Receba as instruções", d: `Instruções de pagamento via ${paymentMethod === "pix" ? "PIX" : paymentMethod === "credit" ? "cartão" : "boleto"} chegam ao seu e-mail.` },
-                    { n: "03", t: "Acesso liberado", d: "Confirmamos o pagamento e liberamos acesso em até 1h." },
+                    { n: "01", t: "Registre o pedido", d: "Seus dados são salvos com segurança." },
+                    { n: "02", t: "Realize o pagamento", d: `Instruções de ${paymentMethod === "pix" ? "PIX" : paymentMethod === "credit" ? "cartão seguro" : "boleto"} chegam ao seu e-mail.` },
+                    { n: "03", t: "Acesso automático", d: "Confirmamos e liberamos acesso em até 1h útil." },
                   ].map(({ n, t, d }) => (
-                    <div key={n} style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
+                    <div key={n} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
                       <span className="step-chip">{n}</span>
                       <div>
                         <p style={{ fontSize: "13px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "2px" }}>{t}</p>
@@ -273,33 +404,21 @@ export default function CheckoutPage() {
 
               <button type="submit" disabled={loading} className="btn-gold" style={{ width: "100%", borderRadius: "16px", minHeight: "56px" }}>
                 {loading
-                  ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Registrando pedido…</>
-                  : <><span>Registrar pedido e receber instruções</span><ArrowRight size={14} /></>
+                  ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Registrando…</>
+                  : <><span>Registrar pedido</span><ArrowRight size={14} /></>
                 }
               </button>
 
-              <p style={{ textAlign: "center", fontSize: "13px", color: "var(--text-faint)", marginTop: "10px", lineHeight: 1.7 }}>
+              <p style={{ textAlign: "center", fontSize: "12px", color: "var(--text-faint)", lineHeight: 1.7 }}>
                 Ao continuar, você concorda com{" "}
-                <Link to="/termos" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>
-                  Termos de Uso
-                </Link>{" "}
+                <Link to="/termos" style={{ color: "var(--gold)", textDecoration: "none" }}>Termos de Uso</Link>{" "}
                 e{" "}
-                <Link to="/privacidade" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>
-                  Política de Privacidade
-                </Link>
-                .
+                <Link to="/privacidade" style={{ color: "var(--gold)", textDecoration: "none" }}>Privacidade</Link>. 7 dias de garantia incondicional.
               </p>
-
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                <Shield size={11} style={{ color: "var(--text-muted)" }} strokeWidth={1.5} />
-                <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.14em", color: "var(--text-muted)", textTransform: "uppercase" }}>
-                  7 dias de garantia incondicional
-                </span>
-              </div>
             </form>
           </div>
 
-          {/* ── Desktop: Order summary ── */}
+          {/* Desktop summary */}
           <div className="hidden lg:block" style={{ gridColumn: "span 2" }}>
             <div style={{ position: "sticky", top: "80px" }}>
               <OrderSummary product={product} savings={savings} />
@@ -313,105 +432,48 @@ export default function CheckoutPage() {
   );
 }
 
-/* ── Order Summary component ── */
-function OrderSummary({
-  product, savings, compact = false,
-}: {
-  product: Record<string, unknown>;
-  savings: number | null;
-  compact?: boolean;
-}) {
-  const p = product as {
-    slug?: string;
-    thumbnail?: string; title?: string; subtitle?: string;
-    price?: number; original_price?: number; modules?: unknown[];
-  };
-  const FALLBACK = "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&q=80&auto=format";
+/* ── Order Summary ── */
+function OrderSummary({ product, savings, compact = false }: { product: Record<string, unknown>; savings: number | null; compact?: boolean }) {
+  const p = product as { slug?: string; thumbnail?: string; thumbnail_url?: string; title?: string; subtitle?: string; price?: number; original_price?: number; modules?: unknown[] };
   const isMulherEspiral = p.slug === "mulher-espiral";
+  const thumbSrc = isMulherEspiral ? mulherEspiralProductImg : (p.thumbnail_url || p.thumbnail || "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&q=80&auto=format");
 
   return (
     <div className="card-dark" style={{ padding: compact ? "clamp(14px,3vw,20px)" : "clamp(20px,3vw,28px)" }}>
       <p className="overline" style={{ color: "var(--gold)", marginBottom: "16px", fontSize: "9px" }}>Resumo do pedido</p>
 
       {!compact && (
-        <div style={{ overflow: "hidden", borderRadius: "12px", aspectRatio: "16/9", marginBottom: "18px", background: "var(--bg-surface-2)", position: "relative" }}>
-          {isMulherEspiral ? (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "18px" }}>
-              <div style={{ width: "100%", maxWidth: "620px" }}>
-                <MulherEspiralMark size="lg" align="center" />
-              </div>
-            </div>
-          ) : (
-            <img
-              src={(p.thumbnail as string) || FALLBACK}
-              alt={(p.title as string) || "Produto"}
-              loading="lazy"
-              decoding="async"
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            />
-          )}
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 70% at 55% 42%, rgba(198,168,112,0.20) 0%, transparent 65%)", pointerEvents: "none" }} />
+        <div style={{ overflow: "hidden", borderRadius: "14px", marginBottom: "18px", background: "var(--bg-surface-2)", aspectRatio: "4/5", maxHeight: "320px", position: "relative" }}>
+          <img src={thumbSrc} alt={p.title as string}
+            loading="lazy" decoding="async"
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 50%, rgba(11,13,28,0.85) 100%)", pointerEvents: "none" }} />
         </div>
       )}
 
       {compact && (
         <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "14px" }}>
-          <div style={{ width: "56px", height: "56px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, background: "var(--bg-surface-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {isMulherEspiral ? (
-              <svg width="34" height="34" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-                <path
-                  d="M32 58
-                     C14.3 58 6 45.5 6 32
-                     C6 18.5 16.5 8 30 8
-                     C41.5 8 51 17.5 51 29
-                     C51 38.8 43.5 46.5 34 46.5
-                     C26 46.5 19.5 40 19.5 32.2
-                     C19.5 25.5 24.8 20.2 31.5 20.2
-                     C37.2 20.2 41.8 24.8 41.8 30.5
-                     C41.8 35.2 38.2 39 33.5 39"
-                  stroke="var(--gold)"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  fill="none"
-                  opacity="0.92"
-                />
-                <path d="M33.5 39 L34.8 37.4 L36.1 39 L34.8 40.6 Z" fill="var(--gold)" opacity="0.92" />
-              </svg>
-            ) : (
-              <img
-                src={(p.thumbnail as string) || FALLBACK}
-                alt={(p.title as string) || "Produto"}
-                loading="lazy"
-                decoding="async"
-                width="56"
-                height="56"
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
-            )}
+          <div style={{ width: "56px", height: "56px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, background: "var(--bg-surface-2)" }}>
+            <img src={thumbSrc} alt={p.title as string} loading="lazy" decoding="async" width="56" height="56"
+              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
           </div>
           <div>
-            <span className="badge-rose" style={{ marginBottom: "6px" }}>
-              {(p.subtitle as string) || "Método"}
-            </span>
-            <h3 className="font-display" style={{ fontSize: "18px", fontWeight: 300, lineHeight: 1.2, color: "var(--text-primary)" }}>
-              {p.title as string}
-            </h3>
+            {p.subtitle && <span className="badge-rose" style={{ marginBottom: "5px" }}>{p.subtitle as string}</span>}
+            <h3 className="font-display" style={{ fontSize: "18px", fontWeight: 300, lineHeight: 1.2, color: "var(--text-primary)" }}>{p.title as string}</h3>
           </div>
         </div>
       )}
 
       {!compact && (
         <>
-          <span className="badge-rose" style={{ marginBottom: "10px", display: "inline-flex" }}>
-            {(p.subtitle as string) || "Método"}
-          </span>
-          <h3 className="font-display" style={{ fontSize: "clamp(20px,2.5vw,26px)", fontWeight: 300, lineHeight: 1.2, color: "var(--text-primary)", marginBottom: "6px", marginTop: "8px" }}>
+          {p.subtitle && <span className="badge-rose" style={{ marginBottom: "10px", display: "inline-flex" }}>{p.subtitle as string}</span>}
+          <h3 className="font-display" style={{ fontSize: "clamp(18px,2.5vw,24px)", fontWeight: 300, lineHeight: 1.2, color: "var(--text-primary)", marginBottom: "6px", marginTop: compact ? 0 : "10px" }}>
             {p.title as string}
           </h3>
-          <p className="font-label" style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "18px" }}>
+          <p className="font-label" style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "16px" }}>
             {((p.modules as unknown[])?.length ?? 8)} módulos · Acesso vitalício
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "18px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
             {["Acesso vitalício", "Comunidade exclusiva", "Certificado de conclusão", "Suporte humanizado"].map((f) => (
               <div key={f} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <CheckCircle size={12} style={{ color: "var(--sage)", flexShrink: 0 }} strokeWidth={2} />
@@ -434,22 +496,26 @@ function OrderSummary({
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px" }}>
             <span style={{ fontSize: "13px", color: "var(--sage)" }}>Desconto</span>
-            <span className="badge-sage" style={{ fontSize: "9px" }}>
-              — R$ {savings.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </span>
+            <span className="badge-sage" style={{ fontSize: "9px" }}>— R$ {savings.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
           </div>
         </>
       )}
 
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <span className="font-label" style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Total</span>
-        <p className="font-display" style={{ fontSize: "clamp(28px,3.5vw,36px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>
+        <p className="font-display" style={{ fontSize: "clamp(26px,3.5vw,34px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>
           R$ {(p.price as number).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
         </p>
       </div>
-      <p className="font-label" style={{ fontSize: "8px", color: "var(--text-faint)", textAlign: "right", marginTop: "5px", letterSpacing: "0.10em", textTransform: "uppercase" }}>
-        7 dias de garantia incondicional
-      </p>
+      {!compact && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", marginTop: "14px" }}>
+          <Shield size={11} style={{ color: "var(--text-muted)" }} strokeWidth={1.5} />
+          <span className="font-label" style={{ fontSize: "8px", letterSpacing: "0.14em", color: "var(--text-muted)", textTransform: "uppercase" }}>7 dias de garantia incondicional</span>
+        </div>
+      )}
     </div>
   );
 }
+
+// Suppress unused MulherEspiralMark warning — used in compact thumb
+void MulherEspiralMark;

@@ -156,15 +156,22 @@ export default function LessonPage() {
           { onConflict: "user_id,lesson_id" }
         );
       if (error) {
-        // Revert optimistic update on failure
         setCompleted((prev) => { const s = new Set(prev); s.delete(id); return s; });
         toast.error("Não foi possível salvar o progresso.");
         return;
       }
     }
     toast.success("Aula concluída. ✦");
-    if (nextLesson?.id) setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id as string}`), 500);
+    // Auto-advance after short delay
+    if (nextLesson?.id) setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id as string}`), 800);
   };
+
+  /* ── Module progress bar for current lesson ── */
+  const moduleDoneCount = moduleOfLesson
+    ? (moduleOfLesson.lessons as Record<string, unknown>[]).filter((l) => completed.has(l.id as string)).length
+    : 0;
+  const moduleTotalCount = moduleOfLesson ? (moduleOfLesson.lessons as Record<string, unknown>[]).length : 0;
+  const modulePct = moduleTotalCount > 0 ? Math.round((moduleDoneCount / moduleTotalCount) * 100) : 0;
 
   const isDone = completed.has(lesson.id as string);
   const isFreePreview = Boolean((lesson as unknown as { is_free_preview?: boolean; is_free?: boolean }).is_free_preview ?? (lesson as unknown as { is_free?: boolean }).is_free);
@@ -414,7 +421,20 @@ export default function LessonPage() {
           {/* Content area */}
           <div style={{ flex: 1, maxWidth: "780px", width: "100%", margin: "0 auto", padding: "clamp(16px,3vw,32px) clamp(14px,4vw,32px) 100px" }}>
 
-            {/* Breadcrumb */}
+            {/* Module progress mini-bar */}
+            {moduleOfLesson && (
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "clamp(12px,2vw,18px)", padding: "10px 14px", borderRadius: "12px", background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "Montserrat, sans-serif", whiteSpace: "nowrap", letterSpacing: "0.06em" }}>Módulo atual</span>
+                <div style={{ flex: 1, height: "3px", borderRadius: "100px", background: "var(--border-subtle)", overflow: "hidden" }}>
+                  <div style={{ width: `${modulePct}%`, height: "100%", borderRadius: "100px", background: modulePct === 100 ? "var(--sage)" : "var(--gold)", transition: "width 0.6s cubic-bezier(.16,1,.3,1)" }} />
+                </div>
+                <span style={{ fontSize: "11px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, color: modulePct === 100 ? "var(--sage)" : "var(--gold)", whiteSpace: "nowrap" }}>
+                  {moduleDoneCount}/{moduleTotalCount}
+                </span>
+              </div>
+            )}
+
+          {/* Breadcrumb */}
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "clamp(12px,2vw,20px)", flexWrap: "wrap" }}>
               <Link
                 to={`/products/${slug}`}

@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MOCK_PRODUCTS } from "@/constants/mockData";
 import {
   ChevronDown, ChevronRight, Play, FileText, File, Volume2,
-  CheckCircle, ArrowLeft, BookOpen, Clock,
+  CheckCircle, ArrowLeft, BookOpen, Clock, TrendingUp,
 } from "lucide-react";
 
 const lessonIcon: Record<string, React.ElementType> = {
@@ -21,7 +21,8 @@ const lessonLabel: Record<string, string> = {
   video: "Vídeo", text: "Leitura", pdf: "PDF", audio: "Áudio",
 };
 
-const FALLBACK = "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80&auto=format";
+import mulherEspiralProduct from "@/assets/mulher-espiral-hero.jpg";
+const FALLBACK = mulherEspiralProduct;
 
 export default function CourseViewPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -228,6 +229,29 @@ export default function CourseViewPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Module progress quick view ── */}
+        {products.length > 0 && (
+          <div style={{ padding: "0 clamp(14px,4vw,24px)", margin: "clamp(8px,1.5vw,12px) 0" }}>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {product.modules.slice(0, 4).map((mod: { id: string; title: string; lessons: { id: string }[] }, i: number) => {
+                const modLessons = mod.lessons.map((l) => l.id);
+                const modDone    = modLessons.filter((id) => completed.has(id)).length;
+                const pct        = modLessons.length > 0 ? Math.round((modDone / modLessons.length) * 100) : 0;
+                const allDone    = pct === 100;
+                return (
+                  <div key={mod.id} style={{ padding: "8px 12px", borderRadius: "10px", background: "var(--bg-surface-2)", border: `1px solid ${allDone ? "rgba(140,170,150,0.25)" : "var(--border-subtle)"}`, display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                    <span style={{ fontSize: "9px", fontFamily: "Montserrat, sans-serif", color: allDone ? "var(--sage)" : "var(--text-faint)", letterSpacing: "0.08em" }}>M{i + 1}</span>
+                    <div style={{ width: "40px", height: "3px", borderRadius: "100px", background: "var(--border-subtle)", overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: "100px", background: allDone ? "var(--sage)" : "var(--gold)", transition: "width 0.6s" }} />
+                    </div>
+                    <span style={{ fontSize: "9px", fontFamily: "Montserrat, sans-serif", color: allDone ? "var(--sage)" : "var(--gold)", fontWeight: 600 }}>{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Stats strip ── */}
         <div style={{ padding: "0 clamp(14px,4vw,24px)", margin: "clamp(12px,2vw,16px) 0" }}>

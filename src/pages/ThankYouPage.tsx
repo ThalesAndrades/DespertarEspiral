@@ -85,6 +85,8 @@ export default function ThankYouPage() {
   const productTitle = params.get("title")    ?? "Mulher Espiral";
   const buyerEmail   = params.get("email")    ?? "";
   const payMethod    = (params.get("method")  ?? "pix") as "pix" | "credit" | "boleto";
+  const invoiceUrl   = params.get("invoiceUrl") ?? "";
+  const pixKey       = params.get("pixKey")   ?? "";
   const shortId      = orderId ? orderId.slice(0, 8).toUpperCase() : "—";
 
   // Suppress unused warning
