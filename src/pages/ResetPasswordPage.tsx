@@ -10,6 +10,8 @@ import SpiralLogo from "@/components/layout/SpiralLogo";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, KeyRound, Loader2 } from "lucide-react";
+import { fireEventAsync } from "@/lib/sequenzy";
+import { supabase as _supabase } from "@/lib/supabase";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -62,7 +64,7 @@ export default function ResetPasswordPage() {
     if (password !== confirm) { toast.error("As senhas não coincidem."); return; }
 
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error, data } = await supabase.auth.updateUser({ password });
     setLoading(false);
 
     if (error) {
@@ -71,6 +73,16 @@ export default function ResetPasswordPage() {
     }
 
     toast.success("Senha atualizada com sucesso. ✦");
+
+    // Sequenzy: password reset completed → triggers "Senha redefinida" sequence
+    if (data?.user?.email) {
+      fireEventAsync("user.password_reset_completed", {
+        email: data.user.email,
+        firstName: data.user.user_metadata?.full_name?.split(" ")[0] ?? "",
+        properties: { completed_at: new Date().toISOString() },
+      });
+    }
+
     navigate("/dashboard");
   };
 

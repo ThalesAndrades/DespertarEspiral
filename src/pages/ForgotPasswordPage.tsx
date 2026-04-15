@@ -7,6 +7,7 @@ import SpiralLogo from "@/components/layout/SpiralLogo";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, CheckCircle, Mail } from "lucide-react";
+import { fireEventAsync } from "@/lib/sequenzy";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -35,6 +36,12 @@ export default function ForgotPasswordPage() {
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     setSent(true);
+
+    // Sequenzy: password reset requested → triggers "Recuperação de Senha" sequence
+    fireEventAsync("user.password_reset_requested", {
+      email,
+      properties: { method: "email_link", requested_at: new Date().toISOString() },
+    });
   };
 
   return (

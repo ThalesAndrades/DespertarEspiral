@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { fireEventAsync } from "@/lib/sequenzy";
 
 /* ─────────────────────────────────────────── */
 export interface AuthUser {
@@ -214,6 +215,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { profile, slugs } = await fetchProfile(updateData.user.id);
     setUser(mapSupabaseUser(updateData.user, profile ?? undefined, slugs));
+
+    // Sequenzy: user registered → triggers Onboarding sequence
+    fireEventAsync("user.registered", {
+      email,
+      firstName: name.split(" ")[0],
+      properties: { source: "email_otp", platform: "web" },
+    });
+
     return {};
   };
 

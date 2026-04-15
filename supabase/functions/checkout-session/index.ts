@@ -2,10 +2,16 @@
 // Creates a pending order, integrates with Asaas (PIX/cartão/boleto) and Sequenzy
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
+import {
+  sequenzyUpsertSubscriber,
+  sequenzyEvent,
+  sequenzyTags,
+  sequenzyTransactional,
+  sequenzyBatch,
+} from "../_shared/sequenzy.ts";
 
-const SEQUENZY_BASE = "https://api.sequenzy.com/api/v1";
-const ASAAS_BASE    = "https://api.asaas.com/v3"; // use https://sandbox.asaas.com/api/v3 for sandbox
-const SITE_URL      = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
+const ASAAS_BASE = "https://api.asaas.com/v3"; // use https://sandbox.asaas.com/api/v3 for sandbox
+const SITE_URL   = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
 
 function jsonResponse(req: Request, status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -18,30 +24,6 @@ function jsonResponse(req: Request, status: number, body: unknown) {
       "Referrer-Policy": "no-referrer",
     },
   });
-}
-
-/* ── Sequenzy helper ── */
-async function sequenzyRequest(
-  apiKey: string,
-  method: string,
-  endpoint: string,
-  body?: Record<string, unknown>
-) {
-  try {
-    const res = await fetch(`${SEQUENZY_BASE}${endpoint}`, {
-      method,
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const text = await res.text();
-    let json: unknown;
-    try { json = JSON.parse(text); } catch { json = null; }
-    if (!res.ok) console.warn(`Sequenzy [${method}] ${endpoint} → ${res.status}`);
-    return { ok: res.ok, status: res.status, data: json };
-  } catch (err) {
-    console.error(`Sequenzy error:`, err);
-    return { ok: false, status: 0, data: null };
-  }
 }
 
 /* ── Asaas helper ── */
@@ -289,56 +271,60 @@ Deno.serve(async (req: Request) => {
       console.warn("ASAAS_API_KEY not configured — payment gateway skipped");
     }
 
-    // 4. Sequenzy email marketing (non-blocking)
+    // 4. Sequenzy — fire checkout.started and checkout_iniciado (non-blocking)
     const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
     if (sequenzyApiKey) {
       const firstName = (name?.split(" ")[0] || email.split("@")[0]).trim();
-      const lastName  = name?.split(" ").slice(1).join(" ").trim() || "";
       const amountFmt = `R$ ${parseFloat(product.price).toFixed(2).replace(".", ",")}`;
 
-      await Promise.allSettled([
-        sequenzyRequest(sequenzyApiKey, "POST", "/subscribers", {
+      await sequenzyBatch([
+        /* Upsert subscriber */
+        sequenzyUpsertSubscriber(sequenzyApiKey, {
           email,
           firstName,
-          lastName,
           customAttributes: {
-            product_slug:  product.slug,
-            product_title: product.title,
-            order_id:      order.id,
-            amount:        product.price,
-            checkout_at:   new Date().toISOString(),
-            status:        "checkout_pendente",
-          },
-        }),
-        sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/tags/bulk", {
-          email,
-          tags: ["checkout-iniciado", `produto-${product.slug}`, "lead-quente", "plataforma-despertar"],
-        }),
-        sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/events", {
-          email,
-          event: "checkout_iniciado",
-          properties: {
-            product_title:  product.title,
             product_slug:   product.slug,
-            amount:         product.price,
+            product_title:  product.title,
             order_id:       order.id,
-            payment_method: paymentMethod || "pix",
+            amount:         product.price,
+            checkout_at:    new Date().toISOString(),
+            status:         "checkout_pendente",
           },
         }),
-        sequenzyRequest(sequenzyApiKey, "POST", "/transactional/send", {
-          to: email,
-          slug: "checkout-confirmado",
-          variables: {
-            firstName,
-            productTitle:    product.title,
-            productSubtitle: product.subtitle || "Método de Reconexão e Cura",
-            orderId:         order.id.slice(0, 8).toUpperCase(),
-            amount:          amountFmt,
-            // Include Asaas payment data in email if available
-            pixKey:          asaasData?.pixKey || "contato@despertarespiral.com",
-            invoiceUrl:      asaasData?.invoiceUrl || `${SITE_URL}/obrigado`,
-            supportEmail:    "contato@despertarespiral.com",
-          },
+        /* Tags */
+        sequenzyTags(sequenzyApiKey, email, [
+          "checkout-iniciado",
+          `produto-${product.slug}`,
+          "lead-quente",
+          "plataforma-despertar",
+        ]),
+        /* checkout_iniciado — triggers "Recuperação de Checkout" sequence */
+        sequenzyEvent(sequenzyApiKey, email, "checkout_iniciado", {
+          product_title:  product.title,
+          product_slug:   product.slug,
+          amount:         product.price,
+          order_id:       order.id,
+          payment_method: paymentMethod || "pix",
+          started_at:     new Date().toISOString(),
+        }),
+        /* checkout.started — custom dashboard event */
+        sequenzyEvent(sequenzyApiKey, email, "checkout.started", {
+          product_title:  product.title,
+          product_slug:   product.slug,
+          amount:         product.price,
+          order_id:       order.id,
+          payment_method: paymentMethod || "pix",
+        }),
+        /* Transactional email — checkout confirmation */
+        sequenzyTransactional(sequenzyApiKey, email, "checkout-confirmado", {
+          firstName,
+          productTitle:    product.title,
+          productSubtitle: product.subtitle || "Método de Reconexão e Cura",
+          orderId:         order.id.slice(0, 8).toUpperCase(),
+          amount:          amountFmt,
+          pixKey:          asaasData?.pixKey || "contato@despertarespiral.com",
+          invoiceUrl:      asaasData?.invoiceUrl || `${SITE_URL}/obrigado`,
+          supportEmail:    "contato@despertarespiral.com",
         }),
       ]);
     }

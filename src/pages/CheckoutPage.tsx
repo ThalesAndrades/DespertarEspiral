@@ -1,3 +1,4 @@
+
 /**
  * CheckoutPage — Mobile-first, theme-aware, Asaas-integrated
  * Improved flow: live form validation, Asaas payment link surfaced on success
@@ -13,6 +14,7 @@ import MulherEspiralMark from "@/components/layout/MulherEspiralMark";
 import mulherEspiralProductImg from "@/assets/mulher-espiral-hero.jpg";
 import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
 import { toast } from "sonner";
+import { fireEventAsync } from "@/lib/sequenzy";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -49,6 +51,21 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (user) setForm({ name: user.name, email: user.email });
   }, [user]);
+
+  // Sequenzy: checkout.started — fire once on page load
+  useEffect(() => {
+    const email = user?.email ?? sessionStorage.getItem("checkout_email") ?? "";
+    if (!email || !slug) return;
+    fireEventAsync("checkout.started", {
+      email,
+      firstName: user?.name?.split(" ")[0] ?? "",
+      properties: {
+        product_slug: slug ?? "",
+        source: "web",
+        started_at: new Date().toISOString(),
+      },
+    });
+  }, [slug, user]);
 
   useEffect(() => {
     if (!slug) return;
@@ -105,6 +122,20 @@ export default function CheckoutPage() {
     }
 
     toast.success("Pedido registrado! ✦");
+
+    // Sequenzy: checkout.completed — fired immediately when order is registered
+    fireEventAsync("checkout.completed", {
+      email: form.email.trim().toLowerCase(),
+      firstName: form.name.trim().split(" ")[0],
+      properties: {
+        product_slug: slug ?? "",
+        product_title: product.title as string,
+        payment_method: paymentMethod,
+        order_id: data?.orderId ?? "",
+        amount: product.price as number,
+        completed_at: new Date().toISOString(),
+      },
+    });
 
     // If we have an invoice URL from Asaas, redirect there immediately for credit card
     if (paymentMethod === "credit" && data?.payment?.invoiceUrl) {

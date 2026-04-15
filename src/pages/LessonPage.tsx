@@ -9,6 +9,7 @@ import {
   File, Volume2, ChevronRight, ChevronDown, List, X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { fireEventAsync } from "@/lib/sequenzy";
 
 const typeIcons: Record<string, React.ElementType> = {
   video: Play, text: FileText, pdf: File, audio: Volume2,
@@ -162,6 +163,47 @@ export default function LessonPage() {
       }
     }
     toast.success("Aula concluída. ✦");
+
+    // Sequenzy: lesson.completed
+    if (user?.email) {
+      const allLessonsForCourse = mods.flatMap((m) => (m.lessons as Record<string, unknown>[]) ?? []);
+      const newCompleted = new Set(completed);
+      newCompleted.add(id);
+      const completedCount = allLessonsForCourse.filter((l) => newCompleted.has(l.id as string)).length;
+      const totalCount = allLessonsForCourse.length;
+      const newProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+      fireEventAsync("lesson.completed", {
+        email: user.email,
+        firstName: user.name?.split(" ")[0] ?? "",
+        properties: {
+          lesson_id: id,
+          lesson_title: lesson.title as string,
+          lesson_type: lesson.type as string,
+          product_slug: slug ?? "",
+          module_title: moduleOfLesson?.title ?? "",
+          course_progress: newProgress,
+          completed_lessons: completedCount,
+          total_lessons: totalCount,
+        },
+      });
+
+      // Sequenzy: course.completed — fire when progress reaches 100%
+      if (newProgress === 100 && totalCount > 0) {
+        const productTitle = (product?.title as string) ?? "";
+        fireEventAsync("course.completed", {
+          email: user.email,
+          firstName: user.name?.split(" ")[0] ?? "",
+          properties: {
+            product_slug: slug ?? "",
+            product_title: productTitle,
+            total_lessons: totalCount,
+            completed_at: new Date().toISOString(),
+          },
+        });
+      }
+    }
+
     // Auto-advance after short delay
     if (nextLesson?.id) setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id as string}`), 800);
   };
