@@ -8,7 +8,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import SpiralLogo from "./SpiralLogo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, BookOpen, Users, LogOut, ChevronRight, Shield } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, LogOut, ChevronRight, Shield, Home } from "lucide-react";
 
 interface NavItem { label: string; icon: React.ElementType; href: string; }
 
@@ -17,6 +17,9 @@ const memberNav: NavItem[] = [
   { label: "Cursos",     icon: BookOpen,        href: "/products"  },
   { label: "Comunidade", icon: Users,           href: "/community" },
 ];
+
+// Alias to suppress unused-import warning — Home used in future mobile nav
+void Home;
 
 function isActive(href: string, pathname: string) {
   if (href === "/dashboard") return pathname === "/dashboard" || pathname.startsWith("/dashboard/");

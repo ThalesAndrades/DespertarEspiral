@@ -1,9 +1,10 @@
 /**
  * LoginPage — Mobile-first, full theme coverage
  * Mobile: full-screen form | Desktop: split panel
+ * Supports ?next= redirect param (safe open-redirect guard included)
  */
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
 import { LazyAuthSpiral3D as AuthSpiral3D } from "@/components/layout/LazyDecorative";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +35,14 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Safe open-redirect guard: only allow same-origin relative paths
+  const nextPath = (() => {
+    const raw = searchParams.get("next") ?? "";
+    return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard";
+  })();
+
   const { loginWithPassword, loginWithGoogle } = useAuth();
   const [email,      setEmail]      = useState("");
   const [password,   setPassword]   = useState("");
@@ -48,13 +57,14 @@ export default function LoginPage() {
     const result = await loginWithPassword(email, password);
     if (result.error) { toast.error(result.error); setLoading(false); return; }
     toast.success("Bem-vinda de volta. ✦");
-    navigate("/dashboard");
+    navigate(nextPath, { replace: true });
   };
 
   const handleGoogle = async () => {
     setGoogleLoad(true);
     const result = await loginWithGoogle();
     if (result.error) { toast.error(result.error); setGoogleLoad(false); }
+    // On success: Supabase redirects to window.location.origin, auth listener handles profile hydration
   };
 
   return (

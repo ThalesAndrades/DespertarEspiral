@@ -84,6 +84,7 @@ export default function ThankYouPage() {
   const productSlug  = params.get("slug")     ?? "mulher-espiral";
   const productTitle = params.get("title")    ?? "Mulher Espiral";
   const buyerEmail   = params.get("email")    ?? "";
+  const payMethod    = (params.get("method")  ?? "pix") as "pix" | "credit" | "boleto";
   const shortId      = orderId ? orderId.slice(0, 8).toUpperCase() : "—";
 
   // Suppress unused warning
@@ -210,25 +211,47 @@ export default function ThankYouPage() {
             </div>
           )}
 
-          {/* PIX key */}
-          <div style={{ background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "12px", padding: "clamp(12px,2vw,16px)" }}>
-            <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "10px" }}>
-              Chave PIX para pagamento
-            </p>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-              <code style={{ fontSize: "clamp(12px,1.5vw,14px)", color: "var(--text-primary)", flex: 1, wordBreak: "break-all" }}>
-                contato@despertarespiral.com
-              </code>
-              <CopyButton text="contato@despertarespiral.com" />
+          {/* Payment instructions — dynamic per method */}
+          {payMethod === "pix" && (
+            <div style={{ background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "12px", padding: "clamp(12px,2vw,16px)" }}>
+              <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "10px" }}>
+                Chave PIX para pagamento
+              </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                <code style={{ fontSize: "clamp(12px,1.5vw,14px)", color: "var(--text-primary)", flex: 1, wordBreak: "break-all" }}>
+                  contato@despertarespiral.com
+                </code>
+                <CopyButton text="contato@despertarespiral.com" />
+              </div>
             </div>
-          </div>
+          )}
+
+          {payMethod === "credit" && (
+            <div style={{ background: "var(--bg-surface-2)", border: "1px solid rgba(164,158,208,0.20)", borderRadius: "12px", padding: "clamp(12px,2vw,16px)" }}>
+              <p className="font-label" style={{ fontSize: "8px", color: "var(--lavender)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "8px" }}>
+                Pagamento via cartão
+              </p>
+              <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.72 }}>
+                O link de pagamento seguro foi enviado para <strong style={{ color: "var(--text-primary)" }}>{buyerEmail || "seu e-mail"}</strong>. Clique no link para inserir os dados do cartão e confirmar em até 12×.
+              </p>
+            </div>
+          )}
+
+          {payMethod === "boleto" && (
+            <div style={{ background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "12px", padding: "clamp(12px,2vw,16px)" }}>
+              <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "8px" }}>
+                Boleto bancário
+              </p>
+              <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.72 }}>
+                O boleto foi enviado para <strong style={{ color: "var(--text-primary)" }}>{buyerEmail || "seu e-mail"}</strong>. Pague até a data de vencimento (3 dias úteis). Acesso liberado em até 1 dia útil após compensação.
+              </p>
+            </div>
+          )}
 
           <p style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.72 }}>
-            Após o pagamento, envie o comprovante com o número{" "}
-            <strong style={{ color: "var(--text-primary)" }}>#{shortId}</strong> para{" "}
-            <a href="mailto:contato@despertarespiral.com" style={{ color: "var(--gold)", textDecoration: "none" }}>
-              contato@despertarespiral.com
-            </a>. Acesso liberado em até 1h.
+            {payMethod === "pix"
+              ? <>Após o pagamento, envie o comprovante com o número <strong style={{ color: "var(--text-primary)" }}>#{shortId}</strong> para{" "}<a href="mailto:contato@despertarespiral.com" style={{ color: "var(--gold)", textDecoration: "none" }}>contato@despertarespiral.com</a>. Acesso liberado em até 1h.</>
+              : <>Em caso de dúvidas, entre em contato com o número <strong style={{ color: "var(--text-primary)" }}>#{shortId}</strong> pelo e-mail{" "}<a href="mailto:contato@despertarespiral.com" style={{ color: "var(--gold)", textDecoration: "none" }}>contato@despertarespiral.com</a>.</>}
           </p>
         </div>
 
@@ -239,7 +262,10 @@ export default function ThankYouPage() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <StepItem num="01" icon={CheckCircle} status="done"   title="Pedido registrado" desc="Seus dados foram salvos com segurança e o pedido está aguardando pagamento." />
-            <StepItem num="02" icon={Mail}        status="active" title="Efetue o pagamento via PIX" desc={`Transfira para a chave PIX e envie o comprovante com o nº #${shortId}.`} />
+            <StepItem num="02" icon={Mail}        status="active"
+              title={payMethod === "pix" ? "Efetue o pagamento via PIX" : payMethod === "credit" ? "Pague via link de cartão" : "Pague o boleto bancário"}
+              desc={payMethod === "pix" ? `Transfira para a chave PIX e envie o comprovante com o nº #${shortId}.` : payMethod === "credit" ? "Acesse o link no seu e-mail e insira os dados do cartão para confirmar." : "Abra o boleto no seu e-mail e pague em qualquer banco até o vencimento."}
+            />
             <StepItem num="03" icon={BookOpen}    status="pending" title="Receba a confirmação" desc="Nossa equipe confirma e libera seu acesso em até 1h (dias úteis)." />
             <StepItem num="04" icon={Award}       status="pending" title="Acesse seu curso" desc={`Entre na sua conta e comece ${productTitle} no seu ritmo.`} />
           </div>

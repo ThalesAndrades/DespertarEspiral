@@ -116,8 +116,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (event === "SIGNED_IN" && session?.user) {
-          // Skip if getSession already hydrated the same session to avoid double fetch
-          if (initialSessionResolved) return;
+          // For Google OAuth: initialSessionResolved may be true but the session
+          // user ID could differ (fresh OAuth flow), so always sync if IDs differ.
+          const currentUserId = await supabase.auth.getSession()
+            .then(({ data: { session: s } }) => s?.user?.id)
+            .catch(() => null);
+          // Skip only when getSession already hydrated this exact session
+          if (initialSessionResolved && currentUserId === session.user.id) return;
           const { profile, slugs } = await fetchProfile(session.user.id);
           if (mounted) {
             setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
@@ -136,6 +141,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
             setLoading(false);
           }
+        } else if (event === "PASSWORD_RECOVERY") {
+          // When Supabase sends a recovery link, ensure loading clears
+          if (mounted) setLoading(false);
         }
       }
     );

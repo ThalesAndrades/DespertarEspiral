@@ -82,7 +82,13 @@ export default function CheckoutPage() {
     }
 
     toast.success("Pedido registrado! Verifique seu e-mail. ✦");
-    const qs = new URLSearchParams({ orderId: data.orderId ?? "", slug: product.slug, title: product.title, email: form.email });
+    const qs = new URLSearchParams({
+      orderId: data.orderId ?? "",
+      slug: product.slug,
+      title: product.title,
+      email: form.email,
+      method: paymentMethod,
+    });
     navigate(`/obrigado?${qs.toString()}`);
     setLoading(false);
   };
