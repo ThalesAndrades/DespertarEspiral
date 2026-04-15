@@ -14,6 +14,7 @@ import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import mockupAtualizado from "@/assets/mockup-atualizado.png";
 import { useTheme } from "@/hooks/useTheme";
 import { ArrowRight, ArrowUpRight, Shield, Clock, Infinity as InfinityIcon, Star, ChevronDown } from "lucide-react";
+import QuizSection from "@/components/features/QuizSection";
 
 /* ── Scroll progress ──────────────────────────────────────── */
 function useScrollProgress(ref: React.RefObject<HTMLDivElement | null>) {
@@ -58,7 +59,7 @@ function useReveal() {
 }
 
 /* ── Active section dots ──────────────────────────────────── */
-const SECTION_COUNT = 9;
+const SECTION_COUNT = 10;
 function useActiveSection(dotsRef: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const els = Array.from({ length: SECTION_COUNT }, (_, i) => document.getElementById(`section-${i}`));
@@ -222,7 +223,8 @@ export default function LandingPage() {
           /* Each named section snaps to top */
           #section-0, #section-1, #section-2,
           #section-3, #section-4, #section-5,
-          #section-6, #section-7, #section-8 {
+          #section-6, #section-7, #section-8,
+          #section-9 {
             scroll-snap-align: start;
             scroll-snap-stop: normal;
           }
@@ -567,9 +569,14 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-             5 — COMUNIDADE (destaque máximo)
+             5 — QUIZ DIAGNÓSTICO
           ══════════════════════════════════════════════ */}
-      <section id="section-5" className="cv-auto" style={{
+      <div id="section-5"><QuizSection /></div>
+
+      {/* ══════════════════════════════════════════════
+             6 — COMUNIDADE (destaque máximo)
+          ══════════════════════════════════════════════ */}
+      <section id="section-6" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(80px,12vw,140px) clamp(16px,5vw,24px)",
         background: "#06050f"
@@ -858,9 +865,9 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-             6 — SUNYAN
+             7 — SUNYAN
           ══════════════════════════════════════════════ */}
-      <section id="section-6" className="cv-auto" style={{
+      <section id="section-7" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
         background: "var(--bg-surface)"
@@ -908,9 +915,9 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-             7 — FAQ
+             8 — FAQ
           ══════════════════════════════════════════════ */}
-      <section id="section-7" className="cv-auto" style={{
+      <section id="section-8" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
         background: "var(--bg-surface-2)"
@@ -939,9 +946,9 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-             8 — CTA FINAL
+             9 — CTA FINAL
           ══════════════════════════════════════════════ */}
-      <section id="section-8" className="cv-auto" style={{
+      <section id="section-9" className="cv-auto" style={{
         position: "relative", zIndex: 1, overflow: "hidden",
         padding: "clamp(100px,14vw,180px) clamp(16px,5vw,24px)",
         textAlign: "center",
@@ -992,7 +999,7 @@ export default function LandingPage() {
               {[
                 ["Método", "#section-2"],
                 ["Jornadas", "#section-3"],
-                ["Comunidade", "#section-5"],
+                ["Comunidade", "#section-6"],
                 ["Privacidade", "/privacidade"],
                 ["Termos", "/termos"],
                 ["Entrar", "/login"],
