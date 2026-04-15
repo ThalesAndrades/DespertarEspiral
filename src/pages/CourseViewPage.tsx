@@ -71,6 +71,69 @@ export default function CourseViewPage() {
     </DashboardLayout>
   );
 
+  const hasAccess = Boolean(user?.products?.includes((product as unknown as { slug?: string }).slug ?? slug ?? ""));
+
+  if (!hasAccess) {
+    const previewLessons = product.modules
+      .flatMap((m: { lessons: { is_free_preview?: boolean; is_free?: boolean }[] }) => m.lessons)
+      .filter((l: { is_free_preview?: boolean; is_free?: boolean }) => Boolean(l.is_free_preview ?? l.is_free));
+
+    return (
+      <DashboardLayout>
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "clamp(20px,4vw,32px) clamp(14px,4vw,24px) clamp(40px,6vw,80px)" }}>
+          <div className="card-dark" style={{ overflow: "hidden" }}>
+            <div style={{ padding: "clamp(18px,3vw,26px)" }}>
+              <p className="overline" style={{ color: "var(--gold)", marginBottom: "8px" }}>Acesso necessário</p>
+              <h1 className="font-display" style={{ fontSize: "clamp(22px,4vw,40px)", fontWeight: 300, color: "var(--text-primary)", marginBottom: "10px" }}>
+                {product.title}
+              </h1>
+              <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.85, marginBottom: "18px" }}>
+                Para ver o conteúdo completo, ative seu acesso ao curso. Você pode começar com as aulas de prévia gratuita quando disponíveis.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "420px" }}>
+                <Link to={`/checkout/${slug}`} className="btn-gold" style={{ justifyContent: "center", minHeight: "54px", borderRadius: "16px", fontSize: "9px" }}>
+                  Liberar acesso agora <Play size={13} fill="#060810" style={{ color: "#060810" }} />
+                </Link>
+                <button
+                  onClick={() => navigate("/products")}
+                  className="btn-ghost"
+                  style={{ justifyContent: "center", minHeight: "50px", borderRadius: "16px", fontSize: "9px" }}
+                >
+                  ← Voltar para meus cursos
+                </button>
+              </div>
+            </div>
+
+            {previewLessons.length > 0 && (
+              <div style={{ borderTop: "1px solid var(--border-subtle)", padding: "clamp(18px,3vw,26px)" }}>
+                <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "12px" }}>
+                  Prévia gratuita
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {previewLessons.slice(0, 6).map((l: { id: string; title: string; type: string }) => (
+                    <Link
+                      key={l.id}
+                      to={`/products/${slug}/lesson/${l.id}`}
+                      className="card-dark"
+                      style={{ padding: "12px 14px", textDecoration: "none" }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                        <span style={{ fontSize: "13px", color: "var(--text-primary)", fontWeight: 500, lineHeight: 1.35 }}>
+                          {l.title}
+                        </span>
+                        <span className="badge-sage" style={{ fontSize: "8px" }}>GRÁTIS</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const allLessons     = product.modules.flatMap((m: { lessons: { id: string }[] }) => m.lessons);
   const totalLessons   = allLessons.length;
   const completedCount = allLessons.filter((l: { id: string }) => completed.has(l.id)).length;

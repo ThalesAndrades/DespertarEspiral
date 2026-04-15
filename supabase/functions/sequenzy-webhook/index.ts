@@ -3,9 +3,23 @@
 // Use this endpoint from admin panel to mark orders as paid and trigger Sequenzy events
 // Also accepts POST from admin to manually confirm payments
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
 
 const SEQUENZY_BASE = "https://api.sequenzy.com/api/v1";
+const SITE_URL = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
+
+function jsonResponse(req: Request, status: number, body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeadersFor(req),
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+    },
+  });
+}
 
 async function sequenzyRequest(
   apiKey: string,
@@ -21,8 +35,12 @@ async function sequenzyRequest(
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const json = await res.json();
-  console.log(`Sequenzy ${method} ${endpoint} →`, res.status, JSON.stringify(json).slice(0, 200));
+  const text = await res.text();
+  let json: unknown;
+  try { json = JSON.parse(text); } catch { json = null; }
+  if (!res.ok) {
+    console.warn(`Sequenzy [${method}] ${endpoint} → ${res.status}`);
+  }
   return { ok: res.ok, data: json };
 }
 
@@ -30,7 +48,15 @@ Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
+  if (!isAllowedOrigin(req)) return jsonResponse(req, 403, { error: "Origem não permitida" });
+  if (req.method !== "POST") return jsonResponse(req, 405, { error: "Método não permitido" });
+
   try {
+    const contentType = req.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return jsonResponse(req, 415, { error: "Content-Type deve ser application/json" });
+    }
+
     const body = await req.json();
     const { action, orderId, paymentMethod } = body;
 
@@ -43,10 +69,7 @@ Deno.serve(async (req: Request) => {
     // The Supabase JS client sends the user's JWT in the Authorization header.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Autenticação necessária" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse(req, 401, { error: "Autenticação necessária" });
     }
     const callerToken = authHeader.replace("Bearer ", "").trim();
 
@@ -57,10 +80,7 @@ Deno.serve(async (req: Request) => {
     const { data: { user: callerUser } } = await supabaseCaller.auth.getUser(callerToken);
 
     if (!callerUser) {
-      return new Response(
-        JSON.stringify({ error: "Token inválido ou expirado" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse(req, 401, { error: "Token inválido ou expirado" });
     }
 
     // Fetch admin role from user_profiles
@@ -71,10 +91,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (callerProfile?.role !== "admin") {
-      return new Response(
-        JSON.stringify({ error: "Acesso negado. Requer papel de administrador." }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse(req, 403, { error: "Acesso negado. Requer papel de administrador." });
     }
 
     // ── Action: confirm_payment ──
@@ -87,28 +104,32 @@ Deno.serve(async (req: Request) => {
         .single();
 
       if (orderError || !order) {
-        return new Response(
-          JSON.stringify({ error: "Pedido não encontrado" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse(req, 404, { error: "Pedido não encontrado" });
       }
 
       if (order.status === "paid") {
-        return new Response(
-          JSON.stringify({ error: "Pedido já foi confirmado" }),
-          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse(req, 409, { error: "Pedido já foi confirmado" });
       }
 
       // 1. Update order to paid
-      await supabaseAdmin
+      const { data: updated, error: updateError } = await supabaseAdmin
         .from("orders")
         .update({
           status: "paid",
           payment_method: paymentMethod || "manual",
           paid_at: new Date().toISOString(),
         })
-        .eq("id", orderId);
+        .eq("id", orderId)
+        .eq("status", "pending")
+        .select("id")
+        .maybeSingle();
+      if (updateError) {
+        console.error("Order update failed:", updateError);
+        return jsonResponse(req, 500, { error: "Falha ao confirmar pagamento" });
+      }
+      if (!updated) {
+        return jsonResponse(req, 409, { error: "Pedido já foi confirmado (ou não está pendente)" });
+      }
 
       // 2. Grant product access if user_id exists
       if (order.user_id) {
@@ -119,7 +140,7 @@ Deno.serve(async (req: Request) => {
             { onConflict: "user_id,product_id" }
           );
         if (accessError) console.error("Failed to grant access:", accessError);
-        else console.log("Access granted: user", order.user_id, "→ product", order.product_id);
+        else console.log("Access granted");
       }
 
       // 3. Sequenzy automation on payment confirmation
@@ -167,16 +188,15 @@ Deno.serve(async (req: Request) => {
             firstName,
             productTitle: product?.title || "Despertar Espiral",
             productSubtitle: product?.subtitle || "",
-            loginUrl: `${req.headers.get("origin") || "https://despertarespiral.com"}/login`,
+            loginUrl: `${SITE_URL}/login`,
           },
         });
 
-        console.log("Sequenzy compra_confirmada triggered for:", order.email);
       }
 
       return new Response(
         JSON.stringify({ success: true, message: "Pagamento confirmado e acesso liberado." }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeadersFor(req), "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" } }
       );
     }
 
@@ -185,10 +205,7 @@ Deno.serve(async (req: Request) => {
     if (action === "add_subscriber" && body.email) {
       const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
       if (!sequenzyApiKey) {
-        return new Response(
-          JSON.stringify({ error: "SEQUENZY_API_KEY não configurada" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse(req, 500, { error: "SEQUENZY_API_KEY não configurada" });
       }
 
       const result = await sequenzyRequest(sequenzyApiKey, "POST", "/subscribers", {
@@ -207,7 +224,7 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify({ success: result.ok, data: result.data }),
-        { status: result.ok ? 200 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: result.ok ? 200 : 400, headers: { ...corsHeadersFor(req), "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" } }
       );
     }
 
@@ -215,10 +232,7 @@ Deno.serve(async (req: Request) => {
     if (action === "trigger_event" && body.email && body.event) {
       const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
       if (!sequenzyApiKey) {
-        return new Response(
-          JSON.stringify({ error: "SEQUENZY_API_KEY não configurada" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse(req, 500, { error: "SEQUENZY_API_KEY não configurada" });
       }
 
       const result = await sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/events", {
@@ -229,19 +243,13 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify({ success: result.ok, data: result.data }),
-        { status: result.ok ? 200 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: result.ok ? 200 : 400, headers: { ...corsHeadersFor(req), "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" } }
       );
     }
 
-    return new Response(
-      JSON.stringify({ error: "Ação não reconhecida. Use: confirm_payment | add_subscriber | trigger_event" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse(req, 400, { error: "Ação não reconhecida. Use: confirm_payment | add_subscriber | trigger_event" });
   } catch (err) {
     console.error("sequenzy-webhook unexpected error:", err);
-    return new Response(
-      JSON.stringify({ error: "Erro interno do servidor" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse(req, 500, { error: "Erro interno do servidor" });
   }
 });

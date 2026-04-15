@@ -6,7 +6,9 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import MulherEspiralMark from "@/components/layout/MulherEspiralMark";
 import { Lock, Play, ArrowRight, BookOpen, Clock, CheckCircle } from "lucide-react";
+import mulherEspiralCover from "@/assets/mulher-espiral-cover.svg";
 
 interface Product {
   id: string;
@@ -24,7 +26,7 @@ interface Product {
   has_access: boolean;
 }
 
-const FALLBACK = "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80&auto=format";
+const FALLBACK = mulherEspiralCover;
 
 function Spinner() {
   return (
@@ -115,6 +117,17 @@ export default function ProductsPage() {
           <h1 className="font-display" style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 300, color: "var(--text-primary)" }}>
             Meus Cursos
           </h1>
+          <div className="flow-card" style={{ padding: "14px 16px", marginTop: "14px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "6px" }}>
+              <span className="step-chip">02</span>
+              <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--gold)" }}>
+                Escolha com clareza
+              </p>
+            </div>
+            <p className="reading-note" style={{ margin: 0 }}>
+              Os cursos com acesso liberado mostram seu progresso. Os bloqueados podem ser ativados quando você quiser continuar a jornada.
+            </p>
+          </div>
         </div>
 
         {loading ? (
@@ -142,7 +155,7 @@ export default function ProductsPage() {
                 {/* Thumbnail */}
                 <div style={{ position: "relative", height: "clamp(180px,30vw,240px)", overflow: "hidden" }}>
                   <img
-                    src={product.thumbnail_url || FALLBACK}
+                    src={product.slug === "mulher-espiral" ? mulherEspiralCover : (product.thumbnail_url || FALLBACK)}
                     alt={product.title}
                     loading="lazy" decoding="async"
                     width="820" height="240"
@@ -152,6 +165,12 @@ export default function ProductsPage() {
                   />
                   {/* Gradient */}
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.95) 0%, rgba(11,13,28,0.15) 55%, transparent 100%)" }} />
+
+                  {product.slug === "mulher-espiral" && (
+                    <div style={{ position: "absolute", right: "14px", top: "14px", padding: "10px 12px", borderRadius: "16px", background: "rgba(11,13,28,0.55)", border: "1px solid rgba(198,168,112,0.22)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+                      <MulherEspiralMark size="sm" align="left" showSubtitle={false} />
+                    </div>
+                  )}
 
                   {/* Lock overlay */}
                   {!product.has_access && (

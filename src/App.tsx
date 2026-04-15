@@ -15,6 +15,8 @@ const CommunityPage         = React.lazy(() => import("@/pages/CommunityPage"));
 const TopicPage             = React.lazy(() => import("@/pages/TopicPage"));
 const CheckoutPage          = React.lazy(() => import("@/pages/CheckoutPage"));
 const ThankYouPage          = React.lazy(() => import("@/pages/ThankYouPage"));
+const PrivacyPolicyPage     = React.lazy(() => import("@/pages/PrivacyPolicyPage"));
+const TermsOfUsePage        = React.lazy(() => import("@/pages/TermsOfUsePage"));
 const NotFoundPage          = React.lazy(() => import("@/pages/NotFoundPage"));
 const AdminDashboardPage    = React.lazy(() => import("@/pages/admin/AdminDashboardPage"));
 const AdminUsersPage        = React.lazy(() => import("@/pages/admin/AdminUsersPage"));
@@ -96,6 +98,12 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/checkout/:slug"  element={<CheckoutPage />} />
         <Route path="/obrigado"        element={<ThankYouPage />} />
+        <Route path="/privacidade" element={<PrivacyPolicyPage />} />
+        <Route path="/termos"      element={<TermsOfUsePage />} />
+        <Route path="/politica-de-privacidade" element={<Navigate to="/privacidade" replace />} />
+        <Route path="/termos-de-uso"           element={<Navigate to="/termos" replace />} />
+        <Route path="/privacy"                element={<Navigate to="/privacidade" replace />} />
+        <Route path="/terms"                  element={<Navigate to="/termos" replace />} />
 
         {/* Member */}
         <Route path="/dashboard"                           element={<PrivateRoute><DashboardPage /></PrivateRoute>} />

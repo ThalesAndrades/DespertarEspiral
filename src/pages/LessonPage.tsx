@@ -1,12 +1,9 @@
-/**
- * LessonPage — Device-optimized
- * Mobile: top nav strip + full-width player + sticky bottom bar
- * Desktop: fixed sidebar + spacious content area
- */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { MOCK_PRODUCTS } from "@/constants/mockData";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
+import { safeEmbedUrl, safeExternalUrl, sanitizeHtml } from "@/lib/contentSafety";
 import {
   CheckCircle, ArrowLeft, ArrowRight, Play, FileText,
   File, Volume2, ChevronRight, ChevronDown, List, X,
@@ -24,39 +21,172 @@ const typeLabel: Record<string, string> = {
 export default function LessonPage() {
   const { slug, lessonId } = useParams<{ slug: string; lessonId: string }>();
   const navigate = useNavigate();
-  const [completed, setCompleted] = useState<Set<string>>(new Set(["l1", "l2"]));
+  const { user } = useAuth();
+  const [product, setProduct] = useState<Record<string, unknown> | null>(null);
+  const [lessonData, setLessonData] = useState<Record<string, unknown> | null>(null);
+  const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const product = MOCK_PRODUCTS.find((p) => p.slug === slug);
-  if (!product) return null;
+  useEffect(() => {
+    let cancelled = false;
+    if (!slug || !lessonId) return;
 
-  const allLessons = product.modules.flatMap((m) => m.lessons);
-  const currentIndex = allLessons.findIndex((l) => l.id === lessonId);
-  const lesson = allLessons[currentIndex];
-  const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
-  const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
-  const moduleOfLesson = product.modules.find((m) => m.id === lesson?.module_id);
+    (async () => {
+      setLoading(true);
 
-  if (!lesson) return (
-    <DashboardLayout>
-      <div style={{ padding: "48px 24px", textAlign: "center" }}>
-        <p style={{ color: "var(--text-muted)", marginBottom: "16px" }}>Aula não encontrada.</p>
-        <Link to={`/products/${slug}`} className="btn-outline-gold" style={{ fontSize: "9px", padding: "10px 24px" }}>
-          Voltar ao curso
-        </Link>
-      </div>
-    </DashboardLayout>
-  );
+      const { data: prod } = await supabase
+        .from("products")
+        .select(`
+          id, slug, title, subtitle,
+          modules(id, title, sort_order,
+            lessons(id, module_id, title, type, sort_order, is_free)
+          )
+        `)
+        .eq("slug", slug)
+        .single();
+
+      if (cancelled) return;
+
+      if (prod) {
+        const normalized = prod as unknown as Record<string, unknown>;
+        const mods = ((normalized.modules as unknown[]) ?? []).slice().sort((a, b) =>
+          ((a as Record<string, unknown>).sort_order as number ?? 0) - ((b as Record<string, unknown>).sort_order as number ?? 0)
+        );
+        for (const m of mods as Record<string, unknown>[]) {
+          const ls = ((m.lessons as unknown[]) ?? []).slice().sort((a, b) =>
+            ((a as Record<string, unknown>).sort_order as number ?? 0) - ((b as Record<string, unknown>).sort_order as number ?? 0)
+          );
+          m.lessons = ls;
+        }
+        normalized.modules = mods;
+        setProduct(normalized);
+      } else {
+        setProduct(null);
+      }
+
+      if (user?.id) {
+        const { data: progress } = await supabase
+          .from("lesson_progress")
+          .select("lesson_id")
+          .eq("user_id", user.id)
+          .eq("completed", true);
+        if (!cancelled) setCompleted(new Set((progress ?? []).map((r: { lesson_id: string }) => r.lesson_id)));
+      } else if (!cancelled) {
+        setCompleted(new Set());
+      }
+
+      const { data: lessonRow } = await supabase
+        .from("lessons")
+        .select("id, module_id, title, type, content, sort_order, is_free")
+        .eq("id", lessonId)
+        .maybeSingle();
+
+      if (!cancelled) setLessonData((lessonRow as unknown as Record<string, unknown>) ?? null);
+      if (!cancelled) setLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, [slug, lessonId, user?.id]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div style={{ padding: "72px 24px", display: "flex", justifyContent: "center" }}>
+          <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid var(--border-subtle)", borderTopColor: "var(--gold)", animation: "spin 0.8s linear infinite" }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!product) {
+    return (
+      <DashboardLayout>
+        <div style={{ padding: "48px 24px", textAlign: "center" }}>
+          <p style={{ color: "var(--text-muted)", marginBottom: "16px" }}>Produto não encontrado.</p>
+          <Link to="/products" className="btn-outline-gold" style={{ fontSize: "9px", padding: "10px 24px" }}>
+            Ver meus cursos
+          </Link>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const mods = (product.modules as { id: string; title: string; lessons: Record<string, unknown>[] }[]) ?? [];
+  const allLessons = mods.flatMap((m) => (m.lessons as Record<string, unknown>[]) ?? []);
+  const currentIndex = allLessons.findIndex((l) => (l.id as string) === lessonId);
+  const lessonMeta = currentIndex >= 0 ? allLessons[currentIndex] : null;
+  const lesson = (lessonData ?? lessonMeta) as Record<string, unknown> | null;
+  const prevLesson = currentIndex > 0 ? (allLessons[currentIndex - 1] as Record<string, unknown>) : null;
+  const nextLesson = currentIndex < allLessons.length - 1 ? (allLessons[currentIndex + 1] as Record<string, unknown>) : null;
+  const moduleOfLesson = mods.find((m) => m.id === ((lesson?.module_id as string | undefined) ?? (lessonMeta?.module_id as string | undefined)));
+
+  if (!lesson) {
+    return (
+      <DashboardLayout>
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "clamp(24px,4vw,40px) clamp(14px,4vw,24px)" }}>
+          <div className="card-dark" style={{ padding: "clamp(20px,4vw,36px)", textAlign: "center" }}>
+            <p className="overline" style={{ color: "var(--gold)", marginBottom: "10px" }}>Indisponível</p>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.85, marginBottom: "18px" }}>
+              Esta aula não está disponível para sua conta.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "360px", margin: "0 auto" }}>
+              <Link to={`/checkout/${product.slug as string}`} className="btn-gold" style={{ justifyContent: "center", minHeight: "54px", borderRadius: "16px", fontSize: "9px" }}>
+                Liberar acesso agora <ArrowRight size={14} />
+              </Link>
+              <Link to="/products" className="btn-ghost" style={{ justifyContent: "center", minHeight: "50px", borderRadius: "16px", fontSize: "9px" }}>
+                Voltar para meus cursos
+              </Link>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const markComplete = () => {
-    setCompleted((prev) => { const s = new Set(prev); s.add(lesson.id); return s; });
-    toast.success("Aula concluída. ✦");
-    if (nextLesson) {
-      setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id}`), 500);
+    const id = lesson.id as string;
+    setCompleted((prev) => { const s = new Set(prev); s.add(id); return s; });
+    if (user?.id) {
+      supabase
+        .from("lesson_progress")
+        .upsert({ user_id: user.id, lesson_id: id, completed: true }, { onConflict: "user_id,lesson_id" })
+        .then(() => {});
     }
+    toast.success("Aula concluída. ✦");
+    if (nextLesson?.id) setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id as string}`), 500);
   };
 
-  const isDone = completed.has(lesson.id);
+  const isDone = completed.has(lesson.id as string);
+  const isFreePreview = Boolean((lesson as unknown as { is_free_preview?: boolean; is_free?: boolean }).is_free_preview ?? (lesson as unknown as { is_free?: boolean }).is_free);
+  const hasAccess = Boolean(user?.products?.includes(product.slug as string));
+
+  if (!hasAccess && !isFreePreview) {
+    return (
+      <DashboardLayout>
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "clamp(24px,4vw,40px) clamp(14px,4vw,24px)" }}>
+          <div className="card-dark" style={{ padding: "clamp(20px,4vw,36px)", textAlign: "center" }}>
+            <p className="overline" style={{ color: "var(--gold)", marginBottom: "10px" }}>Conteúdo exclusivo</p>
+            <h1 className="font-display" style={{ fontSize: "clamp(22px,4vw,34px)", fontWeight: 300, color: "var(--text-primary)", marginBottom: "10px" }}>
+              Esta aula faz parte do acesso do curso.
+            </h1>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.85, marginBottom: "18px" }}>
+              Para assistir, ative seu acesso ao <strong style={{ color: "var(--text-primary)", fontWeight: 500 }}>{product.title as string}</strong>.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "360px", margin: "0 auto" }}>
+              <Link to={`/checkout/${product.slug as string}`} className="btn-gold" style={{ justifyContent: "center", minHeight: "54px", borderRadius: "16px", fontSize: "9px" }}>
+                Liberar acesso agora <ArrowRight size={14} />
+              </Link>
+              <Link to="/products" className="btn-ghost" style={{ justifyContent: "center", minHeight: "50px", borderRadius: "16px", fontSize: "9px" }}>
+                Voltar para meus cursos
+              </Link>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   /* ── Modules sidebar content (shared between drawer + desktop panel) ── */
   function ModuleList({ onSelect }: { onSelect?: () => void }) {
@@ -336,13 +466,32 @@ export default function LessonPage() {
                 marginBottom: "clamp(20px,3vw,32px)",
                 boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
               }}>
-                <iframe
-                  src={lesson.content}
-                  title={lesson.title}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {safeEmbedUrl(lesson.content) ? (
+                  <iframe
+                    src={safeEmbedUrl(lesson.content) as string}
+                    title={lesson.title}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+                    sandbox="allow-same-origin allow-scripts allow-presentation"
+                    referrerPolicy="no-referrer"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "18px" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ fontSize: "14px", color: "rgba(245,240,232,0.75)", lineHeight: 1.7, marginBottom: "10px" }}>
+                        Link de vídeo inválido ou não permitido.
+                      </p>
+                      <a
+                        href="mailto:contato@despertarespiral.com"
+                        className="btn-outline-gold"
+                        style={{ fontSize: "9px", padding: "10px 22px" }}
+                      >
+                        Falar com suporte
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -358,7 +507,7 @@ export default function LessonPage() {
                 color: "var(--text-secondary)",
                 lineHeight: 1.92,
               }}
-                dangerouslySetInnerHTML={{ __html: lesson.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.content) }}
               />
             )}
 
@@ -373,9 +522,15 @@ export default function LessonPage() {
                 </div>
                 <p style={{ fontSize: "15px", color: "var(--text-primary)", marginBottom: "6px", fontWeight: 500 }}>{lesson.title}</p>
                 <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "24px" }}>Arquivo PDF disponível para download</p>
-                <a href={lesson.content} target="_blank" rel="noopener noreferrer" className="btn-gold" style={{ fontSize: "9px", padding: "12px 28px" }}>
-                  Abrir PDF
-                </a>
+                {safeExternalUrl(lesson.content) ? (
+                  <a href={safeExternalUrl(lesson.content) as string} target="_blank" rel="noopener noreferrer" className="btn-gold" style={{ fontSize: "9px", padding: "12px 28px" }}>
+                    Abrir PDF
+                  </a>
+                ) : (
+                  <span className="btn-outline-gold" style={{ fontSize: "9px", padding: "12px 28px", opacity: 0.7, cursor: "not-allowed" }}>
+                    Link inválido
+                  </span>
+                )}
               </div>
             )}
 
@@ -388,7 +543,7 @@ export default function LessonPage() {
                   </div>
                   <p style={{ fontSize: "15px", color: "var(--text-primary)", fontWeight: 500 }}>{lesson.title}</p>
                 </div>
-                <audio controls style={{ width: "100%", borderRadius: "8px" }} src={lesson.content}>
+                <audio controls style={{ width: "100%", borderRadius: "8px" }} src={safeExternalUrl(lesson.content) ?? ""}>
                   Seu navegador não suporta áudio.
                 </audio>
               </div>

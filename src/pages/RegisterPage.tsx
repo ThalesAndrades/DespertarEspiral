@@ -216,6 +216,18 @@ export default function RegisterPage() {
                   </button>
                 </form>
 
+                <p style={{ textAlign: "center", fontSize: "13px", color: "var(--text-faint)", marginTop: "14px", lineHeight: 1.7 }}>
+                  Ao continuar, você concorda com{" "}
+                  <Link to="/termos" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>
+                    Termos de Uso
+                  </Link>{" "}
+                  e{" "}
+                  <Link to="/privacidade" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>
+                    Política de Privacidade
+                  </Link>
+                  .
+                </p>
+
                 <p style={{ textAlign: "center", fontSize: "14px", color: "var(--text-muted)", marginTop: "clamp(20px,3vw,28px)", lineHeight: 1.7 }}>
                   Já tem conta?{" "}
                   <Link to="/login" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>Entrar</Link>

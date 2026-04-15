@@ -1,9 +1,23 @@
 // Edge Function: checkout-session
 // Creates a pending order and registers the buyer in Sequenzy for email marketing automation
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
 
 const SEQUENZY_BASE = "https://api.sequenzy.com/api/v1";
+const SITE_URL = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
+
+function jsonResponse(req: Request, status: number, body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeadersFor(req),
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+    },
+  });
+}
 
 async function sequenzyRequest(
   apiKey: string,
@@ -22,8 +36,10 @@ async function sequenzyRequest(
     });
     const text = await res.text();
     let json: unknown;
-    try { json = JSON.parse(text); } catch { json = { raw: text }; }
-    console.log(`Sequenzy [${method}] ${endpoint} → ${res.status}:`, JSON.stringify(json).slice(0, 300));
+    try { json = JSON.parse(text); } catch { json = null; }
+    if (!res.ok) {
+      console.warn(`Sequenzy [${method}] ${endpoint} → ${res.status}`);
+    }
     return { ok: res.ok, status: res.status, data: json };
   } catch (err) {
     console.error(`Sequenzy [${method}] ${endpoint} error:`, err);
@@ -35,38 +51,46 @@ Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
+  if (!isAllowedOrigin(req)) return jsonResponse(req, 403, { error: "Origem não permitida" });
+  if (req.method !== "POST") return jsonResponse(req, 405, { error: "Método não permitido" });
+
   try {
+    const contentType = req.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return jsonResponse(req, 415, { error: "Content-Type deve ser application/json" });
+    }
+
     const { productSlug, email, name, userId, paymentMethod } = await req.json();
 
     // Input validation
     if (!productSlug || !email) {
-      return new Response(
-        JSON.stringify({ error: "productSlug e email são obrigatórios" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse(req, 400, { error: "productSlug e email são obrigatórios" });
     }
 
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return new Response(
-        JSON.stringify({ error: "Formato de e-mail inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse(req, 400, { error: "Formato de e-mail inválido" });
     }
 
     const allowedPaymentMethods = ["pix", "credit", "boleto", null, undefined];
     if (!allowedPaymentMethods.includes(paymentMethod)) {
-      return new Response(
-        JSON.stringify({ error: "Método de pagamento inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse(req, 400, { error: "Método de pagamento inválido" });
     }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Do not trust client-supplied userId; if a valid JWT is present, derive it from the token.
+    let resolvedUserId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "").trim();
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      resolvedUserId = user?.id ?? null;
+    }
 
     // 1. Fetch product
     const { data: product, error: productError } = await supabaseAdmin
@@ -78,17 +102,14 @@ Deno.serve(async (req: Request) => {
 
     if (productError || !product) {
       console.error("Product not found:", productError);
-      return new Response(
-        JSON.stringify({ error: "Produto não encontrado" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse(req, 404, { error: "Produto não encontrado" });
     }
 
     // 2. Create pending order in DB
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
-        user_id: userId || null,
+        user_id: resolvedUserId ?? null,
         product_id: product.id,
         email: email.toLowerCase().trim(),
         name: name?.trim() || null,
@@ -101,13 +122,11 @@ Deno.serve(async (req: Request) => {
 
     if (orderError || !order) {
       console.error("Order creation failed:", orderError);
-      return new Response(
-        JSON.stringify({ error: "Erro ao registrar pedido" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse(req, 500, { error: "Erro ao registrar pedido" });
     }
 
-    console.log(`Order created: ${order.id} | product: ${product.slug} | buyer: ${email}`);
+    // Avoid logging PII (email/name) in plain text logs.
+    console.log(`Order created: ${order.id} | product: ${product.slug}`);
 
     // 3. Sequenzy email marketing automation (non-blocking — don't await all)
     const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
@@ -146,7 +165,7 @@ Deno.serve(async (req: Request) => {
           amount:           product.price,
           order_id:         order.id,
           payment_method:   paymentMethod || "pix",
-          checkout_url:     `${req.headers.get("origin") || "https://despertarespiral.com"}/checkout/${product.slug}`,
+          checkout_url:     `${SITE_URL}/checkout/${product.slug}`,
         },
       });
 
@@ -167,10 +186,8 @@ Deno.serve(async (req: Request) => {
       });
 
       if (!emailRes.ok) {
-        console.warn("Transactional email failed (template may not exist yet):", emailRes.status, JSON.stringify(emailRes.data));
+        console.warn("Transactional email failed (template may not exist yet):", emailRes.status);
       }
-
-      console.log("Sequenzy automation complete for:", email);
     } else {
       console.warn("SEQUENZY_API_KEY not set — email automation skipped");
     }
@@ -187,13 +204,10 @@ Deno.serve(async (req: Request) => {
         },
         message: "Pedido registrado. Instruções de pagamento enviadas por e-mail.",
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeadersFor(req), "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" } }
     );
   } catch (err) {
     console.error("checkout-session unexpected error:", err);
-    return new Response(
-      JSON.stringify({ error: "Erro interno do servidor" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse(req, 500, { error: "Erro interno do servidor" });
   }
 });

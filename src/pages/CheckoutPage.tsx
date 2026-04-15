@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { MOCK_PRODUCTS } from "@/constants/mockData";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import MulherEspiralMark from "@/components/layout/MulherEspiralMark";
 import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -122,8 +123,8 @@ export default function CheckoutPage() {
         gap: "clamp(12px,3vw,28px)", flexWrap: "wrap",
       }}>
         {[
-          { icon: Users, text: "+1.200 mulheres já transformadas" },
-          { icon: Star,  text: "4.9 ★ avaliação média" },
+          { icon: Users, text: "280+ mulheres em jornada" },
+          { icon: Star,  text: "4.8 ★ avaliação média" },
           { icon: Shield, text: "7 dias de garantia incondicional" },
         ].map(({ icon: Icon, text }) => (
           <div key={text} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -160,6 +161,17 @@ export default function CheckoutPage() {
             <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-secondary)", lineHeight: 1.78, marginBottom: "clamp(20px,3vw,28px)" }}>
               Preencha seus dados para registrar o pedido. As instruções de pagamento chegam no seu e-mail.
             </p>
+            <div className="flow-card" style={{ padding: "14px 16px", marginBottom: "clamp(16px,2.5vw,24px)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "6px" }}>
+                <span className="step-chip">01</span>
+                <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--gold)" }}>
+                  Fluxo simples de compra
+                </p>
+              </div>
+              <p className="reading-note" style={{ margin: 0 }}>
+                Primeiro registramos seu pedido, depois enviamos o meio de pagamento e, por fim, liberamos seu acesso automaticamente.
+              </p>
+            </div>
 
             {user && (
               <div className="card-dark" style={{ padding: "14px 18px", marginBottom: "clamp(16px,2.5vw,24px)", display: "flex", alignItems: "center", gap: "10px" }}>
@@ -243,10 +255,10 @@ export default function CheckoutPage() {
                     { n: "03", t: "Acesso liberado", d: "Confirmamos o pagamento e liberamos acesso em até 1h." },
                   ].map(({ n, t, d }) => (
                     <div key={n} style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
-                      <span className="font-label" style={{ fontSize: "9px", color: "var(--gold)", minWidth: "22px", marginTop: "2px", fontWeight: 600 }}>{n}</span>
+                      <span className="step-chip">{n}</span>
                       <div>
                         <p style={{ fontSize: "13px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "2px" }}>{t}</p>
-                        <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.6 }}>{d}</p>
+                        <p className="reading-note" style={{ fontSize: "12px", lineHeight: 1.6 }}>{d}</p>
                       </div>
                     </div>
                   ))}
@@ -259,6 +271,18 @@ export default function CheckoutPage() {
                   : <><span>Registrar pedido e receber instruções</span><ArrowRight size={14} /></>
                 }
               </button>
+
+              <p style={{ textAlign: "center", fontSize: "13px", color: "var(--text-faint)", marginTop: "10px", lineHeight: 1.7 }}>
+                Ao continuar, você concorda com{" "}
+                <Link to="/termos" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>
+                  Termos de Uso
+                </Link>{" "}
+                e{" "}
+                <Link to="/privacidade" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>
+                  Política de Privacidade
+                </Link>
+                .
+              </p>
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
                 <Shield size={11} style={{ color: "var(--text-muted)" }} strokeWidth={1.5} />
@@ -292,29 +316,72 @@ function OrderSummary({
   compact?: boolean;
 }) {
   const p = product as {
+    slug?: string;
     thumbnail?: string; title?: string; subtitle?: string;
     price?: number; original_price?: number; modules?: unknown[];
   };
   const FALLBACK = "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&q=80&auto=format";
+  const isMulherEspiral = p.slug === "mulher-espiral";
 
   return (
     <div className="card-dark" style={{ padding: compact ? "clamp(14px,3vw,20px)" : "clamp(20px,3vw,28px)" }}>
       <p className="overline" style={{ color: "var(--gold)", marginBottom: "16px", fontSize: "9px" }}>Resumo do pedido</p>
 
       {!compact && (
-        <div style={{ overflow: "hidden", borderRadius: "12px", aspectRatio: "16/9", marginBottom: "18px", background: "var(--bg-surface-2)" }}>
-          <img src={(p.thumbnail as string) || FALLBACK} alt={(p.title as string) || "Produto"}
-            loading="lazy" decoding="async"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <div style={{ overflow: "hidden", borderRadius: "12px", aspectRatio: "16/9", marginBottom: "18px", background: "var(--bg-surface-2)", position: "relative" }}>
+          {isMulherEspiral ? (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "18px" }}>
+              <div style={{ width: "100%", maxWidth: "620px" }}>
+                <MulherEspiralMark size="lg" align="center" />
+              </div>
+            </div>
+          ) : (
+            <img
+              src={(p.thumbnail as string) || FALLBACK}
+              alt={(p.title as string) || "Produto"}
+              loading="lazy"
+              decoding="async"
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            />
+          )}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 70% at 55% 42%, rgba(198,168,112,0.20) 0%, transparent 65%)", pointerEvents: "none" }} />
         </div>
       )}
 
       {compact && (
         <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "14px" }}>
-          <div style={{ width: "56px", height: "56px", borderRadius: "10px", overflow: "hidden", flexShrink: 0 }}>
-            <img src={(p.thumbnail as string) || FALLBACK} alt={(p.title as string) || "Produto"}
-              loading="lazy" decoding="async" width="56" height="56"
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <div style={{ width: "56px", height: "56px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, background: "var(--bg-surface-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {isMulherEspiral ? (
+              <svg width="34" height="34" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                <path
+                  d="M32 58
+                     C14.3 58 6 45.5 6 32
+                     C6 18.5 16.5 8 30 8
+                     C41.5 8 51 17.5 51 29
+                     C51 38.8 43.5 46.5 34 46.5
+                     C26 46.5 19.5 40 19.5 32.2
+                     C19.5 25.5 24.8 20.2 31.5 20.2
+                     C37.2 20.2 41.8 24.8 41.8 30.5
+                     C41.8 35.2 38.2 39 33.5 39"
+                  stroke="var(--gold)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity="0.92"
+                />
+                <path d="M33.5 39 L34.8 37.4 L36.1 39 L34.8 40.6 Z" fill="var(--gold)" opacity="0.92" />
+              </svg>
+            ) : (
+              <img
+                src={(p.thumbnail as string) || FALLBACK}
+                alt={(p.title as string) || "Produto"}
+                loading="lazy"
+                decoding="async"
+                width="56"
+                height="56"
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+            )}
           </div>
           <div>
             <span className="badge-rose" style={{ marginBottom: "6px" }}>

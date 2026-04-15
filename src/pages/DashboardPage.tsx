@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import mulherEspiralCover from "@/assets/mulher-espiral-cover.svg";
 import { ArrowRight, Play, MessageSquare, BookOpen, TrendingUp, Flame, Clock, CheckCircle2 } from "lucide-react";
 
 interface ProductWithProgress {
@@ -50,7 +51,7 @@ const CAT_COLOR: Record<string, string> = {
   conquistas: "var(--sage)", desabafo: "var(--rose)",
   duvidas: "var(--lavender)", dicas: "var(--gold)", geral: "var(--text-muted)",
 };
-const FALLBACK = "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&q=80&auto=format";
+const FALLBACK = mulherEspiralCover;
 
 function Spinner() {
   return (
@@ -204,6 +205,20 @@ export default function DashboardPage() {
 
         {/* ══ CONTINUE COURSE — prominent mobile card ══ */}
         <div style={{ padding: "16px 16px 0" }}>
+          {mainProduct && (
+            <div className="flow-card" style={{ padding: "14px 16px", marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "6px" }}>
+                <span className="step-chip">01</span>
+                <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--gold)" }}>
+                  Próximo passo da sua jornada
+                </p>
+              </div>
+              <p className="reading-note" style={{ margin: 0 }}>
+                Retome <strong style={{ color: "var(--text-primary)", fontWeight: 500 }}>{mainProduct.title}</strong> e avance mais uma aula para manter seu ritmo com leveza.
+              </p>
+            </div>
+          )}
+
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
             <p className="overline" style={{ color: "var(--gold)", fontSize: "8px" }}>Continuar assistindo</p>
             <Link to="/products" className="font-label"
@@ -256,6 +271,9 @@ export default function DashboardPage() {
                   <div className="progress-bar" style={{ height: "3px" }}>
                     <div className="progress-bar-fill" style={{ width: `${mainProduct.progress_pct}%` }} />
                   </div>
+                  <p className="reading-note" style={{ fontSize: "12px", margin: "10px 0 0" }}>
+                    Continue de onde parou para manter consistência sem sobrecarga.
+                  </p>
                 </div>
               </div>
             </Link>
