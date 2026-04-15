@@ -50,7 +50,7 @@ export default function RegisterPage() {
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
-    const result = await loginWithGoogle();
+    const result = await loginWithGoogle("/dashboard");
     if (result.error) { toast.error(result.error); setGoogleLoading(false); }
   };
 
@@ -74,7 +74,7 @@ export default function RegisterPage() {
     const result = await verifyOtpAndRegister(form.email, otp, form.password, form.name);
     if (result.error) { toast.error(result.error); setLoading(false); return; }
     toast.success("Bem-vinda à espiral. ✦");
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   return (

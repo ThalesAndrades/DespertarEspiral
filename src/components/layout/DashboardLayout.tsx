@@ -8,7 +8,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import SpiralLogo from "./SpiralLogo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, BookOpen, Users, LogOut, ChevronRight, Shield, Home } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, LogOut, ChevronRight, Shield, UserCircle } from "lucide-react";
 
 interface NavItem { label: string; icon: React.ElementType; href: string; }
 
@@ -17,9 +17,6 @@ const memberNav: NavItem[] = [
   { label: "Cursos",     icon: BookOpen,        href: "/products"  },
   { label: "Comunidade", icon: Users,           href: "/community" },
 ];
-
-// Alias to suppress unused-import warning — Home used in future mobile nav
-void Home;
 
 function isActive(href: string, pathname: string) {
   if (href === "/dashboard") return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
@@ -70,6 +67,10 @@ function Sidebar() {
             <span style={{ fontSize: "14px" }}>Painel Admin</span>
           </Link>
         )}
+        <Link to="/perfil" className="sidebar-link" style={{ textDecoration: "none" }}>
+          <UserCircle size={15} strokeWidth={1.5} />
+          <span style={{ fontSize: "14px" }}>Perfil</span>
+        </Link>
         <button onClick={handleLogout} className="sidebar-link">
           <LogOut size={15} strokeWidth={1.5} />
           <span style={{ fontSize: "14px" }}>Sair</span>
@@ -114,7 +115,11 @@ function BottomTabBar() {
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const handleLogout = useCallback(() => { logout(); navigate("/"); }, [logout, navigate]);
+  const handleLogout = useCallback(() => {
+    setProfileOpen(false);
+    logout();
+    navigate("/");
+  }, [logout, navigate]);
 
   return (
     <>
@@ -129,7 +134,6 @@ function BottomTabBar() {
           borderTop: "1px solid var(--border-subtle)",
           display: "flex", alignItems: "stretch",
           zIndex: 150,
-          /* Glassmorphism on mobile */
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
         }}
@@ -152,7 +156,6 @@ function BottomTabBar() {
               }}
               aria-current={active ? "page" : undefined}
             >
-              {/* Active indicator — pill */}
               {active && (
                 <span style={{
                   position: "absolute", top: 0, left: "20%", right: "20%",
@@ -186,21 +189,28 @@ function BottomTabBar() {
             flex: 1, display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
             gap: "3px", background: "transparent", border: "none",
-            cursor: "pointer", color: "var(--text-faint)",
+            cursor: "pointer",
+            color: location.pathname.startsWith("/perfil") ? "var(--gold)" : "var(--text-faint)",
             minHeight: "60px", transition: "color 0.16s",
           }}
-          aria-label="Perfil"
+          aria-label="Abrir perfil"
         >
           <div style={{
             width: "28px", height: "28px", borderRadius: "50%",
-            background: "rgba(198,168,112,0.16)", color: "var(--gold)",
+            background: location.pathname.startsWith("/perfil") ? "rgba(198,168,112,0.18)" : "rgba(198,168,112,0.12)",
+            color: "var(--gold)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "11px", fontFamily: "Montserrat", fontWeight: 600,
-            border: "1.5px solid rgba(198,168,112,0.22)",
+            border: `1.5px solid rgba(198,168,112,${location.pathname.startsWith("/perfil") ? "0.40" : "0.22"})`,
+            transition: "all 0.16s",
           }}>
             {user?.name?.charAt(0).toUpperCase() ?? "U"}
           </div>
-          <span style={{ fontFamily: "Montserrat, sans-serif", fontSize: "7.5px", letterSpacing: "0.10em", textTransform: "uppercase" }}>
+          <span style={{
+            fontFamily: "Montserrat, sans-serif", fontSize: "7.5px",
+            letterSpacing: "0.10em", textTransform: "uppercase",
+            fontWeight: location.pathname.startsWith("/perfil") ? 600 : 400,
+          }}>
             Perfil
           </span>
         </button>
@@ -209,11 +219,10 @@ function BottomTabBar() {
       {/* Profile bottom sheet */}
       {profileOpen && (
         <div
-          className="md:hidden"
           style={{
             position: "fixed", inset: 0, zIndex: 200,
-            background: "rgba(4,6,15,0.60)",
-            backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+            background: "rgba(4,6,15,0.65)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             display: "flex", alignItems: "flex-end",
           }}
           onClick={() => setProfileOpen(false)}
@@ -227,7 +236,7 @@ function BottomTabBar() {
               borderTop: "1px solid var(--border-soft)",
               borderRadius: "24px 24px 0 0",
               padding: "0 20px",
-              paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
+              paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
             }}
           >
             {/* Handle */}
@@ -244,18 +253,22 @@ function BottomTabBar() {
               marginBottom: "16px",
             }}>
               <div style={{
-                width: "46px", height: "46px", borderRadius: "50%",
+                width: "48px", height: "48px", borderRadius: "50%",
                 background: "rgba(198,168,112,0.14)",
                 color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "17px", fontFamily: "Montserrat", fontWeight: 500, flexShrink: 0,
-                border: "1.5px solid rgba(198,168,112,0.22)",
+                fontSize: "18px", fontFamily: "Montserrat", fontWeight: 500, flexShrink: 0,
+                border: "2px solid rgba(198,168,112,0.22)",
               }}>
                 {user?.name?.charAt(0).toUpperCase() ?? "U"}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: "15px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "2px" }}>{user?.name}</p>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>{user?.email}</p>
-                <p className="font-label" style={{ fontSize: "9px", color: "var(--lavender)", letterSpacing: "0.10em", textTransform: "uppercase", marginTop: "2px" }}>
+                <p style={{ fontSize: "15px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user?.name}
+                </p>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user?.email}
+                </p>
+                <p className="font-label" style={{ fontSize: "9px", color: "var(--lavender)", letterSpacing: "0.10em", textTransform: "uppercase", marginTop: "3px" }}>
                   {user?.anonymous_name}
                 </p>
               </div>
@@ -263,7 +276,7 @@ function BottomTabBar() {
             </div>
 
             {/* Actions */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {user?.role === "admin" && (
                 <button
                   onClick={() => { navigate("/admin"); setProfileOpen(false); }}
@@ -275,29 +288,43 @@ function BottomTabBar() {
                     color: "var(--gold)", cursor: "pointer", width: "100%",
                     fontSize: "15px", fontFamily: "DM Sans, sans-serif",
                     minHeight: "54px", textAlign: "left",
-                    transition: "background 0.2s, transform 0.16s",
+                    transition: "background 0.2s",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(198,168,112,0.12)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(198,168,112,0.07)")}
                 >
                   <Shield size={18} strokeWidth={1.5} />
                   Painel Administrativo
                 </button>
               )}
+
+              <button
+                onClick={() => { navigate("/perfil"); setProfileOpen(false); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: "12px",
+                  padding: "15px 18px", borderRadius: "14px",
+                  background: "transparent",
+                  border: "1px solid var(--border-soft)",
+                  color: "var(--text-secondary)", cursor: "pointer", width: "100%",
+                  fontSize: "15px", fontFamily: "DM Sans, sans-serif",
+                  minHeight: "54px", textAlign: "left",
+                  transition: "background 0.2s, border-color 0.2s",
+                }}
+              >
+                <UserCircle size={18} strokeWidth={1.5} />
+                Meu Perfil
+              </button>
+
               <button
                 onClick={handleLogout}
                 style={{
                   display: "flex", alignItems: "center", gap: "12px",
                   padding: "15px 18px", borderRadius: "14px",
                   background: "transparent",
-                  border: "1px solid var(--border-soft)",
-                  color: "var(--text-muted)", cursor: "pointer", width: "100%",
+                  border: "1px solid rgba(201,154,170,0.22)",
+                  color: "var(--rose)", cursor: "pointer", width: "100%",
                   fontSize: "15px", fontFamily: "DM Sans, sans-serif",
                   minHeight: "54px", textAlign: "left",
                   transition: "background 0.2s, border-color 0.2s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(10,12,26,0.06)"; e.currentTarget.style.borderColor = "var(--border-mid)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border-soft)"; }}
               >
                 <LogOut size={18} strokeWidth={1.5} />
                 Sair da conta
@@ -317,6 +344,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     "/dashboard": "Início",
     "/products":  "Meus Cursos",
     "/community": "Comunidade",
+    "/perfil":    "Perfil",
   };
   const currentTitle = Object.entries(pageTitles).find(([p]) => isActive(p, location.pathname))?.[1] ?? "";
 

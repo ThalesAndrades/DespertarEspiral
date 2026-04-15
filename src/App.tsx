@@ -26,6 +26,7 @@ const AdminProductContentPage = React.lazy(() => import("@/pages/admin/AdminProd
 const AdminOrdersPage       = React.lazy(() => import("@/pages/admin/AdminOrdersPage"));
 const AdminCommunityPage    = React.lazy(() => import("@/pages/admin/AdminCommunityPage"));
 const CertificatePage       = React.lazy(() => import("@/pages/CertificatePage"));
+const ProfilePage           = React.lazy(() => import("@/pages/ProfilePage"));
 
 /* ── Global loader ── */
 function GlobalLoader() {
@@ -118,6 +119,7 @@ export default function App() {
         <Route path="/products/:slug/certificado"           element={<PrivateRoute><CertificatePage /></PrivateRoute>} />
         <Route path="/community"                           element={<PrivateRoute><CommunityPage /></PrivateRoute>} />
         <Route path="/community/topic/:id"                 element={<PrivateRoute><TopicPage /></PrivateRoute>} />
+        <Route path="/perfil"                              element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
         {/* Admin */}
         <Route path="/admin"                      element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />

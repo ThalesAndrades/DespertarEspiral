@@ -26,7 +26,7 @@ interface AuthContextType {
     email: string,
     password: string
   ) => Promise<{ error?: string }>;
-  loginWithGoogle: () => Promise<{ error?: string }>;
+  loginWithGoogle: (nextPath?: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -116,17 +116,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (event === "SIGNED_IN" && session?.user) {
-          // For Google OAuth: initialSessionResolved may be true but the session
-          // user ID could differ (fresh OAuth flow), so always sync if IDs differ.
-          const currentUserId = await supabase.auth.getSession()
-            .then(({ data: { session: s } }) => s?.user?.id)
-            .catch(() => null);
-          // Skip only when getSession already hydrated this exact session
-          if (initialSessionResolved && currentUserId === session.user.id) return;
+          // Always hydrate on SIGNED_IN.
+          // Skip only if getSession already resolved this exact user AND we already
+          // have that user in state (avoids double-fetch on page load).
+          const alreadyHydrated =
+            initialSessionResolved &&
+            (await supabase.auth.getSession()
+              .then(({ data: { session: s } }) => s?.user?.id)
+              .catch(() => null)) === session.user.id;
+
+          if (alreadyHydrated) {
+            // Still need to redirect after Google OAuth if a ?next was saved
+            const savedNext = sessionStorage.getItem("auth_next");
+            if (savedNext) {
+              sessionStorage.removeItem("auth_next");
+              if (window.location.pathname === "/" || window.location.pathname === "/login") {
+                window.location.replace(savedNext);
+              }
+            }
+            return;
+          }
+
           const { profile, slugs } = await fetchProfile(session.user.id);
           if (mounted) {
             setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
             setLoading(false);
+            // Redirect after OAuth if a destination was saved
+            const savedNext = sessionStorage.getItem("auth_next");
+            if (savedNext) {
+              sessionStorage.removeItem("auth_next");
+              if (window.location.pathname === "/" || window.location.pathname === "/login" || window.location.pathname === "/register") {
+                window.location.replace(savedNext);
+              }
+            }
           }
         } else if (event === "SIGNED_OUT") {
           setUser(null);
@@ -209,7 +231,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   /* ── Google OAuth ── */
-  const loginWithGoogle = async (): Promise<{ error?: string }> => {
+  const loginWithGoogle = async (nextPath?: string): Promise<{ error?: string }> => {
+    // Save the intended destination so we can redirect after OAuth callback
+    const dest = nextPath ?? sessionStorage.getItem("auth_next") ?? "/dashboard";
+    sessionStorage.setItem("auth_next", dest);
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -218,7 +244,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         skipBrowserRedirect: false,
       },
     });
-    if (error) return { error: error.message };
+    if (error) {
+      sessionStorage.removeItem("auth_next");
+      return { error: error.message };
+    }
     return {};
   };
 

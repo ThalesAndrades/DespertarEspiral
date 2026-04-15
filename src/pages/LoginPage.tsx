@@ -62,9 +62,9 @@ export default function LoginPage() {
 
   const handleGoogle = async () => {
     setGoogleLoad(true);
-    const result = await loginWithGoogle();
+    const result = await loginWithGoogle(nextPath);
     if (result.error) { toast.error(result.error); setGoogleLoad(false); }
-    // On success: Supabase redirects to window.location.origin, auth listener handles profile hydration
+    // On success: Supabase redirects to origin, onAuthStateChange handles redirect via sessionStorage
   };
 
   return (
