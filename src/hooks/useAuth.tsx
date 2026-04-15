@@ -96,13 +96,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /* ── hydrate from session on mount ── */
   useEffect(() => {
     let mounted = true;
+    // Track whether getSession already resolved so onAuthStateChange
+    // SIGNED_IN doesn't fire a redundant profile fetch on initial load.
+    let initialSessionResolved = false;
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (mounted && session?.user) {
         const { profile, slugs } = await fetchProfile(session.user.id);
         if (mounted) setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
       }
-      if (mounted) setLoading(false);
+      if (mounted) {
+        initialSessionResolved = true;
+        setLoading(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -110,15 +116,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (event === "SIGNED_IN" && session?.user) {
+          // Skip if getSession already hydrated the same session to avoid double fetch
+          if (initialSessionResolved) return;
           const { profile, slugs } = await fetchProfile(session.user.id);
-          setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
-          setLoading(false);
+          if (mounted) {
+            setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+            setLoading(false);
+          }
         } else if (event === "SIGNED_OUT") {
           setUser(null);
           setLoading(false);
         } else if (event === "TOKEN_REFRESHED" && session?.user) {
+          // Silently refresh profile slugs (e.g. new product access granted)
           const { profile, slugs } = await fetchProfile(session.user.id);
-          setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+          if (mounted) setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+        } else if (event === "USER_UPDATED" && session?.user) {
+          const { profile, slugs } = await fetchProfile(session.user.id);
+          if (mounted) {
+            setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+            setLoading(false);
+          }
         }
       }
     );
@@ -199,8 +216,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /* ── logout ── */
   const logout = async () => {
+    setUser(null); // clear immediately so UI responds instantly
     await supabase.auth.signOut();
-    setUser(null);
   };
 
   /* ── refresh user data ── */

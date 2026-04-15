@@ -28,8 +28,9 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     if (!email) { toast.error("Digite seu e-mail."); return; }
     setLoading(true);
+    // /reset-password handles the Supabase magic-link callback and prompts for new password
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }

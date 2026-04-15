@@ -1,15 +1,15 @@
 /**
- * CommunityPage — Mobile-first forum
- * Full-width cards, floating compose button (FAB), 
- * horizontal scrollable category pills, pull-to-see-more feel
+ * CommunityPage — Mobile-first forum — Supabase-connected
+ * Persists posts and likes to community_posts / community_likes tables.
+ * Optimistic UI for likes; full async for post creation.
  */
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { MOCK_COMMUNITY_POSTS } from "@/constants/mockData";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import type { CommunityPost } from "@/types";
-import { Flame, MessageSquare, Heart, Plus, X, ChevronRight, ArrowRight } from "lucide-react";
+import { Flame, MessageSquare, Heart, Plus, X, ChevronRight, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Category = "all" | CommunityPost["category"];
@@ -42,39 +42,142 @@ function timeAgo(iso: string) {
 
 export default function CommunityPage() {
   const { user } = useAuth();
-  const [category,    setCategory]    = useState<Category>("all");
-  const [posts,       setPosts]       = useState(MOCK_COMMUNITY_POSTS);
-  const [showCompose, setShowCompose] = useState(false);
-  const [newPost,     setNewPost]     = useState({ title: "", body: "", category: "geral" as CommunityPost["category"] });
-  const [liked,       setLiked]       = useState<Set<string>>(new Set());
+  const [category,     setCategory]     = useState<Category>("all");
+  const [posts,        setPosts]        = useState<CommunityPost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [showCompose,  setShowCompose]  = useState(false);
+  const [newPost,      setNewPost]      = useState({ title: "", body: "", category: "geral" as CommunityPost["category"] });
+  const [liked,        setLiked]        = useState<Set<string>>(new Set());
+  const [submitting,   setSubmitting]   = useState(false);
+
+  /* ── Load posts from Supabase ── */
+  const fetchPosts = useCallback(async () => {
+    setPostsLoading(true);
+    const { data, error } = await supabase
+      .from("community_posts")
+      .select("id, user_id, category, title, body, is_pinned, likes_count, comments_count, created_at, user_profiles(anonymous_name)")
+      .eq("is_visible", true)
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(60);
+
+    if (error) {
+      console.error("community_posts fetch:", error);
+    } else if (data) {
+      const mapped: CommunityPost[] = (data as Record<string, unknown>[]).map((r) => ({
+        id: r.id as string,
+        author_anonymous:
+          (r.user_profiles as { anonymous_name?: string } | null)?.anonymous_name ?? "Anônima",
+        category: r.category as CommunityPost["category"],
+        title: r.title as string,
+        body: r.body as string,
+        is_pinned: Boolean(r.is_pinned),
+        is_visible: true,
+        likes: (r.likes_count as number) ?? 0,
+        comments_count: (r.comments_count as number) ?? 0,
+        created_at: r.created_at as string,
+      }));
+      setPosts(mapped);
+    }
+    setPostsLoading(false);
+  }, []);
+
+  /* ── Load user's existing likes ── */
+  const fetchLikes = useCallback(async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("community_likes")
+      .select("post_id")
+      .eq("user_id", user.id)
+      .not("post_id", "is", null);
+    if (data) setLiked(new Set((data as { post_id: string }[]).map((r) => r.post_id)));
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchPosts();
+    fetchLikes();
+  }, [fetchPosts, fetchLikes]);
 
   const filtered = category === "all" ? posts : posts.filter((p) => p.category === category);
 
-  const handleLike = (id: string) => {
+  /* ── Like / unlike with optimistic UI ── */
+  const handleLike = async (postId: string) => {
+    if (!user?.id) { toast.error("Faça login para curtir."); return; }
+    const isLiked = liked.has(postId);
+
+    // Optimistic update
     setLiked((prev) => {
       const s = new Set(prev);
-      if (s.has(id)) { s.delete(id); setPosts((ps) => ps.map((p) => p.id === id ? { ...p, likes: p.likes - 1 } : p)); }
-      else            { s.add(id);   setPosts((ps) => ps.map((p) => p.id === id ? { ...p, likes: p.likes + 1 } : p)); }
+      isLiked ? s.delete(postId) : s.add(postId);
       return s;
     });
+    setPosts((ps) =>
+      ps.map((p) => p.id === postId ? { ...p, likes: p.likes + (isLiked ? -1 : 1) } : p)
+    );
+
+    if (isLiked) {
+      const { error } = await supabase
+        .from("community_likes")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("post_id", postId);
+      if (error) {
+        // Revert on failure
+        setLiked((prev) => { const s = new Set(prev); s.add(postId); return s; });
+        setPosts((ps) => ps.map((p) => p.id === postId ? { ...p, likes: p.likes + 1 } : p));
+      }
+    } else {
+      const { error } = await supabase
+        .from("community_likes")
+        .insert({ user_id: user.id, post_id: postId });
+      if (error) {
+        // Revert on failure
+        setLiked((prev) => { const s = new Set(prev); s.delete(postId); return s; });
+        setPosts((ps) => ps.map((p) => p.id === postId ? { ...p, likes: p.likes - 1 } : p));
+      }
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /* ── Submit new post to Supabase ── */
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.title.trim() || !newPost.body.trim()) { toast.error("Preencha título e conteúdo."); return; }
-    const post: CommunityPost = {
-      id: `p${Date.now()}`,
-      author_anonymous: user?.anonymous_name ?? "Anônima",
-      category: newPost.category,
-      title: newPost.title,
-      body: newPost.body,
+    if (!user?.id) { toast.error("Faça login para publicar."); return; }
+    setSubmitting(true);
+
+    const { data, error } = await supabase
+      .from("community_posts")
+      .insert({
+        user_id: user.id,
+        category: newPost.category,
+        title: newPost.title.trim(),
+        body: newPost.body.trim(),
+      })
+      .select("id, category, title, body, is_pinned, likes_count, comments_count, created_at")
+      .single();
+
+    setSubmitting(false);
+
+    if (error || !data) {
+      toast.error("Não foi possível publicar. Tente novamente.");
+      console.error("insert post:", error);
+      return;
+    }
+
+    const row = data as Record<string, unknown>;
+    const newEntry: CommunityPost = {
+      id: row.id as string,
+      author_anonymous: user.anonymous_name ?? "Anônima",
+      category: row.category as CommunityPost["category"],
+      title: row.title as string,
+      body: row.body as string,
       is_pinned: false,
       is_visible: true,
       likes: 0,
       comments_count: 0,
-      created_at: new Date().toISOString(),
+      created_at: row.created_at as string,
     };
-    setPosts((prev) => [post, ...prev]);
+    setPosts((prev) => [newEntry, ...prev]);
     setNewPost({ title: "", body: "", category: "geral" });
     setShowCompose(false);
     toast.success("Post publicado. ✦");
@@ -93,7 +196,6 @@ export default function CommunityPage() {
                 Comunidade
               </h1>
             </div>
-            {/* Desktop compose button */}
             <button
               onClick={() => setShowCompose(true)}
               className="btn-gold hidden md:inline-flex"
@@ -123,7 +225,7 @@ export default function CommunityPage() {
           </div>
         </div>
 
-        {/* ── Category pills (horizontal scroll) ── */}
+        {/* ── Category pills ── */}
         <div style={{
           display: "flex", gap: "8px", overflowX: "auto", padding: "0 16px 16px",
           scrollbarWidth: "none", msOverflowStyle: "none",
@@ -137,20 +239,13 @@ export default function CommunityPage() {
                 onClick={() => setCategory(c.value)}
                 className="font-label"
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: "100px",
-                  border: "1px solid",
-                  fontSize: "9px",
-                  letterSpacing: "0.15em",
-                  textTransform: "uppercase",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                  transition: "all 0.2s",
+                  padding: "8px 16px", borderRadius: "100px", border: "1px solid",
+                  fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase",
+                  whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.2s",
                   borderColor: active ? c.color : "var(--border-subtle)",
                   color: active ? c.color : "var(--text-faint)",
                   background: active ? `${c.color}18` : "transparent",
-                  minHeight: "36px",
-                  cursor: "pointer",
+                  minHeight: "36px", cursor: "pointer",
                 }}
               >
                 {c.label}
@@ -161,7 +256,12 @@ export default function CommunityPage() {
 
         {/* ── Posts ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: "2px", padding: "0 0 8px" }}>
-          {filtered.length === 0 ? (
+          {postsLoading ? (
+            <div style={{ padding: "60px 24px", display: "flex", justifyContent: "center" }}>
+              <Loader2 size={22} style={{ color: "var(--gold)", animation: "spin 1s linear infinite" }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          ) : filtered.length === 0 ? (
             <div style={{ padding: "60px 24px", textAlign: "center" }}>
               <p style={{ fontSize: "16px", color: "var(--text-muted)", marginBottom: "16px" }}>Nenhum post nessa categoria.</p>
               <button onClick={() => setShowCompose(true)} className="btn-outline-gold" style={{ fontSize: "9px" }}>
@@ -177,14 +277,12 @@ export default function CommunityPage() {
                 borderTop: i === 0 ? "1px solid var(--border-subtle)" : "none",
               }}
             >
-              {/* Post content */}
               <div style={{ padding: "16px 16px 0" }}>
                 {/* Author row */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
                   <div style={{
                     width: "30px", height: "30px", borderRadius: "50%",
-                    background: "rgba(164,158,208,0.14)",
-                    color: "var(--lavender)",
+                    background: "rgba(164,158,208,0.14)", color: "var(--lavender)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: "11px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, flexShrink: 0,
                   }}>
@@ -198,7 +296,6 @@ export default function CommunityPage() {
                       {post.is_pinned && <Flame size={10} style={{ color: "var(--gold)" }} />}
                     </div>
                   </div>
-                  {/* Category pill */}
                   <span style={{
                     fontSize: "8px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.14em",
                     textTransform: "uppercase", padding: "3px 10px", borderRadius: "100px",
@@ -228,7 +325,7 @@ export default function CommunityPage() {
 
               {/* Actions row */}
               <div style={{
-                display: "flex", alignItems: "center", gap: "0",
+                display: "flex", alignItems: "center",
                 padding: "0 8px 4px",
                 borderTop: "1px solid var(--border-subtle)",
               }}>
@@ -279,7 +376,7 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      {/* ── FAB — mobile compose button ── */}
+      {/* ── FAB — mobile compose ── */}
       <button
         onClick={() => setShowCompose(true)}
         className="md:hidden"
@@ -287,16 +384,12 @@ export default function CommunityPage() {
           position: "fixed",
           bottom: "calc(64px + 20px + env(safe-area-inset-bottom))",
           right: "20px",
-          width: "52px", height: "52px",
-          borderRadius: "50%",
-          background: "var(--gold)",
-          color: "#0b0d1c",
-          border: "none",
-          cursor: "pointer",
+          width: "52px", height: "52px", borderRadius: "50%",
+          background: "var(--gold)", color: "#0b0d1c",
+          border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: "0 8px 28px rgba(198,168,112,0.45)",
-          zIndex: 140,
-          transition: "transform 0.2s, box-shadow 0.2s",
+          zIndex: 140, transition: "transform 0.2s, box-shadow 0.2s",
         }}
         aria-label="Novo post"
       >
@@ -322,11 +415,9 @@ export default function CommunityPage() {
               borderRadius: "24px 24px 0 0",
               borderTop: "1px solid var(--border-soft)",
               padding: "20px 20px calc(24px + env(safe-area-inset-bottom))",
-              maxHeight: "90dvh",
-              overflowY: "auto",
+              maxHeight: "90dvh", overflowY: "auto",
             }}
           >
-            {/* Sheet handle */}
             <div style={{ width: "36px", height: "3px", borderRadius: "100px", background: "var(--border-mid)", margin: "0 auto 20px" }} />
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
@@ -358,7 +449,6 @@ export default function CommunityPage() {
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              {/* Category select */}
               <div>
                 <label style={{ display: "block", fontFamily: "Montserrat, sans-serif", fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "8px" }}>
                   Categoria
@@ -370,11 +460,9 @@ export default function CommunityPage() {
                       type="button"
                       onClick={() => setNewPost((p) => ({ ...p, category: c.value as CommunityPost["category"] }))}
                       style={{
-                        padding: "7px 14px", borderRadius: "100px",
-                        border: "1px solid",
+                        padding: "7px 14px", borderRadius: "100px", border: "1px solid",
                         fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.15em", textTransform: "uppercase",
-                        cursor: "pointer", minHeight: "36px",
-                        transition: "all 0.18s",
+                        cursor: "pointer", minHeight: "36px", transition: "all 0.18s",
                         borderColor: newPost.category === c.value ? c.color : "var(--border-subtle)",
                         color: newPost.category === c.value ? c.color : "var(--text-faint)",
                         background: newPost.category === c.value ? `${c.color}18` : "transparent",
@@ -386,7 +474,6 @@ export default function CommunityPage() {
                 </div>
               </div>
 
-              {/* Title */}
               <div>
                 <label style={{ display: "block", fontFamily: "Montserrat, sans-serif", fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "8px" }}>
                   Título
@@ -402,7 +489,6 @@ export default function CommunityPage() {
                 />
               </div>
 
-              {/* Body */}
               <div>
                 <label style={{ display: "block", fontFamily: "Montserrat, sans-serif", fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "8px" }}>
                   Conteúdo
@@ -417,8 +503,11 @@ export default function CommunityPage() {
                 />
               </div>
 
-              <button type="submit" className="btn-gold" style={{ width: "100%", borderRadius: "12px", minHeight: "54px", fontSize: "10px" }}>
-                Publicar ✦
+              <button type="submit" disabled={submitting} className="btn-gold" style={{ width: "100%", borderRadius: "12px", minHeight: "54px", fontSize: "10px" }}>
+                {submitting
+                  ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Publicando…</>
+                  : "Publicar ✦"
+                }
               </button>
             </form>
           </div>

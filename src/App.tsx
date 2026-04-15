@@ -7,6 +7,7 @@ const LandingPage           = React.lazy(() => import("@/pages/LandingPage"));
 const LoginPage             = React.lazy(() => import("@/pages/LoginPage"));
 const RegisterPage          = React.lazy(() => import("@/pages/RegisterPage"));
 const ForgotPasswordPage    = React.lazy(() => import("@/pages/ForgotPasswordPage"));
+const ResetPasswordPage     = React.lazy(() => import("@/pages/ResetPasswordPage"));
 const DashboardPage         = React.lazy(() => import("@/pages/DashboardPage"));
 const ProductsPage          = React.lazy(() => import("@/pages/ProductsPage"));
 const CourseViewPage        = React.lazy(() => import("@/pages/CourseViewPage"));
@@ -96,6 +97,7 @@ export default function App() {
         <Route path="/login"           element={<LoginPage />} />
         <Route path="/register"        element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"  element={<ResetPasswordPage />} />
         <Route path="/checkout/:slug"  element={<CheckoutPage />} />
         <Route path="/obrigado"        element={<ThankYouPage />} />
         <Route path="/privacidade" element={<PrivacyPolicyPage />} />

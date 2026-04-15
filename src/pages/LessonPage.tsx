@@ -145,14 +145,22 @@ export default function LessonPage() {
     );
   }
 
-  const markComplete = () => {
+  const markComplete = async () => {
     const id = lesson.id as string;
     setCompleted((prev) => { const s = new Set(prev); s.add(id); return s; });
     if (user?.id) {
-      supabase
+      const { error } = await supabase
         .from("lesson_progress")
-        .upsert({ user_id: user.id, lesson_id: id, completed: true }, { onConflict: "user_id,lesson_id" })
-        .then(() => {});
+        .upsert(
+          { user_id: user.id, lesson_id: id, completed: true, completed_at: new Date().toISOString() },
+          { onConflict: "user_id,lesson_id" }
+        );
+      if (error) {
+        // Revert optimistic update on failure
+        setCompleted((prev) => { const s = new Set(prev); s.delete(id); return s; });
+        toast.error("Não foi possível salvar o progresso.");
+        return;
+      }
     }
     toast.success("Aula concluída. ✦");
     if (nextLesson?.id) setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id as string}`), 500);
