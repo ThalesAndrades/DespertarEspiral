@@ -1,0 +1,26 @@
+{
+  "name": "Despertar Espiral",
+  "short_name": "Despertar",
+  "description": "Método de Reconexão e Cura feminina por Sunyan Nunes.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0d1c",
+  "theme_color": "#0b0d1c",
+  "categories": ["education", "lifestyle", "health"],
+  "icons": [
+    {
+      "src": "/brand-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

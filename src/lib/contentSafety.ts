@@ -28,45 +28,59 @@ function isSafeHref(href: string): boolean {
   }
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function sanitizeHtml(input: string): string {
   if (!input) return "";
-  const doc = new DOMParser().parseFromString(input, "text/html");
+  try {
+    const doc = new DOMParser().parseFromString(input, "text/html");
 
-  const walk = (node: Node) => {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const tag = el.tagName.toLowerCase();
-      if (!ALLOWED_TAGS.has(tag)) {
-        const text = doc.createTextNode(el.textContent ?? "");
-        el.replaceWith(text);
-        return;
-      }
-
-      for (const attr of Array.from(el.attributes)) {
-        const name = attr.name.toLowerCase();
-        if (tag === "a" && name === "href") continue;
-        el.removeAttribute(attr.name);
-      }
-
-      if (tag === "a") {
-        const href = el.getAttribute("href") ?? "";
-        if (!href || !isSafeHref(href)) {
+    const walk = (node: Node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        if (!ALLOWED_TAGS.has(tag)) {
           const text = doc.createTextNode(el.textContent ?? "");
           el.replaceWith(text);
           return;
         }
-        el.setAttribute("target", "_blank");
-        el.setAttribute("rel", "noreferrer noopener");
+
+        for (const attr of Array.from(el.attributes)) {
+          const name = attr.name.toLowerCase();
+          if (tag === "a" && name === "href") continue;
+          el.removeAttribute(attr.name);
+        }
+
+        if (tag === "a") {
+          const href = el.getAttribute("href") ?? "";
+          if (!href || !isSafeHref(href)) {
+            const text = doc.createTextNode(el.textContent ?? "");
+            el.replaceWith(text);
+            return;
+          }
+          el.setAttribute("target", "_blank");
+          el.setAttribute("rel", "noreferrer noopener");
+        }
       }
-    }
 
-    for (const child of Array.from(node.childNodes)) {
-      walk(child);
-    }
-  };
+      for (const child of Array.from(node.childNodes)) {
+        walk(child);
+      }
+    };
 
-  walk(doc.body);
-  return doc.body.innerHTML;
+    walk(doc.body);
+    return doc.body.innerHTML;
+  } catch {
+    // Fallback: escape entire content if DOMParser fails
+    return `<p>${escapeHtml(input)}</p>`;
+  }
 }
 
 export function safeExternalUrl(input: string): string | null {

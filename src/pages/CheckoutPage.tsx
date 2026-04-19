@@ -15,6 +15,7 @@ import mulherEspiralProductImg from "@/assets/mulher-espiral-hero.jpg";
 import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
 import { toast } from "sonner";
 import { fireEventAsync } from "@/lib/sequenzy";
+import { getAttribution } from "@/lib/analytics";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -69,18 +70,31 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!slug) return;
+    const hasMock = MOCK_PRODUCTS.some((p) => p.slug === slug);
     supabase.from("products").select("*").eq("slug", slug).eq("is_active", true).single()
-      .then(({ data }) => {
-        if (data) setProduct((prev) => ({
-          ...prev, id: data.id, title: data.title,
-          subtitle: data.subtitle ?? prev.subtitle,
-          description: data.description ?? prev.description,
-          price: parseFloat(data.price),
-          original_price: data.original_price ? parseFloat(data.original_price) : undefined,
-          slug: data.slug,
-        }));
+      .then(({ data, error }) => {
+        if (data) {
+          const priceNum = typeof data.price === "number" ? data.price : parseFloat(data.price);
+          const originalNum = data.original_price
+            ? (typeof data.original_price === "number" ? data.original_price : parseFloat(data.original_price))
+            : undefined;
+          if (!Number.isFinite(priceNum)) return;
+          setProduct((prev) => ({
+            ...prev, id: data.id, title: data.title,
+            subtitle: data.subtitle ?? prev.subtitle,
+            description: data.description ?? prev.description,
+            price: priceNum,
+            original_price: Number.isFinite(originalNum as number) ? originalNum : undefined,
+            slug: data.slug,
+          }));
+          return;
+        }
+        if (error && !hasMock) {
+          toast.error("Produto não encontrado.");
+          navigate("/products");
+        }
       });
-  }, [slug]);
+  }, [slug, navigate]);
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -124,6 +138,7 @@ export default function CheckoutPage() {
     toast.success("Pedido registrado! ✦");
 
     // Sequenzy: checkout.completed — fired immediately when order is registered
+    const attribution = getAttribution();
     fireEventAsync("checkout.completed", {
       email: form.email.trim().toLowerCase(),
       firstName: form.name.trim().split(" ")[0],
@@ -134,6 +149,9 @@ export default function CheckoutPage() {
         order_id: data?.orderId ?? "",
         amount: product.price as number,
         completed_at: new Date().toISOString(),
+        utm_source:   attribution.utm_source   ?? "",
+        utm_medium:   attribution.utm_medium   ?? "",
+        utm_campaign: attribution.utm_campaign ?? "",
       },
     });
 

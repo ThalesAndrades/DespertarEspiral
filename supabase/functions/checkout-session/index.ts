@@ -2,6 +2,7 @@
 // Creates a pending order, integrates with Asaas (PIX/cartão/boleto) and Sequenzy
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
+import { rateLimit, clientKey } from "../_shared/rateLimit.ts";
 import {
   sequenzyUpsertSubscriber,
   sequenzyEvent,
@@ -12,8 +13,9 @@ import {
 
 const ASAAS_BASE = "https://api.asaas.com/v3"; // use https://sandbox.asaas.com/api/v3 for sandbox
 const SITE_URL   = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
+const MAX_BODY_BYTES = 8 * 1024; // 8KB — checkout payload is tiny
 
-function jsonResponse(req: Request, status: number, body: unknown) {
+function jsonResponse(req: Request, status: number, body: unknown, extra: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -22,6 +24,8 @@ function jsonResponse(req: Request, status: number, body: unknown) {
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer",
+      "X-Frame-Options": "DENY",
+      ...extra,
     },
   });
 }
@@ -161,25 +165,66 @@ Deno.serve(async (req: Request) => {
   if (!isAllowedOrigin(req)) return jsonResponse(req, 403, { error: "Origem não permitida" });
   if (req.method !== "POST") return jsonResponse(req, 405, { error: "Método não permitido" });
 
+  // Rate limit: max 10 checkout attempts per IP in 60s
+  const rl = rateLimit(`checkout:${clientKey(req)}`, 10, 60_000);
+  if (!rl.allowed) {
+    return jsonResponse(
+      req,
+      429,
+      { error: "Muitas tentativas. Aguarde alguns segundos e tente novamente." },
+      { "Retry-After": Math.ceil(rl.retryAfterMs / 1000).toString() }
+    );
+  }
+
   try {
     const contentType = req.headers.get("content-type") ?? "";
     if (!contentType.toLowerCase().includes("application/json")) {
       return jsonResponse(req, 415, { error: "Content-Type deve ser application/json" });
     }
 
-    const { productSlug, email, name, paymentMethod, cpfCnpj } = await req.json();
+    // Guard against oversized payloads
+    const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+    if (contentLength > MAX_BODY_BYTES) {
+      return jsonResponse(req, 413, { error: "Payload muito grande" });
+    }
+
+    const raw = await req.text();
+    if (raw.length > MAX_BODY_BYTES) {
+      return jsonResponse(req, 413, { error: "Payload muito grande" });
+    }
+    let parsed: Record<string, unknown>;
+    try { parsed = JSON.parse(raw); } catch { return jsonResponse(req, 400, { error: "JSON inválido" }); }
+    const { productSlug, email, name, paymentMethod, cpfCnpj } = parsed as {
+      productSlug?: string; email?: string; name?: string;
+      paymentMethod?: string; cpfCnpj?: string;
+    };
 
     // Input validation
     if (!productSlug || !email) {
       return jsonResponse(req, 400, { error: "productSlug e email são obrigatórios" });
     }
+    if (typeof productSlug !== "string" || !/^[a-z0-9-]{2,64}$/i.test(productSlug)) {
+      return jsonResponse(req, 400, { error: "productSlug inválido" });
+    }
+    if (typeof email !== "string" || email.length > 254) {
+      return jsonResponse(req, 400, { error: "E-mail inválido" });
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return jsonResponse(req, 400, { error: "Formato de e-mail inválido" });
     }
+    if (name !== undefined && (typeof name !== "string" || name.length > 120)) {
+      return jsonResponse(req, 400, { error: "Nome inválido" });
+    }
     const validMethods = ["pix", "credit", "boleto", null, undefined];
-    if (!validMethods.includes(paymentMethod)) {
+    if (!validMethods.includes(paymentMethod as string | null | undefined)) {
       return jsonResponse(req, 400, { error: "Método de pagamento inválido" });
+    }
+    if (cpfCnpj !== undefined && cpfCnpj !== null) {
+      const digits = String(cpfCnpj).replace(/\D/g, "");
+      if (digits && (digits.length < 11 || digits.length > 14)) {
+        return jsonResponse(req, 400, { error: "CPF/CNPJ inválido" });
+      }
     }
 
     const supabaseAdmin = createClient(
