@@ -69,18 +69,31 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!slug) return;
+    const hasMock = MOCK_PRODUCTS.some((p) => p.slug === slug);
     supabase.from("products").select("*").eq("slug", slug).eq("is_active", true).single()
-      .then(({ data }) => {
-        if (data) setProduct((prev) => ({
-          ...prev, id: data.id, title: data.title,
-          subtitle: data.subtitle ?? prev.subtitle,
-          description: data.description ?? prev.description,
-          price: parseFloat(data.price),
-          original_price: data.original_price ? parseFloat(data.original_price) : undefined,
-          slug: data.slug,
-        }));
+      .then(({ data, error }) => {
+        if (data) {
+          const priceNum = typeof data.price === "number" ? data.price : parseFloat(data.price);
+          const originalNum = data.original_price
+            ? (typeof data.original_price === "number" ? data.original_price : parseFloat(data.original_price))
+            : undefined;
+          if (!Number.isFinite(priceNum)) return;
+          setProduct((prev) => ({
+            ...prev, id: data.id, title: data.title,
+            subtitle: data.subtitle ?? prev.subtitle,
+            description: data.description ?? prev.description,
+            price: priceNum,
+            original_price: Number.isFinite(originalNum as number) ? originalNum : undefined,
+            slug: data.slug,
+          }));
+          return;
+        }
+        if (error && !hasMock) {
+          toast.error("Produto não encontrado.");
+          navigate("/products");
+        }
       });
-  }, [slug]);
+  }, [slug, navigate]);
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));

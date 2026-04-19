@@ -170,7 +170,7 @@ Deno.serve(async (req: Request) => {
         console.error("Failed to grant access (email lookup):", accessErr.message);
       }
     } else {
-      console.warn(`No profile found for ${order.email} — access pending account creation`);
+      console.warn(`No profile found for order=${order.id} — access pending account creation`);
     }
   }
 
