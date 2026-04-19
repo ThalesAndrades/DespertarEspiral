@@ -37,10 +37,19 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, asaas-access-token",
 };
 
+const MAX_BODY_BYTES = 32 * 1024;
+
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" },
+    headers: {
+      ...CORS,
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+      "X-Frame-Options": "DENY",
+    },
   });
 }
 
@@ -59,9 +68,15 @@ Deno.serve(async (req: Request) => {
   if (!safeEquals(receivedToken, webhookToken)) { console.warn("Asaas webhook: token inválido"); return json(401, { error: "Token inválido" }); }
 
   /* ── 2. Parse payload ── */
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > MAX_BODY_BYTES) return json(413, { error: "Payload muito grande" });
+
   let payload: Record<string, unknown>;
-  try { payload = await req.json(); }
-  catch { return json(400, { error: "Payload inválido" }); }
+  try {
+    const raw = await req.text();
+    if (raw.length > MAX_BODY_BYTES) return json(413, { error: "Payload muito grande" });
+    payload = JSON.parse(raw) as Record<string, unknown>;
+  } catch { return json(400, { error: "Payload inválido" }); }
 
   const event   = (payload.event as string | undefined) ?? "";
   const payment = (payload.payment as Record<string, unknown> | undefined) ?? {};
@@ -113,6 +128,23 @@ Deno.serve(async (req: Request) => {
   if (order.status === "paid") {
     console.log(`Order ${order.id} already paid — idempotent skip`);
     return json(200, { received: true, action: "already_paid" });
+  }
+
+  /* ── 5b. Amount sanity check — prevent underpayment acceptance ── */
+  const expectedAmount = parseFloat(String(order.amount ?? "0"));
+  if (Number.isFinite(expectedAmount) && expectedAmount > 0 && confirmedValue > 0) {
+    // Tolerate rounding differences up to R$ 0.05
+    if (confirmedValue + 0.05 < expectedAmount) {
+      console.error(
+        `Amount mismatch for order ${order.id}: expected=${expectedAmount} confirmed=${confirmedValue}`
+      );
+      await supabase
+        .from("orders")
+        .update({ status: "flagged", payment_method: billingType.toLowerCase() })
+        .eq("id", order.id)
+        .eq("status", "pending");
+      return json(200, { received: true, action: "amount_mismatch_flagged" });
+    }
   }
 
   /* ── 6. Mark order as paid (atomic) ── */

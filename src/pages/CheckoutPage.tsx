@@ -15,6 +15,7 @@ import mulherEspiralProductImg from "@/assets/mulher-espiral-hero.jpg";
 import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
 import { toast } from "sonner";
 import { fireEventAsync } from "@/lib/sequenzy";
+import { getAttribution } from "@/lib/analytics";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -137,6 +138,7 @@ export default function CheckoutPage() {
     toast.success("Pedido registrado! ✦");
 
     // Sequenzy: checkout.completed — fired immediately when order is registered
+    const attribution = getAttribution();
     fireEventAsync("checkout.completed", {
       email: form.email.trim().toLowerCase(),
       firstName: form.name.trim().split(" ")[0],
@@ -147,6 +149,9 @@ export default function CheckoutPage() {
         order_id: data?.orderId ?? "",
         amount: product.price as number,
         completed_at: new Date().toISOString(),
+        utm_source:   attribution.utm_source   ?? "",
+        utm_medium:   attribution.utm_medium   ?? "",
+        utm_campaign: attribution.utm_campaign ?? "",
       },
     });
 

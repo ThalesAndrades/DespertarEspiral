@@ -2,40 +2,121 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
     <title>Despertar Espiral — Mulher Espiral · Método de Reconexão e Cura</title>
     <meta name="description" content="Conduza seu reencontro com a essência através de um caminho de autoconhecimento profundo, estruturado e amoroso. Por Sunyan Nunes." />
     <meta name="keywords" content="despertar espiral, mulher espiral, autoconhecimento, cura feminina, reconexão, desenvolvimento pessoal, Sunyan Nunes" />
-    <meta name="robots" content="index,follow" />
-    <meta name="theme-color" content="#0b0d1c" />
+    <meta name="author" content="Sunyan Nunes" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#0b0d1c" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fffaf2" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Security -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Icons + PWA -->
     <link rel="icon" type="image/svg+xml" href="/brand-mark.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/brand-mark.svg" />
+    <link rel="mask-icon" href="/brand-mark.svg" color="#c6a870" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Despertar" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Canonical -->
     <link rel="canonical" href="https://despertarespiral.com/" />
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://despertarespiral.com" />
     <meta property="og:site_name" content="Despertar Espiral" />
+    <meta property="og:locale" content="pt_BR" />
     <meta property="og:title" content="Despertar Espiral — Mulher Espiral · Método de Reconexão e Cura" />
     <meta property="og:description" content="Conduza seu reencontro com a essência através de um caminho de autoconhecimento profundo, estruturado e amoroso." />
     <meta property="og:image" content="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200&h=630&fit=crop" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Despertar Espiral — Método de Reconexão e Cura" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Despertar Espiral — Mulher Espiral" />
     <meta name="twitter:description" content="Método de Reconexão e Cura por Sunyan Nunes." />
     <meta name="twitter:image" content="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200&h=630&fit=crop" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- JSON-LD — Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Despertar Espiral",
+      "url": "https://despertarespiral.com",
+      "logo": "https://despertarespiral.com/brand-mark.svg",
+      "email": "contato@despertarespiral.com",
+      "description": "Método de Reconexão e Cura feminina por Sunyan Nunes.",
+      "founder": {
+        "@type": "Person",
+        "name": "Sunyan Nunes"
+      },
+      "sameAs": []
+    }
+    </script>
+
+    <!-- JSON-LD — WebSite -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "Despertar Espiral",
       "url": "https://despertarespiral.com",
+      "inLanguage": "pt-BR",
       "description": "Método de Reconexão e Cura feminina por Sunyan Nunes"
+    }
+    </script>
+
+    <!-- JSON-LD — Course (Mulher Espiral) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      "name": "Mulher Espiral — Método de Reconexão e Cura",
+      "description": "Caminho de autoconhecimento profundo, estruturado e amoroso para mulheres em busca de reconexão com sua essência.",
+      "provider": {
+        "@type": "Organization",
+        "name": "Despertar Espiral",
+        "sameAs": "https://despertarespiral.com"
+      },
+      "inLanguage": "pt-BR",
+      "educationalLevel": "Beginner to advanced",
+      "url": "https://despertarespiral.com/checkout/mulher-espiral",
+      "hasCourseInstance": {
+        "@type": "CourseInstance",
+        "courseMode": "online",
+        "inLanguage": "pt-BR",
+        "courseWorkload": "PT40H"
+      }
     }
     </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="padding:32px;font-family:system-ui,sans-serif;text-align:center;color:#0b0d1c;background:#fffaf2;">
+        Para acessar o Despertar Espiral, ative o JavaScript no seu navegador.
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
