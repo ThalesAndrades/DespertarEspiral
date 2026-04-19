@@ -108,7 +108,7 @@ export default function CommunityPage() {
     // Optimistic update
     setLiked((prev) => {
       const s = new Set(prev);
-      isLiked ? s.delete(postId) : s.add(postId);
+      if (isLiked) s.delete(postId); else s.add(postId);
       return s;
     });
     setPosts((ps) =>
