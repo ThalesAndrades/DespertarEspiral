@@ -205,7 +205,7 @@ export default function PrivacyPolicyPage() {
         </P>
         <P>
           O acesso e uso de informações recebidas de APIs do Google obedecem à{" "}
-          <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>
+          <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 500 }}>
             Google API Services User Data Policy
           </a>
           , incluindo os requisitos de “Limited Use”. Nós não usamos dados do Google para fins de publicidade; não permitimos que terceiros os usem para

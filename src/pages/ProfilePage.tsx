@@ -32,9 +32,10 @@ export default function ProfilePage() {
   const [savingProfile, setSavingProfile] = useState(false);
 
   /* Password form */
+  const [currentPass,   setCurrentPass]   = useState("");
   const [newPass,       setNewPass]       = useState("");
   const [confirmPass,   setConfirmPass]   = useState("");
-  const [showConfirm,   setShowConfirm]   = useState(false);
+  const [showCurrent,   setShowCurrent]   = useState(false);
   const [showNew,       setShowNew]       = useState(false);
   const [savingPass,    setSavingPass]    = useState(false);
 
@@ -72,7 +73,7 @@ export default function ProfilePage() {
       toast.error(error.message);
     } else {
       toast.success("Senha alterada com sucesso. ✦");
-      setNewPass(""); setConfirmPass("");
+      setCurrentPass(""); setNewPass(""); setConfirmPass("");
     }
     setSavingPass(false);
   };
@@ -231,7 +232,7 @@ export default function ProfilePage() {
               <label style={LABEL}>Confirmar nova senha</label>
               <div style={{ position: "relative" }}>
                 <input
-                  type={showConfirm ? "text" : "password"}
+                  type={showCurrent ? "text" : "password"}
                   value={confirmPass}
                   onChange={(e) => setConfirmPass(e.target.value)}
                   placeholder="Repita a senha"
@@ -241,11 +242,11 @@ export default function ProfilePage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
+                  onClick={() => setShowCurrent(!showCurrent)}
                   style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "44px", minHeight: "44px" }}
-                  aria-label={showConfirm ? "Ocultar" : "Mostrar"}
+                  aria-label={showCurrent ? "Ocultar" : "Mostrar"}
                 >
-                  {showConfirm ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                  {showCurrent ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
                 </button>
               </div>
             </div>

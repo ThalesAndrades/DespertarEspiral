@@ -58,25 +58,23 @@ export default function AdminDashboardPage() {
       supabase.from("orders").select("id,status,amount,email,created_at,product_id,products(title)").order("created_at", { ascending: false }).limit(10),
       supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
       supabase.from("community_posts").select("id", { count: "exact", head: true }).eq("is_visible", true),
-      supabase.from("orders").select("amount", { count: "exact" }).eq("status", "paid"),
-      supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    ])
-      .then(([members, ordersRes, products, posts, paidTotals, pendingCount]) => {
-        const recent = (ordersRes.data ?? []) as RecentOrder[];
-        const paidRows = (paidTotals.data ?? []) as { amount: number | string }[];
-        const revenue = paidRows.reduce((s, o) => s + Number(o.amount), 0);
+    ]).then(([members, ordersRes, products, posts]) => {
+      const allOrders = (ordersRes.data ?? []) as RecentOrder[];
+      const paid = allOrders.filter((o) => o.status === "paid");
+      const pending = allOrders.filter((o) => o.status === "pending");
+      const revenue = paid.reduce((s, o) => s + Number(o.amount), 0);
 
-        setStats({
-          totalMembers:  members.count ?? 0,
-          paidOrders:    paidTotals.count ?? paidRows.length,
-          pendingOrders: pendingCount.count ?? 0,
-          totalRevenue:  revenue,
-          totalProducts: products.count ?? 0,
-          totalPosts:    posts.count ?? 0,
-        });
-        setOrders(recent.slice(0, 8));
-      })
-      .finally(() => setLoading(false));
+      setStats({
+        totalMembers:  members.count ?? 0,
+        paidOrders:    paid.length,
+        pendingOrders: pending.length,
+        totalRevenue:  revenue,
+        totalProducts: products.count ?? 0,
+        totalPosts:    posts.count ?? 0,
+      });
+      setOrders(allOrders.slice(0, 8));
+      setLoading(false);
+    });
   }, []);
 
   const statusBadge = (status: string) => {

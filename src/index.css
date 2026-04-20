@@ -911,29 +911,6 @@
   border-radius: 4px;
 }
 
-/* Skip-to-content link — a11y */
-.skip-link {
-  position: absolute;
-  left: 12px;
-  top: -200px;
-  z-index: 9999;
-  padding: 12px 22px;
-  background: var(--gold);
-  color: var(--bg-surface);
-  font-family: "Montserrat", sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 500;
-  border-radius: 10px;
-  text-decoration: none;
-  transition: top 0.2s ease;
-}
-.skip-link:focus,
-.skip-link:focus-visible {
-  top: 12px;
-}
-
 /* Autofill override */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

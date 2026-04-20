@@ -87,19 +87,15 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 function Suspense({ children }: { children: React.ReactNode }) {
   return (
     <React.Suspense fallback={<GlobalLoader />}>
-      <main id="main-content">
-        {children}
-      </main>
+      {children}
     </React.Suspense>
   );
 }
 
 export default function App() {
   return (
-    <>
-      <a href="#main-content" className="skip-link">Ir para o conteúdo principal</a>
-      <Suspense>
-        <Routes>
+    <Suspense>
+      <Routes>
         {/* Public */}
         <Route path="/"                element={<LandingPage />} />
         <Route path="/login"           element={<LoginPage />} />
@@ -135,7 +131,6 @@ export default function App() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      </Suspense>
-    </>
+    </Suspense>
   );
 }
