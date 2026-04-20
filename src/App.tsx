@@ -71,7 +71,10 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   if (loading) return <GlobalLoader />;
-  if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
+  if (!user) {
+    const full = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={`/login?next=${encodeURIComponent(full)}`} replace />;
+  }
   return <>{children}</>;
 }
 
@@ -80,6 +83,14 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   if (loading) return <GlobalLoader />;
   if (!user)               return <Navigate to="/login" replace />;
   if (user.role !== "admin") return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
+/* Redirect authenticated users away from login/register pages. */
+function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <GlobalLoader />;
+  if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -102,8 +113,8 @@ export default function App() {
         <Routes>
         {/* Public */}
         <Route path="/"                element={<LandingPage />} />
-        <Route path="/login"           element={<LoginPage />} />
-        <Route path="/register"        element={<RegisterPage />} />
+        <Route path="/login"           element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+        <Route path="/register"        element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password"  element={<ResetPasswordPage />} />
         <Route path="/checkout/:slug"  element={<CheckoutPage />} />

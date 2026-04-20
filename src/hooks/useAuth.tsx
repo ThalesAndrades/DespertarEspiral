@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { fireEventAsync } from "@/lib/sequenzy";
@@ -93,18 +93,35 @@ const fallbackAuth: AuthContextType = {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]       = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  // Track the currently-hydrated user id across renders so onAuthStateChange
+  // can dedupe redundant profile fetches without a stale closure.
+  const hydratedUserIdRef = useRef<string | null>(null);
 
   /* ── hydrate from session on mount ── */
   useEffect(() => {
     let mounted = true;
-    // Track whether getSession already resolved so onAuthStateChange
-    // SIGNED_IN doesn't fire a redundant profile fetch on initial load.
     let initialSessionResolved = false;
+
+    // Surface OAuth provider errors returned in the callback URL.
+    try {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const search = new URLSearchParams(window.location.search);
+      const errDesc = hash.get("error_description") ?? search.get("error_description");
+      if (errDesc) {
+        import("sonner").then(({ toast }) => toast.error(decodeURIComponent(errDesc))).catch(() => {});
+        // Scrub the URL so the error doesn't re-trigger on reload
+        const clean = window.location.pathname + (search.toString() ? `?${search.toString()}` : "");
+        window.history.replaceState({}, "", clean);
+      }
+    } catch { /* non-browser or malformed URL — ignore */ }
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (mounted && session?.user) {
         const { profile, slugs } = await fetchProfile(session.user.id);
-        if (mounted) setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+        if (mounted) {
+          setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+          hydratedUserIdRef.current = session.user.id;
+        }
       }
       if (mounted) {
         initialSessionResolved = true;
@@ -117,41 +134,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (event === "SIGNED_IN" && session?.user) {
-          // Always hydrate on SIGNED_IN.
-          // Skip only if getSession already resolved this exact user AND we already
-          // have that user in state (avoids double-fetch on page load).
           const alreadyHydrated =
-            initialSessionResolved &&
-            (await supabase.auth.getSession()
-              .then(({ data: { session: s } }) => s?.user?.id)
-              .catch(() => null)) === session.user.id;
+            initialSessionResolved && hydratedUserIdRef.current === session.user.id;
 
-          if (alreadyHydrated) {
-            // Still need to redirect after Google OAuth if a ?next was saved
-            const savedNext = sessionStorage.getItem("auth_next");
-            if (savedNext) {
-              sessionStorage.removeItem("auth_next");
-              if (window.location.pathname === "/" || window.location.pathname === "/login") {
-                window.location.replace(savedNext);
-              }
-            }
-            return;
+          if (!alreadyHydrated) {
+            const { profile, slugs } = await fetchProfile(session.user.id);
+            if (!mounted) return;
+            setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+            hydratedUserIdRef.current = session.user.id;
+            setLoading(false);
           }
 
-          const { profile, slugs } = await fetchProfile(session.user.id);
-          if (mounted) {
-            setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
-            setLoading(false);
-            // Redirect after OAuth if a destination was saved
-            const savedNext = sessionStorage.getItem("auth_next");
-            if (savedNext) {
-              sessionStorage.removeItem("auth_next");
-              if (window.location.pathname === "/" || window.location.pathname === "/login" || window.location.pathname === "/register") {
-                window.location.replace(savedNext);
-              }
+          // Post-OAuth redirect — consume `auth_next` once.
+          const savedNext = sessionStorage.getItem("auth_next");
+          if (savedNext) {
+            sessionStorage.removeItem("auth_next");
+            const authPages = new Set(["/", "/login", "/register"]);
+            if (authPages.has(window.location.pathname)) {
+              window.location.replace(savedNext);
             }
           }
         } else if (event === "SIGNED_OUT") {
+          sessionStorage.removeItem("auth_next");
+          hydratedUserIdRef.current = null;
           setUser(null);
           setLoading(false);
         } else if (event === "TOKEN_REFRESHED" && session?.user) {
@@ -205,13 +210,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       data: { full_name: name },
     });
-    if (updateErr || !updateData.user) return { error: updateErr?.message ?? "Erro ao definir senha" };
+    if (updateErr || !updateData.user) {
+      // OTP already consumed — sign out to avoid orphan authenticated state
+      await supabase.auth.signOut().catch(() => {});
+      return {
+        error:
+          (updateErr?.message ?? "Não foi possível definir a senha") +
+          ". Use \"Esqueci a senha\" para definir uma nova.",
+      };
+    }
 
-    // Update user_profiles
-    await supabase
+    // Update user_profiles — log error but don't block
+    const { error: profileErr } = await supabase
       .from("user_profiles")
       .update({ full_name: name })
       .eq("id", updateData.user.id);
+    if (profileErr) console.warn("[useAuth] profile update failed:", profileErr.message);
 
     const { profile, slugs } = await fetchProfile(updateData.user.id);
     setUser(mapSupabaseUser(updateData.user, profile ?? undefined, slugs));
@@ -241,14 +255,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /* ── Google OAuth ── */
   const loginWithGoogle = async (nextPath?: string): Promise<{ error?: string }> => {
-    // Save the intended destination so we can redirect after OAuth callback
-    const dest = nextPath ?? sessionStorage.getItem("auth_next") ?? "/dashboard";
+    // Sanitize redirect destination (same-origin absolute path only)
+    const raw = nextPath ?? "/dashboard";
+    const dest = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard";
     sessionStorage.setItem("auth_next", dest);
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        // Land directly on the intended destination; Supabase PKCE parses the
+        // code from the URL on arrival via detectSessionInUrl.
+        redirectTo: `${window.location.origin}${dest}`,
         queryParams: { access_type: "offline", prompt: "consent" },
         skipBrowserRedirect: false,
       },

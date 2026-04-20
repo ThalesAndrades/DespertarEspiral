@@ -11,7 +11,6 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, KeyRound, Loader2 } from "lucide-react";
 import { fireEventAsync } from "@/lib/sequenzy";
-import { supabase as _supabase } from "@/lib/supabase";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -35,27 +34,41 @@ export default function ResetPasswordPage() {
   const [invalid,   setInvalid]   = useState(false);   // link expired / already used
 
   // Supabase injects the recovery token into the URL hash (#access_token=...&type=recovery)
-  // and fires onAuthStateChange with event "PASSWORD_RECOVERY".
+  // and fires onAuthStateChange with event "PASSWORD_RECOVERY". If detection
+  // ran before this component mounted, fall back to checking for an active
+  // session alongside the recovery marker in the URL.
   useEffect(() => {
+    let cancelled = false;
+
+    const hashHasRecovery = /[#&?]type=recovery/.test(window.location.hash + window.location.search);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
-        setReady(true);
+        if (!cancelled) setReady(true);
       }
     });
 
-    // Timeout: if after 8s no recovery event fired, the link is invalid/expired
+    // Race-safe fallback: if PASSWORD_RECOVERY already fired before the
+    // subscription attached, getSession() will still return the recovery session.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!cancelled && session && hashHasRecovery) setReady(true);
+    });
+
+    // After 8s with no recovery session, show invalid-link UI.
     const timer = setTimeout(() => {
-      setInvalid((prev) => {
-        if (!prev && !ready) return true;
-        return prev;
-      });
+      if (!cancelled) {
+        setReady((prevReady) => {
+          if (!prevReady) setInvalid(true);
+          return prevReady;
+        });
+      }
     }, 8000);
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
       clearTimeout(timer);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,6 +86,9 @@ export default function ResetPasswordPage() {
     }
 
     toast.success("Senha atualizada com sucesso. ✦");
+
+    // Invalidate sessions on other devices after a password reset.
+    await supabase.auth.signOut({ scope: "others" }).catch(() => {});
 
     // Sequenzy: password reset completed → triggers "Senha redefinida" sequence
     if (data?.user?.email) {
