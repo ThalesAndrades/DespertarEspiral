@@ -112,9 +112,14 @@ export default function TopicPage() {
       .eq("post_id", id)
       .eq("is_visible", true)
       .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        if (data) setComments(data as unknown as CommentData[]);
-        else setComments([]);
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("comments fetch:", error);
+          toast.error("Não foi possível carregar as respostas.");
+          setComments([]);
+        } else {
+          setComments((data ?? []) as unknown as CommentData[]);
+        }
       });
   }, [id]);
 

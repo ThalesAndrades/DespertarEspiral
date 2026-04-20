@@ -111,9 +111,16 @@ export default function AdminProductContentPage() {
 
   /* Delete module */
   const deleteModule = async (modId: string) => {
+    if (!id) return;
     if (!confirm("Remover módulo e todas as aulas?")) return;
     setDeleting(modId);
-    const { error } = await supabase.from("modules").delete().eq("id", modId);
+    // Scope by product_id so a stale/manipulated modId cannot delete
+    // modules belonging to other products.
+    const { error } = await supabase
+      .from("modules")
+      .delete()
+      .eq("id", modId)
+      .eq("product_id", id);
     if (error) { toast.error("Erro ao remover."); }
     else { setModules((prev) => prev.filter((m) => m.id !== modId)); toast.success("Módulo removido."); }
     setDeleting(null);

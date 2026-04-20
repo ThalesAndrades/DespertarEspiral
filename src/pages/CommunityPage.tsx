@@ -63,6 +63,7 @@ export default function CommunityPage() {
 
     if (error) {
       console.error("community_posts fetch:", error);
+      toast.error("Não foi possível carregar os posts. Tente novamente.");
     } else if (data) {
       const mapped: CommunityPost[] = (data as Record<string, unknown>[]).map((r) => ({
         id: r.id as string,
@@ -125,6 +126,7 @@ export default function CommunityPage() {
         // Revert on failure
         setLiked((prev) => { const s = new Set(prev); s.add(postId); return s; });
         setPosts((ps) => ps.map((p) => p.id === postId ? { ...p, likes: p.likes + 1 } : p));
+        toast.error("Não foi possível remover a curtida.");
       }
     } else {
       const { error } = await supabase
@@ -134,6 +136,7 @@ export default function CommunityPage() {
         // Revert on failure
         setLiked((prev) => { const s = new Set(prev); s.delete(postId); return s; });
         setPosts((ps) => ps.map((p) => p.id === postId ? { ...p, likes: p.likes - 1 } : p));
+        toast.error("Não foi possível curtir este post.");
       }
     }
   };

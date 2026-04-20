@@ -44,20 +44,37 @@ export default function ProfilePage() {
     if (!name.trim()) { toast.error("Nome não pode estar vazio."); return; }
     setSavingProfile(true);
 
-    const [updateAuthRes, updateProfileRes] = await Promise.all([
-      supabase.auth.updateUser({ data: { full_name: name.trim() } }),
-      supabase.from("user_profiles").update({
+    // Update auth metadata first — if it fails, the user_profiles table stays
+    // untouched so the two stores don't desync.
+    const { error: authErr } = await supabase.auth.updateUser({
+      data: { full_name: name.trim() },
+    });
+    if (authErr) {
+      toast.error(authErr.message || "Erro ao salvar perfil.");
+      setSavingProfile(false);
+      return;
+    }
+
+    const { error: profileErr } = await supabase
+      .from("user_profiles")
+      .update({
         full_name:      name.trim(),
         anonymous_name: anonymousName.trim() || user?.anonymous_name,
-      }).eq("id", user!.id),
-    ]);
+      })
+      .eq("id", user!.id);
 
-    if (updateAuthRes.error || updateProfileRes.error) {
-      toast.error(updateAuthRes.error?.message ?? updateProfileRes.error?.message ?? "Erro ao salvar perfil.");
-    } else {
-      await refreshUser();
-      toast.success("Perfil atualizado. ✦");
+    if (profileErr) {
+      // Auth succeeded but profile row failed — surface the discrepancy so the
+      // user can retry. A subsequent retry is idempotent.
+      toast.error(
+        `${profileErr.message || "Erro ao salvar perfil."} Tente novamente.`
+      );
+      setSavingProfile(false);
+      return;
     }
+
+    await refreshUser();
+    toast.success("Perfil atualizado. ✦");
     setSavingProfile(false);
   };
 
