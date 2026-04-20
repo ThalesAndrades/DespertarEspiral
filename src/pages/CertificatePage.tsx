@@ -121,7 +121,7 @@ export default function CertificatePage() {
     if (certRef.current) certRef.current.id = "cert-print-target";
     window.print();
     setTimeout(() => {
-      document.head.removeChild(style);
+      if (style.parentNode) style.parentNode.removeChild(style);
       if (certRef.current) certRef.current.removeAttribute("id");
       toast.success("Certificado salvo/impresso.");
     }, 1000);
@@ -129,11 +129,15 @@ export default function CertificatePage() {
 
   const handleShare = async () => {
     const url = window.location.href;
-    if (navigator.share) {
-      await navigator.share({ title: `Certificado — ${certData?.courseName}`, url });
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success("Link copiado!");
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Certificado — ${certData?.courseName}`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copiado!");
+      }
+    } catch {
+      // User cancelled share — no-op
     }
   };
 

@@ -10,7 +10,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { MOCK_PRODUCTS } from "@/constants/mockData";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import MulherEspiralMark from "@/components/layout/MulherEspiralMark";
 import mulherEspiralProductImg from "@/assets/mulher-espiral-hero.jpg";
 import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -566,5 +565,3 @@ function OrderSummary({ product, savings, compact = false }: { product: Record<s
   );
 }
 
-// Suppress unused MulherEspiralMark warning — used in compact thumb
-void MulherEspiralMark;

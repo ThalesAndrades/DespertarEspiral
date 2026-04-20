@@ -55,6 +55,10 @@ export default function AdminUsersPage() {
 
   const toggleRole = async (userId: string, currentRole: string) => {
     const newRole = currentRole === "admin" ? "member" : "admin";
+    const prompt = newRole === "admin"
+      ? "Promover esta usuária a administradora? Ela terá acesso total ao painel."
+      : "Remover permissões de administradora desta conta?";
+    if (!confirm(prompt)) return;
     setUpdating(userId);
     const { error } = await supabase
       .from("user_profiles")

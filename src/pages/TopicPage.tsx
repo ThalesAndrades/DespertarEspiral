@@ -114,25 +114,38 @@ export default function TopicPage() {
       .order("created_at", { ascending: true })
       .then(({ data }) => {
         if (data) setComments(data as unknown as CommentData[]);
-        else {
-          // Mock fallback comments
-          setComments([
-            { id: "c1", body: "Que belo partilhar. Eu também vivi isso no módulo 2. É como se o corpo se lembrasse do que já sabia.", created_at: "2026-04-10T15:00:00Z", user_profiles: { anonymous_name: "Cedro Dourado" }, likes_count: 12 },
-            { id: "c2", body: "Obrigada por colocar em palavras o que eu ainda não consegui. Isso me deu esperança.", created_at: "2026-04-10T16:30:00Z", user_profiles: { anonymous_name: "Íris do Campo" }, likes_count: 8 },
-          ]);
-        }
+        else setComments([]);
       });
   }, [id]);
 
+  /* Load user's like state for this post */
+  useEffect(() => {
+    if (!id || !user?.id) return;
+    supabase
+      .from("community_likes")
+      .select("post_id")
+      .eq("user_id", user.id)
+      .eq("post_id", id)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setLikedPost(true); });
+  }, [id, user?.id]);
+
   const handleLikePost = async () => {
-    if (!user || !post) return;
-    const isLiked = likedPost;
-    setLikedPost(!isLiked);
-    setPostLikes((p) => isLiked ? p - 1 : p + 1);
-    if (!isLiked) {
-      await supabase.from("community_likes").insert({ user_id: user.id, post_id: post.id });
-    } else {
-      await supabase.from("community_likes").delete().eq("user_id", user.id).eq("post_id", post.id);
+    if (!user) { toast.error("Faça login para curtir."); return; }
+    if (!post) return;
+    const wasLiked = likedPost;
+    setLikedPost(!wasLiked);
+    setPostLikes((p) => wasLiked ? p - 1 : p + 1);
+
+    const { error } = wasLiked
+      ? await supabase.from("community_likes").delete().eq("user_id", user.id).eq("post_id", post.id)
+      : await supabase.from("community_likes").insert({ user_id: user.id, post_id: post.id });
+
+    if (error) {
+      // Revert on failure
+      setLikedPost(wasLiked);
+      setPostLikes((p) => wasLiked ? p + 1 : p - 1);
+      toast.error("Não foi possível salvar sua curtida.");
     }
   };
 
@@ -162,22 +175,15 @@ export default function TopicPage() {
       body: newComment.trim(),
     }).select("id, body, created_at, user_profiles(anonymous_name)").single();
 
-    if (error) {
-      // Optimistic fallback
-      const optimistic: CommentData = {
-        id: `c${Date.now()}`,
-        body: newComment.trim(),
-        created_at: new Date().toISOString(),
-        user_profiles: { anonymous_name: user.anonymous_name },
-        likes_count: 0,
-      };
-      setComments((prev) => [...prev, optimistic]);
-    } else if (data) {
-      setComments((prev) => [...prev, data as unknown as CommentData]);
+    setSubmitting(false);
+
+    if (error || !data) {
+      toast.error("Não foi possível publicar o comentário. Tente novamente.");
+      return;
     }
 
+    setComments((prev) => [...prev, data as unknown as CommentData]);
     setNewComment("");
-    setSubmitting(false);
     toast.success("Comentário publicado. ✦");
   };
 

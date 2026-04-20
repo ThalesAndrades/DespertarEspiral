@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { setAnalyticsConsent } from "@/lib/analytics";
+import { captureAttribution, setAnalyticsConsent } from "@/lib/analytics";
 
 const CONSENT_KEY = "de_cookie_consent";
 
@@ -25,6 +25,7 @@ export default function CookieBanner() {
 
   const handleDecision = (accepted: boolean) => {
     setAnalyticsConsent(accepted);
+    if (accepted) captureAttribution();
     setVisible(false);
   };
 
