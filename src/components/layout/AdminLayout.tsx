@@ -3,8 +3,8 @@
  * Mobile: sticky header + slide-up drawer + bottom quick-nav
  * Desktop: fixed sidebar + breadcrumb
  */
-import { useState, useCallback } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useCallback, useEffect } from "react";
+import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import SpiralLogo from "./SpiralLogo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
@@ -196,6 +196,15 @@ function AdminBottomNav() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { user, loading } = useAuth();
+
+  // Defense-in-depth: block non-admins at the layout level even if the route
+  // guard is bypassed. Wait for auth hydration before deciding.
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (user.role !== "admin") return <Navigate to="/dashboard" replace />;
 
   const titles: Record<string, string> = {
     "/admin":           "Painel",

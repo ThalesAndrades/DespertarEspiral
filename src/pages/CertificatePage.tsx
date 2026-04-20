@@ -38,20 +38,26 @@ export default function CertificatePage() {
   const [certData, setCertData] = useState<CertData | null>(null);
   const [loading, setLoading] = useState(true);
   const [eligible, setEligible] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || !slug) return;
     (async () => {
       setLoading(true);
+      setFetchError(null);
 
       // 1. Load product with certificate config
-      const { data: product } = await supabase
+      const { data: product, error: productErr } = await supabase
         .from("products")
         .select("id, title, subtitle, certificate_config, modules(id, lessons(id, duration_min))")
         .eq("slug", slug)
         .single();
 
-      if (!product) { setLoading(false); return; }
+      if (productErr || !product) {
+        setFetchError(productErr?.message ?? "Curso não encontrado.");
+        setLoading(false);
+        return;
+      }
 
       const allLessons = (product.modules ?? []).flatMap(
         (m: { lessons: { id: string; duration_min?: number }[] }) => m.lessons
@@ -64,12 +70,18 @@ export default function CertificatePage() {
       if (totalLessonIds.length === 0) { setLoading(false); return; }
 
       // 2. Check completion
-      const { data: progress } = await supabase
+      const { data: progress, error: progressErr } = await supabase
         .from("lesson_progress")
         .select("lesson_id, completed_at")
         .eq("user_id", user.id)
         .eq("completed", true)
         .in("lesson_id", totalLessonIds);
+
+      if (progressErr) {
+        setFetchError(progressErr.message);
+        setLoading(false);
+        return;
+      }
 
       const completedIds = new Set((progress ?? []).map((r: { lesson_id: string }) => r.lesson_id));
       const isComplete = totalLessonIds.every((id: string) => completedIds.has(id));
@@ -146,6 +158,25 @@ export default function CertificatePage() {
       <div style={{ minHeight: "100dvh", background: "var(--bg-surface)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Loader2 size={28} style={{ color: "var(--gold)", animation: "spin 1s linear infinite" }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div style={{ minHeight: "100dvh", background: "var(--bg-surface)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", gap: "20px" }}>
+        <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(201,154,170,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Award size={30} style={{ color: "rgba(201,154,170,0.5)" }} strokeWidth={1.2} />
+        </div>
+        <h1 className="font-display" style={{ fontSize: "clamp(22px,4vw,32px)", fontWeight: 300, color: "var(--text-primary)", textAlign: "center" }}>
+          Não foi possível carregar o certificado
+        </h1>
+        <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.8, textAlign: "center", maxWidth: "420px" }}>
+          {fetchError} Tente novamente em instantes.
+        </p>
+        <Link to={`/products/${slug}`} className="btn-gold" style={{ padding: "13px 32px", fontSize: "9px" }}>
+          Voltar ao curso
+        </Link>
       </div>
     );
   }

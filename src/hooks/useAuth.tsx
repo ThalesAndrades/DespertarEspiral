@@ -250,6 +250,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { profile, slugs } = await fetchProfile(data.user.id);
     setUser(mapSupabaseUser(data.user, profile ?? undefined, slugs));
+    // Prevent the onAuthStateChange SIGNED_IN handler from duplicating the fetch
+    hydratedUserIdRef.current = data.user.id;
     return {};
   };
 
