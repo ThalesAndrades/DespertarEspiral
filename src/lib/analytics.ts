@@ -26,6 +26,7 @@ export type Attribution = Partial<Record<(typeof UTM_KEYS)[number], string>> & {
 
 export function captureAttribution(): void {
   if (typeof window === "undefined") return;
+  if (!hasAnalyticsConsent()) return;
   try {
     const params = new URLSearchParams(window.location.search);
     const attrs: Attribution = {};
