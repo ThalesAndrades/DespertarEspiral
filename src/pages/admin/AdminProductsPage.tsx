@@ -165,6 +165,7 @@ export default function AdminProductsPage() {
   };
 
   const toggleUserAccess = async (userId: string, productId: string, hasAccess: boolean) => {
+    if (hasAccess && !confirm("Revogar acesso desta usuária ao curso?")) return;
     setTogglingAccess(userId);
     if (hasAccess) {
       const { error } = await supabase.from("user_products").delete().eq("user_id", userId).eq("product_id", productId);

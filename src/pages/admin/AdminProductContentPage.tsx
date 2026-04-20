@@ -147,6 +147,7 @@ export default function AdminProductContentPage() {
 
   /* Delete lesson */
   const deleteLesson = async (modId: string, lessonId: string) => {
+    if (!confirm("Remover esta aula? Esta ação não pode ser desfeita.")) return;
     setDeleting(lessonId);
     const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
     if (error) { toast.error("Erro ao remover."); }

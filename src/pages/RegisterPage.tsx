@@ -69,7 +69,7 @@ export default function RegisterPage() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp || otp.length < 4) { toast.error("Digite o código de 4 dígitos."); return; }
+    if (!otp || otp.length < 6) { toast.error("Digite o código de 6 dígitos."); return; }
     setLoading(true);
     const result = await verifyOtpAndRegister(form.email, otp, form.password, form.name);
     if (result.error) { toast.error(result.error); setLoading(false); return; }
@@ -255,7 +255,7 @@ export default function RegisterPage() {
                     Código enviado
                   </h1>
                   <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.78 }}>
-                    Digite o código de 4 dígitos enviado para<br />
+                    Digite o código de 6 dígitos enviado para<br />
                     <strong style={{ color: "var(--text-primary)", fontWeight: 500 }}>{form.email}</strong>
                   </p>
                 </div>
@@ -264,10 +264,11 @@ export default function RegisterPage() {
                   <div>
                     <label style={LABEL}>Código de verificação</label>
                     <input
-                      type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4}
-                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                      placeholder="• • • •" className="input-dark"
-                      style={{ textAlign: "center", fontSize: "clamp(24px,5vw,32px)", letterSpacing: "0.38em", fontFamily: "Montserrat, sans-serif", fontWeight: 500, minHeight: "64px" }}
+                      type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6}
+                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="• • • • • •" className="input-dark"
+                      autoComplete="one-time-code"
+                      style={{ textAlign: "center", fontSize: "clamp(22px,5vw,30px)", letterSpacing: "0.32em", fontFamily: "Montserrat, sans-serif", fontWeight: 500, minHeight: "64px" }}
                       autoFocus
                     />
                   </div>

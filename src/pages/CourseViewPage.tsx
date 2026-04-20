@@ -33,8 +33,8 @@ export default function CourseViewPage() {
   const mockProduct = MOCK_PRODUCTS.find((p) => p.slug === slug);
 
   const [product,     setProduct]     = useState(mockProduct ?? null);
-  const [completed,   setCompleted]   = useState<Set<string>>(new Set(["l1", "l2"]));
-  const [openModules, setOpenModules] = useState<Record<string, boolean>>({ m1: true });
+  const [completed,   setCompleted]   = useState<Set<string>>(new Set());
+  const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
 
   /* -- Load real progress from Supabase */
   useEffect(() => {
@@ -50,7 +50,10 @@ export default function CourseViewPage() {
       .eq("slug", slug)
       .single()
       .then(({ data }) => {
-        if (data) setProduct(data as unknown as typeof mockProduct);
+        if (!data) return;
+        setProduct(data as unknown as typeof mockProduct);
+        const firstModId = (data as unknown as { modules?: { id: string }[] }).modules?.[0]?.id;
+        if (firstModId) setOpenModules((prev) => (prev[firstModId] !== undefined ? prev : { ...prev, [firstModId]: true }));
       });
 
     supabase
