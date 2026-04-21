@@ -151,7 +151,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             sessionStorage.removeItem("auth_next");
             const authPages = new Set(["/", "/login", "/register"]);
             if (authPages.has(window.location.pathname)) {
-              window.location.replace(savedNext);
+              const safePath = savedNext.startsWith("/") && !savedNext.startsWith("//")
+                ? savedNext
+                : "/dashboard";
+              window.location.replace(safePath);
             }
           }
         } else if (event === "SIGNED_OUT") {

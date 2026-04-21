@@ -142,7 +142,7 @@ Deno.serve(async (req: Request) => {
     calls.push(sequenzyEvent(apiKey, email, "contact.subscribed", { source: "platform" }));
   }
 
-  await sequenzyBatch(calls);
+  sequenzyBatch(calls);
 
   console.log(`[sequenzy-event] ${event} fired for ${email}`);
   return json(200, { ok: true, event, email }, cors);

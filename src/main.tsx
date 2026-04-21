@@ -6,6 +6,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "sonner";
 import App from "./App";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ErrorBoundary } from "@/lib/ErrorBoundary";
 import "./index.css";
 
 /* ── React Query — optimized defaults ── */
@@ -34,31 +35,33 @@ document.documentElement.setAttribute("data-theme", initialTheme);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <HelmetProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <App />
-            <Toaster
-              position="top-right"
-              theme={initialTheme}
-              richColors={false}
-              closeButton
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: "14px",
-                  borderRadius: "14px",
-                },
-                classNames: {
-                  toast: "toaster-brand",
-                },
-              }}
-            />
-          </AuthProvider>
-        </BrowserRouter>
-      </HelmetProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <HelmetProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <App />
+              <Toaster
+                position="top-right"
+                theme={initialTheme}
+                richColors={false}
+                closeButton
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: "14px",
+                    borderRadius: "14px",
+                  },
+                  classNames: {
+                    toast: "toaster-brand",
+                  },
+                }}
+              />
+            </AuthProvider>
+          </BrowserRouter>
+        </HelmetProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

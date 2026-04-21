@@ -3,6 +3,7 @@
  * Dark / Light totalmente cobertos, mobile-first em todas as seções
  */
 import { useEffect, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
 import {
@@ -13,7 +14,8 @@ import mulherEspiralHero from "@/assets/mulher-espiral-hero.jpg";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import mockupAtualizado from "@/assets/mockup-atualizado.png";
 import { useTheme } from "@/hooks/useTheme";
-import { ArrowRight, ArrowUpRight, Shield, Clock, Infinity as InfinityIcon, Star, ChevronDown } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Star, ChevronDown } from "lucide-react";
+import { testimonials, steps, guarantees, faqs, LANDING_STATS, COMMUNITY_STATS } from "@/constants/landingContent";
 import QuizSection from "@/components/features/QuizSection";
 
 /* ── Scroll progress ──────────────────────────────────────── */
@@ -93,52 +95,7 @@ function Stat({ value, label, delay = "" }: {value: string;label: string;delay?:
 
 }
 
-/* ── Data ─────────────────────────────────────────────────── */
-const testimonials = [
-{ name: "Lua Crescente", text: "Pela primeira vez em anos me senti em casa na minha própria pele. O método da Sunyan toca onde nenhum outro chegou.", detail: "Módulo 3 — O Corpo como Sabedoria" },
-{ name: "Violeta Silvestre", text: "Esse curso não te ensina sobre autoconhecimento. Ele te faz vivê-lo. É completamente diferente de qualquer coisa que já experimentei.", detail: "Concluiu Mulher Espiral" },
-{ name: "Rosa do Deserto", text: "Cheguei cética. Fui transformada. A profundidade do conteúdo e o cuidado de cada aula são incomparáveis.", detail: "Módulo 5 — O Feminino Sagrado" }];
-
-
-const steps = [
-{ num: "01", title: "Reconhecer", body: "Você enxerga os padrões que te aprisionam, com olhos de compaixão — não de julgamento." },
-{ num: "02", title: "Sentir", body: "O corpo fala. Aprendemos a ouvir o que ele carrega há anos em silêncio." },
-{ num: "03", title: "Integrar", body: "Cada aspecto de si mesma é acolhido. A espiral avança quando você para de fugir." },
-{ num: "04", title: "Despertar", body: "Não é um destino. É uma orientação. Uma forma de viver mais leve e alinhada." }];
-
-
-const guarantees = [
-{ icon: Shield, label: "7 dias de garantia", desc: "Devolução integral sem perguntas" },
-{ icon: InfinityIcon, label: "Acesso vitalício", desc: "Conteúdo sempre disponível" },
-{ icon: Clock, label: "Suporte humanizado", desc: "Time dedicado à sua jornada" }];
-
-
-const faqs = [
-{
-  q: "Para quem é o Mulher Espiral?",
-  a: "Para mulheres que sentem que algo está faltando — mesmo quando tudo 'parece' bem por fora. Para quem carrega histórias difíceis no corpo, mas ainda acredita em transformação. Não é necessária nenhuma experiência prévia com autoconhecimento."
-},
-{
-  q: "Como funciona o acesso ao curso?",
-  a: "Após a confirmação do pagamento, você recebe acesso vitalício à plataforma. Os módulos são liberados progressivamente para que você possa integrar cada etapa. Você aprende no seu ritmo, sem pressão."
-},
-{
-  q: "E se eu não me identificar com o conteúdo?",
-  a: "Você tem 7 dias de garantia incondicional. Se por qualquer motivo sentir que não é o momento certo, devolvemos 100% do investimento sem burocracia e sem perguntas. Simples assim."
-},
-{
-  q: "Preciso de muito tempo disponível?",
-  a: "As aulas foram criadas para a realidade da mulher moderna. Você pode progredir com 20 a 40 minutos por dia. O que importa é constância, não velocidade — a espiral avança no seu tempo."
-},
-{
-  q: "Existe suporte durante a jornada?",
-  a: "Sim. Você tem acesso à comunidade exclusiva de alunas e ao suporte humanizado da nossa equipe. Ninguém percorre esse caminho sozinha."
-},
-{
-  q: "Como é feito o pagamento?",
-  a: "Aceitamos PIX (aprovação instantânea), cartão de crédito em até 12× e boleto bancário. Após o pedido, você recebe as instruções detalhadas por e-mail."
-}];
-
+/* ── Data moved to @/constants/landingContent ─────────────── */
 
 function FaqItem({ q, a }: {q: string;a: string;}) {
   const [open, setOpen] = useState(false);
@@ -212,6 +169,16 @@ export default function LandingPage() {
 
 
   return (
+    <>
+      <Helmet>
+        <title>Despertar Espiral — Método de Reconexão e Cura Feminina</title>
+        <meta name="description" content="Uma jornada de autoconhecimento feminino com aulas práticas, comunidade ativa e certificado de conclusão. Inicie sua espiral de transformação." />
+        <meta property="og:title" content="Despertar Espiral — Método de Reconexão e Cura Feminina" />
+        <meta property="og:description" content="Uma jornada de autoconhecimento feminino com aulas práticas, comunidade ativa e certificado de conclusão." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://despertarespiral.com" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
     <div style={{ background: "var(--bg-surface)", color: "var(--text-primary)", minHeight: "100dvh", overflowX: "hidden", position: "relative" }}>
       {/* ── Scroll-snap: mobile only ───────────────────── */}
       <style>{`
@@ -388,10 +355,10 @@ export default function LandingPage() {
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "clamp(4px,2vw,16px)" }} className="sm:grid-cols-4">
-            <Stat value="280+" label="Mulheres na jornada" delay="reveal-delay-1" />
-            <Stat value="92%" label="Recomendam o método" delay="reveal-delay-2" />
+            <Stat value={LANDING_STATS.students} label="Mulheres na jornada" delay="reveal-delay-1" />
+            <Stat value={LANDING_STATS.recommendation} label="Recomendam o método" delay="reveal-delay-2" />
             <Stat value="8" label="Módulos transformadores" delay="reveal-delay-3" />
-            <Stat value="4.8 ★" label="Avaliação média" delay="reveal-delay-4" />
+            <Stat value={`${LANDING_STATS.rating} ★`} label="Avaliação média" delay="reveal-delay-4" />
           </div>
         </div>
         {/* Bottom diamond */}
@@ -611,7 +578,7 @@ export default function LandingPage() {
               </span>
               <span style={{ fontSize: "9px", letterSpacing: "0.22em", textTransform: "uppercase",
                 color: "rgba(164,158,208,0.90)", fontFamily: "Montserrat,sans-serif", fontWeight: 500 }}>
-                14 mulheres online agora
+                Comunidade exclusiva de alunas
               </span>
             </div>
 
@@ -636,12 +603,7 @@ export default function LandingPage() {
             background: "rgba(81,72,152,0.08)",
             overflow: "hidden"
           }}>
-            {[
-            { value: "280+", label: "Alunas na comunidade" },
-            { value: "1.1k", label: "Mensagens este mês" },
-            { value: "92%", label: "Recomendam o espaço" },
-            { value: "24h", label: "Espaço sempre ativo" }].
-            map(({ value, label }, i, arr) =>
+            {COMMUNITY_STATS.map(({ value, label }, i, arr) =>
             <div key={label} style={{
               flex: "1 1 0", minWidth: 0,
               padding: "clamp(16px,2.5vw,28px) clamp(12px,2vw,24px)",
@@ -719,116 +681,29 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {[
-              {
-                cat: "conquistas", catColor: "#8caa96", catBg: "rgba(140,170,150,0.10)",
-                msg: "Terminei o módulo 3 hoje e chorei. Não sabia que carregar tanto podia ser libertador.",
-                by: "Lua Crescente", time: "agora mesmo", likes: 12, comments: 4, initial: "L", initColor: "#8caa96"
-              },
-              {
-                cat: "desabafo", catColor: "#c99aaa", catBg: "rgba(201,154,170,0.10)",
-                msg: "Hoje foi difícil. Mas eu vim aqui, porque sei que vocês entendem sem julgamento.",
-                by: "Violeta Silvestre", time: "há 3 min", likes: 15, comments: 5, initial: "V", initColor: "#c99aaa"
-              },
-              {
-                cat: "dicas", catColor: "#c6a870", catBg: "rgba(198,168,112,0.10)",
-                msg: "Criei uma rotina de 20 min antes de dormir com a aula de integração somática. Mudou tudo.",
-                by: "Cedro Dourado", time: "há 8 min", likes: 9, comments: 2, initial: "C", initColor: "#c6a870"
-              },
-              {
-                cat: "conquistas", catColor: "#8caa96", catBg: "rgba(140,170,150,0.10)",
-                msg: "Concluí o curso inteiro. Voltei para mim com mais calma, presença e escolhas melhores.",
-                by: "Rosa do Deserto", time: "há 14 min", likes: 18, comments: 6, initial: "R", initColor: "#8caa96"
-              },
-              {
-                cat: "duvidas", catColor: "rgba(164,158,208,0.85)", catBg: "rgba(164,158,208,0.08)",
-                msg: "Alguém mais tem dificuldade com o módulo 5? Quero entender se é resistência ou ritmo.",
-                by: "Névoa Clara", time: "há 22 min", likes: 7, comments: 3, initial: "N", initColor: "rgba(164,158,208,0.85)"
-              }].
-              map((post, i) =>
-              <div key={i} style={{
-                background: i === 0 ? "rgba(81,72,152,0.14)" : "rgba(255,255,255,0.032)",
-                border: i === 0 ?
-                "1px solid rgba(81,72,152,0.38)" :
-                "1px solid rgba(255,255,255,0.055)",
-                borderRadius: "clamp(12px,1.5vw,16px)",
-                padding: "clamp(14px,2vw,20px)",
-                transition: "border-color 0.2s",
-                position: "relative",
-                overflow: "hidden"
-              }}>
-                  {/* Newest post glow */}
-                  {i === 0 &&
-                <div aria-hidden="true" style={{
-                  position: "absolute", top: 0, left: 0, right: 0, height: "1px",
-                  background: "linear-gradient(90deg, transparent, rgba(164,158,208,0.60), transparent)"
-                }} />
-                }
-
-                  {/* Post header */}
+              {/* Community preview cards */}
+              {testimonials.map((t, i) => (
+                <div key={i} style={{
+                  background: "rgba(255,255,255,0.032)",
+                  border: "1px solid rgba(255,255,255,0.055)",
+                  borderRadius: "clamp(12px,1.5vw,16px)",
+                  padding: "clamp(14px,2vw,20px)",
+                }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                    {/* Avatar */}
-                    <div style={{
-                    width: "30px", height: "30px", borderRadius: "50%", flexShrink: 0,
-                    background: `${post.initColor}18`,
-                    border: `1px solid ${post.initColor}40`,
-                    display: "flex", alignItems: "center", justifyContent: "center"
-                  }}>
-                      <span style={{ fontSize: "12px", color: post.initColor,
-                      fontFamily: "Montserrat,sans-serif", fontWeight: 600 }}>{post.initial}</span>
+                    <div style={{ width: "30px", height: "30px", borderRadius: "50%", flexShrink: 0,
+                      background: "rgba(198,168,112,0.12)", border: "1px solid rgba(198,168,112,0.30)",
+                      display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: "12px", color: "var(--gold)", fontFamily: "Montserrat,sans-serif", fontWeight: 600 }}>
+                        {t.name.charAt(0)}
+                      </span>
                     </div>
-                    {/* Name + time */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: "12px", color: "rgba(245,240,232,0.75)",
-                      fontFamily: "Montserrat,sans-serif", fontWeight: 500,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.by}</p>
-                      <p style={{ fontSize: "10px", color: "rgba(245,240,232,0.28)",
-                      fontFamily: "Montserrat,sans-serif" }}>{post.time}</p>
-                    </div>
-                    {/* Category badge */}
-                    <span style={{
-                    fontSize: "8px", letterSpacing: "0.18em", textTransform: "uppercase",
-                    color: post.catColor, background: post.catBg,
-                    border: `1px solid ${post.catColor}35`,
-                    borderRadius: "100px", padding: "3px 9px",
-                    fontFamily: "Montserrat,sans-serif", fontWeight: 500, flexShrink: 0
-                  }}>{post.cat}</span>
+                    <p style={{ fontSize: "12px", color: "rgba(245,240,232,0.75)", fontFamily: "Montserrat,sans-serif", fontWeight: 500 }}>{t.name}</p>
                   </div>
-
-                  {/* Post body */}
-                  <p style={{ fontSize: "clamp(12px,1.4vw,14px)", color: "rgba(245,240,232,0.62)",
-                  lineHeight: 1.70, marginBottom: "12px",
-                  fontFamily: "Montserrat,sans-serif" }}>{post.msg}</p>
-
-                  {/* Post footer: likes + comments */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px", paddingTop: "10px",
-                  borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: "5px",
-                    fontSize: "11px", color: "rgba(245,240,232,0.32)",
-                    fontFamily: "Montserrat,sans-serif" }}>
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M8 13.5C8 13.5 2 9.3 2 5.5C2 3.57 3.57 2 5.5 2C6.62 2 7.6 2.55 8 3.43C8.4 2.55 9.38 2 10.5 2C12.43 2 14 3.57 14 5.5C14 9.3 8 13.5 8 13.5Z"
-                      stroke="rgba(201,154,170,0.55)" strokeWidth="1.2" strokeLinejoin="round" />
-                      </svg>
-                      {post.likes}
-                    </span>
-                    <span style={{ display: "flex", alignItems: "center", gap: "5px",
-                    fontSize: "11px", color: "rgba(245,240,232,0.32)",
-                    fontFamily: "Montserrat,sans-serif" }}>
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M13 2H3C2.45 2 2 2.45 2 3V10C2 10.55 2.45 11 3 11H5L8 14L11 11H13C13.55 11 14 10.55 14 10V3C14 2.45 13.55 2 13 2Z"
-                      stroke="rgba(164,158,208,0.45)" strokeWidth="1.2" strokeLinejoin="round" />
-                      </svg>
-                      {post.comments}
-                    </span>
-                    {i === 0 &&
-                  <span style={{ marginLeft: "auto", fontSize: "9px",
-                    color: "rgba(140,170,150,0.70)", letterSpacing: "0.14em",
-                    textTransform: "uppercase", fontFamily: "Montserrat,sans-serif" }}>novo</span>
-                  }
-                  </div>
+                  <p style={{ fontSize: "clamp(12px,1.4vw,14px)", color: "rgba(245,240,232,0.62)", lineHeight: 1.70, fontFamily: "Montserrat,sans-serif" }}>
+                    {t.text}
+                  </p>
                 </div>
-              )}
+              ))}
 
               {/* Feed CTA */}
               <div style={{
@@ -1054,6 +929,8 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
-    </div>);
+    </div>
+    </>
+  );
 
 }

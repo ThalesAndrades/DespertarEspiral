@@ -37,6 +37,7 @@ export default function ProfilePage() {
   const [confirmPass,   setConfirmPass]   = useState("");
   const [showCurrent,   setShowCurrent]   = useState(false);
   const [showNew,       setShowNew]       = useState(false);
+  const [showConfirm,   setShowConfirm]   = useState(false);
   const [savingPass,    setSavingPass]    = useState(false);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -80,10 +81,23 @@ export default function ProfilePage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentPass) { toast.error("Digite a senha atual."); return; }
     if (!newPass) { toast.error("Digite a nova senha."); return; }
+    if (newPass.length < 8) { toast.error("A nova senha deve ter no mínimo 8 caracteres."); return; }
+    if (!/[A-Z]/.test(newPass)) { toast.error("A nova senha deve conter ao menos uma letra maiúscula."); return; }
+    if (!/[0-9]/.test(newPass)) { toast.error("A nova senha deve conter ao menos um número."); return; }
     if (newPass !== confirmPass) { toast.error("As senhas não coincidem."); return; }
-    if (newPass.length < 6) { toast.error("Senha com no mínimo 6 caracteres."); return; }
     setSavingPass(true);
+
+    const { error: reAuthError } = await supabase.auth.signInWithPassword({
+      email: user!.email,
+      password: currentPass,
+    });
+    if (reAuthError) {
+      toast.error("Senha atual incorreta.");
+      setSavingPass(false);
+      return;
+    }
 
     const { error } = await supabase.auth.updateUser({ password: newPass });
     if (error) {
@@ -223,13 +237,36 @@ export default function ProfilePage() {
 
           <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
+              <label style={LABEL}>Senha atual</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showCurrent ? "text" : "password"}
+                  value={currentPass}
+                  onChange={(e) => setCurrentPass(e.target.value)}
+                  placeholder="Digite sua senha atual"
+                  className="input-dark"
+                  style={{ paddingRight: "52px", borderRadius: "12px" }}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent(!showCurrent)}
+                  style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "44px", minHeight: "44px" }}
+                  aria-label={showCurrent ? "Ocultar" : "Mostrar"}
+                >
+                  {showCurrent ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                </button>
+              </div>
+            </div>
+
+            <div>
               <label style={LABEL}>Nova senha</label>
               <div style={{ position: "relative" }}>
                 <input
                   type={showNew ? "text" : "password"}
                   value={newPass}
                   onChange={(e) => setNewPass(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   className="input-dark"
                   style={{ paddingRight: "52px", borderRadius: "12px" }}
                   autoComplete="new-password"
@@ -243,13 +280,26 @@ export default function ProfilePage() {
                   {showNew ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
                 </button>
               </div>
+              {newPass.length > 0 && (
+                <div style={{ display: "flex", gap: "16px", marginTop: "8px", flexWrap: "wrap" }}>
+                  {[
+                    { ok: newPass.length >= 8, label: "8+ chars" },
+                    { ok: /[A-Z]/.test(newPass), label: "Maiúscula" },
+                    { ok: /[0-9]/.test(newPass), label: "Número" },
+                  ].map(({ ok, label }) => (
+                    <span key={label} style={{ fontSize: "11px", display: "flex", alignItems: "center", gap: "4px", color: ok ? "var(--sage)" : "var(--text-faint)" }}>
+                      <span style={{ fontSize: "13px" }}>{ok ? "✓" : "○"}</span> {label}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
               <label style={LABEL}>Confirmar nova senha</label>
               <div style={{ position: "relative" }}>
                 <input
-                  type={showCurrent ? "text" : "password"}
+                  type={showConfirm ? "text" : "password"}
                   value={confirmPass}
                   onChange={(e) => setConfirmPass(e.target.value)}
                   placeholder="Repita a senha"
@@ -259,11 +309,11 @@ export default function ProfilePage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowCurrent(!showCurrent)}
+                  onClick={() => setShowConfirm(!showConfirm)}
                   style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "44px", minHeight: "44px" }}
-                  aria-label={showCurrent ? "Ocultar" : "Mostrar"}
+                  aria-label={showConfirm ? "Ocultar" : "Mostrar"}
                 >
-                  {showCurrent ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                  {showConfirm ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
                 </button>
               </div>
             </div>
