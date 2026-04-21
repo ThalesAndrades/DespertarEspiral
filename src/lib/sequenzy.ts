@@ -43,11 +43,13 @@ export async function fireEvent(
       headers,
     });
 
-    if (error) {
+    if (error && import.meta.env.DEV) {
       console.warn(`[Sequenzy] event "${event}" failed:`, error.message);
     }
   } catch (e) {
-    console.warn(`[Sequenzy] event "${event}" error (non-blocking):`, e);
+    if (import.meta.env.DEV) {
+      console.warn(`[Sequenzy] event "${event}" error (non-blocking):`, e);
+    }
   }
 }
 

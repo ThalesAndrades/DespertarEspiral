@@ -73,7 +73,9 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password || password.length < 6) { toast.error("Senha com no mínimo 6 caracteres."); return; }
+    if (!password || password.length < 8) { toast.error("A senha deve ter no mínimo 8 caracteres."); return; }
+    if (!/[A-Z]/.test(password)) { toast.error("A senha deve conter ao menos uma letra maiúscula."); return; }
+    if (!/[0-9]/.test(password)) { toast.error("A senha deve conter ao menos um número."); return; }
     if (password !== confirm) { toast.error("As senhas não coincidem."); return; }
 
     setLoading(true);

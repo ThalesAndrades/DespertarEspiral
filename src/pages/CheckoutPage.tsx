@@ -4,11 +4,11 @@
  * Improved flow: live form validation, Asaas payment link surfaced on success
  */
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { MOCK_PRODUCTS } from "@/constants/mockData";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import mulherEspiralProductImg from "@/assets/mulher-espiral-hero.jpg";
 import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
@@ -40,7 +40,8 @@ export default function CheckoutPage() {
   const navigate  = useNavigate();
   const { user }  = useAuth();
 
-  const [product,       setProduct]       = useState(MOCK_PRODUCTS.find((p) => p.slug === slug) ?? MOCK_PRODUCTS[0]);
+  const [product,       setProduct]       = useState<{ id: string; slug: string; title: string; subtitle?: string; description?: string; price: number; original_price?: number } | null>(null);
+  const [productLoading, setProductLoading] = useState(true);
   const [form,          setForm]          = useState({ name: user?.name ?? "", email: user?.email ?? "" });
   const [errors,        setErrors]        = useState<{ name?: string; email?: string }>({});
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit" | "boleto">("pix");
@@ -68,8 +69,7 @@ export default function CheckoutPage() {
   }, [slug, user]);
 
   useEffect(() => {
-    if (!slug) return;
-    const hasMock = MOCK_PRODUCTS.some((p) => p.slug === slug);
+    if (!slug) { setProductLoading(false); return; }
     supabase.from("products").select("*").eq("slug", slug).eq("is_active", true).single()
       .then(({ data, error }) => {
         if (data) {
@@ -77,21 +77,24 @@ export default function CheckoutPage() {
           const originalNum = data.original_price
             ? (typeof data.original_price === "number" ? data.original_price : parseFloat(data.original_price))
             : undefined;
-          if (!Number.isFinite(priceNum)) return;
-          setProduct((prev) => ({
-            ...prev, id: data.id, title: data.title,
-            subtitle: data.subtitle ?? prev.subtitle,
-            description: data.description ?? prev.description,
+          if (!Number.isFinite(priceNum)) {
+            toast.error("Produto com preço inválido.");
+            navigate("/products");
+            return;
+          }
+          setProduct({
+            id: data.id, title: data.title,
+            subtitle: data.subtitle ?? undefined,
+            description: data.description ?? undefined,
             price: priceNum,
             original_price: Number.isFinite(originalNum as number) ? originalNum : undefined,
             slug: data.slug,
-          }));
-          return;
-        }
-        if (error && !hasMock) {
+          });
+        } else {
           toast.error("Produto não encontrado.");
           navigate("/products");
         }
+        setProductLoading(false);
       });
   }, [slug, navigate]);
 
@@ -181,6 +184,24 @@ export default function CheckoutPage() {
     setLoading(false);
   };
 
+  if (productLoading) return (
+    <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-surface)" }}>
+      <Loader2 size={28} style={{ color: "var(--gold)", animation: "spin 0.8s linear infinite" }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+  if (!product) return null;
+
+  const helmetTitle = `Checkout — ${product.title} | Despertar Espiral`;
+
+  // Helmet (rendered once product is loaded)
+  const helmetNode = (
+    <Helmet>
+      <title>{helmetTitle}</title>
+      <meta name="robots" content="noindex" />
+    </Helmet>
+  );
+
   // Success state — inline payment instructions
   if (step === "success" && successData) {
     const qs = new URLSearchParams({
@@ -194,6 +215,8 @@ export default function CheckoutPage() {
     });
 
     return (
+      <>
+        {helmetNode}
       <div style={{ minHeight: "100dvh", background: "var(--bg-surface)", color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
         <div style={{ maxWidth: "480px", width: "100%", textAlign: "center" }}>
           <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(140,170,150,0.12)", border: "1px solid rgba(140,170,150,0.30)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
@@ -273,6 +296,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
@@ -281,6 +305,8 @@ export default function CheckoutPage() {
     : null;
 
   return (
+    <>
+      {helmetNode}
     <div style={{ minHeight: "100dvh", background: "var(--bg-surface)", color: "var(--text-primary)" }}>
 
       {/* Top bar */}
@@ -477,6 +503,7 @@ export default function CheckoutPage() {
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+    </>
   );
 }
 

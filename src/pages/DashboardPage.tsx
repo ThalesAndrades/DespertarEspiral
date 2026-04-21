@@ -3,6 +3,7 @@
  * Priority: progress widget, quick-access course card, community pulse
  */
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -143,6 +144,10 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>Início — Despertar Espiral</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div style={{ maxWidth: "760px", margin: "0 auto", padding: "0" }}>
 
         {/* ══ GREETING HERO — mobile-first full-width ══ */}

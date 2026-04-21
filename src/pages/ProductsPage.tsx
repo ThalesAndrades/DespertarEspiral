@@ -2,6 +2,7 @@
  * ProductsPage — Mobile-first, full-width cards, real Supabase data
  */
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,6 +110,10 @@ export default function ProductsPage() {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>Meus Cursos — Despertar Espiral</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div style={{ maxWidth: "820px", margin: "0 auto", padding: "clamp(20px,4vw,32px) clamp(14px,4vw,24px)" }}>
 
         {/* Header */}

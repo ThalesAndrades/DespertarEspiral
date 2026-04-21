@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -185,8 +186,16 @@ export default function AdminOrdersPage() {
         {/* Desktop table */}
         <div className="card-dark hidden md:block" style={{ overflow: "hidden" }}>
           {loadingOrders ? (
-            <div style={{ padding: "48px", textAlign: "center" }}>
-              <Loader2 size={22} style={{ color: "var(--gold)", animation: "spin 1s linear infinite", margin: "0 auto" }} />
+            <div style={{ padding: "16px 0" }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{ display: "flex", gap: "16px", padding: "12px 16px", alignItems: "center" }}>
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 flex-1" />
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              ))}
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
@@ -263,9 +272,18 @@ export default function AdminOrdersPage() {
         {/* Mobile card list */}
         <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {loadingOrders ? (
-            <div style={{ padding: "48px", textAlign: "center" }}>
-              <Loader2 size={22} style={{ color: "var(--gold)", animation: "spin 1s linear infinite", margin: "0 auto" }} />
-            </div>
+            <>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card-dark" style={{ padding: "16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3 w-full mb-2" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              ))}
+            </>
           ) : filtered.length === 0 ? (
             <div className="card-dark" style={{ padding: "40px", textAlign: "center" }}>
               <p style={{ fontSize: "13px", color: "var(--text-faint)" }}>Nenhum pedido encontrado.</p>

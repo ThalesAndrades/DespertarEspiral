@@ -3,6 +3,7 @@
  * Passo 1: dados + OTP | Passo 2: verificação
  */
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
 import { LazyAuthSpiral3D as AuthSpiral3D } from "@/components/layout/LazyDecorative";
@@ -58,7 +59,9 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!form.name || !form.email || !form.password) { toast.error("Preencha todos os campos."); return; }
     if (form.password !== form.confirm) { toast.error("As senhas não coincidem."); return; }
-    if (form.password.length < 6) { toast.error("Senha com no mínimo 6 caracteres."); return; }
+    if (form.password.length < 8) { toast.error("A senha deve ter no mínimo 8 caracteres."); return; }
+    if (!/[A-Z]/.test(form.password)) { toast.error("A senha deve conter ao menos uma letra maiúscula."); return; }
+    if (!/[0-9]/.test(form.password)) { toast.error("A senha deve conter ao menos um número."); return; }
     setLoading(true);
     const result = await sendOtp(form.email);
     setLoading(false);
@@ -78,6 +81,11 @@ export default function RegisterPage() {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>Criar conta — Despertar Espiral</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
     <div style={{ minHeight: "100dvh", display: "flex", background: "var(--bg-surface)", color: "var(--text-primary)" }}>
 
       {/* ── Left panel — desktop only ── */}
@@ -296,5 +304,6 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

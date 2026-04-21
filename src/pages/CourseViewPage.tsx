@@ -8,7 +8,6 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { MOCK_PRODUCTS } from "@/constants/mockData";
 import {
   ChevronDown, ChevronRight, Play, FileText, File, Volume2,
   CheckCircle, ArrowLeft, BookOpen, Clock, Award,
@@ -29,10 +28,7 @@ export default function CourseViewPage() {
   const navigate  = useNavigate();
   const { user }  = useAuth();
 
-  /* -- Local fallback from mock data */
-  const mockProduct = MOCK_PRODUCTS.find((p) => p.slug === slug);
-
-  const [product,     setProduct]     = useState(mockProduct ?? null);
+  const [product,     setProduct]     = useState<null | Record<string, unknown>>(null);
   const [completed,   setCompleted]   = useState<Set<string>>(new Set());
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
 
@@ -50,8 +46,8 @@ export default function CourseViewPage() {
       .eq("slug", slug)
       .single()
       .then(({ data }) => {
-        if (!data) return;
-        setProduct(data as unknown as typeof mockProduct);
+        if (!data) { navigate("/products"); return; }
+        setProduct(data as unknown as Record<string, unknown>);
         const firstModId = (data as unknown as { modules?: { id: string }[] }).modules?.[0]?.id;
         if (firstModId) setOpenModules((prev) => (prev[firstModId] !== undefined ? prev : { ...prev, [firstModId]: true }));
       });

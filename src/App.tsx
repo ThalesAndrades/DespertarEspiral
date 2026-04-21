@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { ErrorBoundary } from "@/lib/ErrorBoundary";
 
 /* Lazy-loaded pages for optimal bundle splitting */
 const LandingPage           = React.lazy(() => import("@/pages/LandingPage"));
@@ -94,12 +95,14 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/* ── Suspense wrapper ── */
+/* ── Suspense + ErrorBoundary wrapper ── */
 function Suspense({ children }: { children: React.ReactNode }) {
   return (
-    <React.Suspense fallback={<GlobalLoader />}>
-      {children}
-    </React.Suspense>
+    <ErrorBoundary>
+      <React.Suspense fallback={<GlobalLoader />}>
+        {children}
+      </React.Suspense>
+    </ErrorBoundary>
   );
 }
 

@@ -129,12 +129,9 @@ export async function sequenzyTransactional(
 }
 
 /**
- * Batch all Sequenzy calls in Promise.allSettled (non-blocking).
- * Use when you need to fire multiple calls at once and don't want one failure
- * to block the others or the main response.
+ * Fire all Sequenzy calls in parallel without blocking the caller.
+ * Returns void — intentionally not awaitable.
  */
-export async function sequenzyBatch(
-  calls: Promise<void>[]
-): Promise<void> {
-  await Promise.allSettled(calls);
+export function sequenzyBatch(calls: Promise<void>[]): void {
+  Promise.allSettled(calls).catch(() => {});
 }

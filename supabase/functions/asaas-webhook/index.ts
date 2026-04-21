@@ -189,7 +189,7 @@ Deno.serve(async (req: Request) => {
     const productTitle = product?.title ?? "Despertar Espiral";
     const productSlug  = product?.slug  ?? "";
 
-    await sequenzyBatch([
+    sequenzyBatch([
       /* Upsert subscriber with purchase attributes */
       sequenzyUpsertSubscriber(sequenzyApiKey, {
         email: order.email,

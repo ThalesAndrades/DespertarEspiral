@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import {
   Users, ShoppingBag, BookOpen, TrendingUp,
@@ -86,9 +87,25 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "200px" }}>
-          <div style={{ width: "32px", height: "32px", border: "2px solid var(--border-soft)", borderTopColor: "var(--gold)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        <div style={{ marginBottom: "clamp(24px,4vw,36px)" }}>
+          <Skeleton className="h-3 w-24 mb-3" />
+          <Skeleton className="h-9 w-56" />
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "clamp(12px,2vw,16px)", marginBottom: "clamp(24px,4vw,32px)" }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card-dark" style={{ padding: "clamp(16px,2.5vw,22px)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+                <Skeleton className="h-2 w-24" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+              </div>
+              <Skeleton className="h-8 w-20" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-5 w-32 mb-4" />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-12 w-full mb-2 rounded-xl" />
+        ))}
       </AdminLayout>
     );
   }

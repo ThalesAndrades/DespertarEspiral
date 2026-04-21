@@ -4,6 +4,7 @@
  * Supports ?next= redirect param (safe open-redirect guard included)
  */
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
 import { LazyAuthSpiral3D as AuthSpiral3D } from "@/components/layout/LazyDecorative";
@@ -68,6 +69,11 @@ export default function LoginPage() {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>Entrar — Despertar Espiral</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
     <div style={{ minHeight: "100dvh", display: "flex", background: "var(--bg-surface)", color: "var(--text-primary)" }}>
 
       {/* ── Left panel — desktop only ── */}
@@ -217,5 +223,6 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

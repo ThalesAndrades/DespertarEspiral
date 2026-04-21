@@ -26,16 +26,34 @@ function jsonResponse(req: Request, status: number, body: unknown) {
   });
 }
 
-/* ── Asaas helper ── */
+/* ── CPF validation ── */
+function isValidCpf(cpf: string): boolean {
+  const s = cpf.replace(/\D/g, "");
+  if (s.length !== 11 || /^(\d)\1+$/.test(s)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(s[i]) * (10 - i);
+  let r = (sum * 10) % 11; if (r === 10 || r === 11) r = 0;
+  if (r !== parseInt(s[9])) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(s[i]) * (11 - i);
+  r = (sum * 10) % 11; if (r === 10 || r === 11) r = 0;
+  return r === parseInt(s[10]);
+}
+
+/* ── Asaas helper with timeout + retry ── */
 async function asaasRequest(
   apiKey: string,
   method: string,
   endpoint: string,
-  body?: Record<string, unknown>
-) {
+  body?: Record<string, unknown>,
+  attempt = 0
+): Promise<{ ok: boolean; status: number; data: Record<string, unknown> | null }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
   try {
     const res = await fetch(`${ASAAS_BASE}${endpoint}`, {
       method,
+      signal: controller.signal,
       headers: {
         "access_token": apiKey,
         "Content-Type": "application/json",
@@ -48,11 +66,18 @@ async function asaasRequest(
     try { json = JSON.parse(text); } catch { json = null; }
     if (!res.ok) {
       console.warn(`Asaas [${method}] ${endpoint} → ${res.status}: ${text.slice(0, 300)}`);
+      // Retry once on 5xx transient errors
+      if (res.status >= 500 && attempt < 1) {
+        await new Promise(r => setTimeout(r, 1000));
+        return asaasRequest(apiKey, method, endpoint, body, attempt + 1);
+      }
     }
     return { ok: res.ok, status: res.status, data: json };
   } catch (err) {
     console.error("Asaas request error:", err);
     return { ok: false, status: 0, data: null };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -181,6 +206,12 @@ Deno.serve(async (req: Request) => {
     if (!validMethods.includes(paymentMethod)) {
       return jsonResponse(req, 400, { error: "Método de pagamento inválido" });
     }
+    if (cpfCnpj) {
+      const digits = cpfCnpj.replace(/\D/g, "");
+      if (digits.length !== 14 && !isValidCpf(cpfCnpj)) {
+        return jsonResponse(req, 400, { error: "CPF inválido" });
+      }
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -255,7 +286,6 @@ Deno.serve(async (req: Request) => {
         );
 
         if (asaasData?.asaasId) {
-          // Store asaas payment reference in order
           await supabaseAdmin
             .from("orders")
             .update({
@@ -265,7 +295,19 @@ Deno.serve(async (req: Request) => {
             .eq("id", order.id);
         }
       } else {
-        console.warn("Could not create/find Asaas customer — payment link skipped");
+        console.warn("Could not create/find Asaas customer");
+      }
+
+      // If Asaas is configured but payment creation failed, mark order failed and surface the error
+      if (asaasData === null) {
+        await supabaseAdmin
+          .from("orders")
+          .update({ status: "failed" })
+          .eq("id", order.id);
+        return jsonResponse(req, 502, {
+          error: "Não foi possível gerar as instruções de pagamento. Tente novamente em instantes.",
+          orderId: order.id,
+        });
       }
     } else {
       console.warn("ASAAS_API_KEY not configured — payment gateway skipped");
@@ -277,7 +319,7 @@ Deno.serve(async (req: Request) => {
       const firstName = (name?.split(" ")[0] || email.split("@")[0]).trim();
       const amountFmt = `R$ ${parseFloat(product.price).toFixed(2).replace(".", ",")}`;
 
-      await sequenzyBatch([
+      sequenzyBatch([
         /* Upsert subscriber */
         sequenzyUpsertSubscriber(sequenzyApiKey, {
           email,
