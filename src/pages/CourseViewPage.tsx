@@ -20,7 +20,7 @@ const lessonLabel: Record<string, string> = {
   video: "Vídeo", text: "Leitura", pdf: "PDF", audio: "Áudio",
 };
 
-import mulherEspiralProduct from "@/assets/mulher-espiral-hero.jpg";
+import mulherEspiralProduct from "@/assets/mulher-espiral-hero-new.jpg";
 const FALLBACK = mulherEspiralProduct;
 
 export default function CourseViewPage() {

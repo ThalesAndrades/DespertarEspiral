@@ -10,7 +10,7 @@ import {
   LazyBackgroundSpiral3D as BackgroundSpiral3D,
   LazySectionSpiral3D as SectionSpiral3D } from
 "@/components/layout/LazyDecorative";
-import mulherEspiralHero from "@/assets/mulher-espiral-hero.jpg";
+import mulherEspiralHero from "@/assets/mulher-espiral-hero-new.jpg";
 import sunyanPortrait from "@/assets/sunyan-portrait.jpg";
 import mockupAtualizado from "@/assets/mockup-atualizado.png";
 import { useTheme } from "@/hooks/useTheme";
@@ -244,7 +244,7 @@ export default function LandingPage() {
                Desktop (grid 2-col): headline[col1 row1] + body[col1 row2]  |  macbook[col2 row1-2]
               */}
           <div style={{ width: "100%", display: "grid", gap: "clamp(16px,4vw,48px)", alignItems: "center" }}
-          className="flex flex-col lg:grid lg:grid-cols-[0.80fr_1.20fr]">
+          className="flex flex-col lg:grid lg:grid-cols-[1fr_1fr]">
 
             {/* ── 1 · Headline group ── */}
             <div
@@ -273,23 +273,93 @@ export default function LandingPage() {
               className="order-2 lg:order-none animate-fade-up delay-300 flex justify-center lg:justify-end"
               style={{ width: "100%", position: "relative", zIndex: 10 }}
             >
-              <img
-                src={mockupAtualizado}
-                alt="Mockup Despertar Espiral"
-                width={768}
-                height={454}
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
-                className="w-full max-w-[560px] sm:max-w-[640px] lg:max-w-[820px] xl:max-w-[920px] 2xl:max-w-[1040px] object-contain"
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  display: "block",
-                  objectFit: "contain",
-                  filter: "drop-shadow(0 26px 42px rgba(0,0,0,0.18)) drop-shadow(0 12px 20px rgba(0,0,0,0.12))",
-                }} />
-              
+              <div style={{ position: "relative", width: "100%" }}>
+                <img
+                  src={mockupAtualizado}
+                  alt="Plataforma Despertar Espiral no MacBook"
+                  width={768}
+                  height={454}
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    display: "block",
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 32px 56px rgba(0,0,0,0.30)) drop-shadow(0 8px 16px rgba(198,168,112,0.10))",
+                  }} />
+
+                {/* Floating card — top left: alunas online */}
+                <div className="animate-pop-in delay-600" style={{
+                  position: "absolute", top: "10%", left: "-2%",
+                  background: isLight ? "rgba(255,255,255,0.96)" : "rgba(12,15,34,0.92)",
+                  backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+                  border: `1px solid ${isLight ? "rgba(122,94,30,0.15)" : "rgba(198,168,112,0.20)"}`,
+                  borderRadius: "16px", padding: "12px 16px",
+                  boxShadow: "0 16px 48px rgba(0,0,0,0.26)",
+                  display: "flex", alignItems: "center", gap: "10px",
+                  minWidth: "170px",
+                }}>
+                  <div style={{ display: "flex", flexShrink: 0 }}>
+                    {["#c6a870","#c99aaa","#a49ed0","#8caa96"].map((c, i) => (
+                      <div key={i} style={{
+                        width: "26px", height: "26px", borderRadius: "50%",
+                        background: c + "28", border: `2px solid ${c}55`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        marginLeft: i > 0 ? "-8px" : "0",
+                        fontSize: "10px", color: c, fontFamily: "Montserrat,sans-serif", fontWeight: 600,
+                        zIndex: 4 - i, position: "relative",
+                      }}>{["L","V","R","M"][i]}</div>
+                    ))}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: "12px", fontWeight: 600, color: heroText, fontFamily: "DM Sans,sans-serif", lineHeight: 1.2 }}>280+ alunas</p>
+                    <p style={{ fontSize: "10px", color: heroMuted, fontFamily: "DM Sans,sans-serif" }}>em jornada agora</p>
+                  </div>
+                </div>
+
+                {/* Floating card — bottom right: progresso */}
+                <div className="animate-pop-in delay-700" style={{
+                  position: "absolute", bottom: "20%", right: "-2%",
+                  background: isLight ? "rgba(255,255,255,0.96)" : "rgba(12,15,34,0.92)",
+                  backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+                  border: `1px solid ${isLight ? "rgba(122,94,30,0.15)" : "rgba(198,168,112,0.20)"}`,
+                  borderRadius: "16px", padding: "14px 18px",
+                  boxShadow: "0 16px 48px rgba(0,0,0,0.26)",
+                  minWidth: "188px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(140,170,150,0.18)", border: "1px solid rgba(140,170,150,0.38)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#8caa96" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: "10px", color: heroMuted, fontFamily: "DM Sans,sans-serif", lineHeight: 1.1 }}>Módulo completado</p>
+                      <p style={{ fontSize: "12px", fontWeight: 600, color: heroText, fontFamily: "DM Sans,sans-serif", lineHeight: 1.3 }}>"O Corpo como Sabedoria"</p>
+                    </div>
+                  </div>
+                  <div style={{ background: isLight ? "rgba(10,12,26,0.07)" : "rgba(255,255,255,0.06)", borderRadius: "100px", height: "4px", overflow: "hidden" }}>
+                    <div style={{ width: "72%", height: "100%", borderRadius: "100px", background: "linear-gradient(90deg, #c6a870, #dac394)" }} />
+                  </div>
+                  <p style={{ fontSize: "10px", color: "var(--gold)", marginTop: "5px", fontFamily: "Montserrat,sans-serif", fontWeight: 600 }}>72% concluído</p>
+                </div>
+
+                {/* Floating badge — top right: certificado */}
+                <div className="animate-pop-in delay-800" style={{
+                  position: "absolute", top: "4%", right: "5%",
+                  background: "linear-gradient(135deg, rgba(198,168,112,0.20), rgba(198,168,112,0.07))",
+                  backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+                  border: "1px solid rgba(198,168,112,0.30)",
+                  borderRadius: "100px", padding: "7px 14px 7px 9px",
+                  boxShadow: "0 8px 28px rgba(198,168,112,0.18)",
+                  display: "flex", alignItems: "center", gap: "7px",
+                }}>
+                  <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "rgba(198,168,112,0.22)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: "10px" }}>🏅</span>
+                  </div>
+                  <span style={{ fontSize: "9px", color: "var(--gold)", fontFamily: "Montserrat,sans-serif", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600 }}>Certificado incluso</span>
+                </div>
+              </div>
             </div>
 
             {/* ── 3 · Body group (subtitle + CTAs) ── */}
@@ -377,7 +447,7 @@ export default function LandingPage() {
         <div style={{ position: "absolute", left: "-24px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} aria-hidden="true">
           <SectionSpiral3D size={100} height={280} opacity={isLight ? 0.22 : 0.26} color={isLight ? "#8f6e28" : "#a07c34"} emissive="#5a3a0a" speed={0.00035} lightBg={isLight} />
         </div>
-        <div style={{ position: "relative", maxWidth: "1100px", margin: "0 auto", display: "grid", gap: "clamp(32px,5vw,72px)", alignItems: "center" }} className="grid lg:grid-cols-2">
+        <div style={{ position: "relative", maxWidth: "1100px", margin: "0 auto", display: "grid", gap: "clamp(32px,5vw,72px)", alignItems: "start" }} className="grid lg:grid-cols-2">
           <div className="reveal-left">
             <p className="overline" style={{ color: "var(--gold)", marginBottom: "18px" }}>O Método Espiral</p>
             <h2 className="text-balance" style={{ fontSize: "clamp(28px,5vw,58px)", lineHeight: 1.06, fontWeight: 300, marginBottom: "20px", color: "var(--text-primary)" }}>
@@ -428,9 +498,9 @@ export default function LandingPage() {
           <div className="reveal reveal-delay-1" style={{ overflow: "hidden", borderRadius: "clamp(16px,2vw,22px)", border: "1px solid rgba(198,168,112,0.15)", marginBottom: "24px", background: "#0e1023" }}>
             <div className="grid lg:grid-cols-2" style={{ minHeight: "clamp(300px,50vw,420px)" }}>
               {/* Image */}
-              <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #0b0d1c 0%, #180d18 100%)", minHeight: "clamp(200px,32vw,280px)" }}>
+              <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #0b0d1c 0%, #180d18 100%)", minHeight: "clamp(260px,40vw,420px)" }}>
                 <img src={mulherEspiralHero} alt="Mulher Espiral" loading="lazy" decoding="async" width={1376} height={768}
-                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block", position: "absolute", inset: 0, mixBlendMode: "luminosity", opacity: 0.88 }} />
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 22%", display: "block", position: "absolute", inset: 0, opacity: 0.95 }} />
                 <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 90% 90% at 50% 100%, rgba(198,168,112,0.18) 0%, transparent 60%)", zIndex: 1 }} />
                 <div aria-hidden="true" className="hidden lg:block" style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 50%, #0e1023 100%)", zIndex: 2 }} />
                 <div aria-hidden="true" className="lg:hidden" style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0e1023 0%, transparent 50%)", zIndex: 2 }} />

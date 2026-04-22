@@ -10,7 +10,7 @@ import SpiralLogo from "@/components/layout/SpiralLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import mulherEspiralProductImg from "@/assets/mulher-espiral-hero.jpg";
+import mulherEspiralProductImg from "@/assets/mulher-espiral-hero-new.jpg";
 import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, Users } from "lucide-react";
 import { toast } from "sonner";
 import { fireEventAsync } from "@/lib/sequenzy";

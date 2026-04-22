@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import mulherEspiralProduct from "@/assets/mulher-espiral-hero.jpg";
+import mulherEspiralProduct from "@/assets/mulher-espiral-hero-new.jpg";
 import { ArrowRight, Play, MessageSquare, BookOpen, TrendingUp, Flame, Clock, CheckCircle2 } from "lucide-react";
 
 interface ProductWithProgress {
