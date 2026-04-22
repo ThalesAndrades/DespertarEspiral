@@ -90,6 +90,9 @@ export default function ThankYouPage() {
   const barCode      = params.get("barCode")  ?? "";
   const shortId      = orderId ? orderId.slice(0, 8).toUpperCase() : "—";
 
+  // QR Code stored in sessionStorage (too long for URL)
+  const pixQrCode = sessionStorage.getItem("pix_qr_code") ?? "";
+
   // Suppress unused warning
   void productSlug;
 
@@ -216,18 +219,57 @@ export default function ThankYouPage() {
 
           {/* Payment instructions — dynamic per method */}
           {payMethod === "pix" && (
-            <div style={{ background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "12px", padding: "clamp(12px,2vw,16px)" }}>
-              <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "10px" }}>
-                Chave PIX para pagamento
+            <div style={{ background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: "16px", padding: "clamp(14px,2.5vw,20px)" }}>
+              <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "14px" }}>
+                Pagamento via PIX
               </p>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                <code style={{ fontSize: "clamp(12px,1.5vw,14px)", color: "var(--text-primary)", flex: 1, wordBreak: "break-all" }}>
-                  {pixKey || "contato@despertarespiral.com"}
-                </code>
-                <CopyButton text={pixKey || "contato@despertarespiral.com"} />
+
+              {/* QR Code block */}
+              {pixQrCode && (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+                  <div style={{
+                    background: "#fff", borderRadius: "16px", padding: "14px",
+                    border: "2px solid rgba(198,168,112,0.35)",
+                    boxShadow: "0 6px 32px rgba(0,0,0,0.22)",
+                    display: "inline-flex",
+                  }}>
+                    <img
+                      src={`data:image/png;base64,${pixQrCode}`}
+                      alt="QR Code PIX"
+                      width={180}
+                      height={180}
+                      style={{ display: "block", borderRadius: "6px" }}
+                    />
+                  </div>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", textAlign: "center", lineHeight: 1.65 }}>
+                    Escaneie com o app do seu banco para pagar
+
+                    <span style={{ color: "var(--text-faint)", display: "block", marginTop: "3px", fontSize: "11px" }}>O QR Code expira em 24h</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Divider */}
+              {pixQrCode && (
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+                  <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
+                  <span className="font-label" style={{ fontSize: "8px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)" }}>ou copie a chave</span>
+                  <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
+                </div>
+              )}
+
+              {/* PIX key copy */}
+              <div style={{ background: "var(--bg-surface)", borderRadius: "10px", padding: "10px 12px", border: "1px solid var(--border-subtle)", marginBottom: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                  <code style={{ fontSize: "clamp(11px,1.4vw,13px)", color: "var(--text-primary)", flex: 1, wordBreak: "break-all", lineHeight: 1.6 }}>
+                    {pixKey || "contato@despertarespiral.com"}
+                  </code>
+                  <CopyButton text={pixKey || "contato@despertarespiral.com"} />
+                </div>
               </div>
+
               {barCode && (
-                <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-subtle)" }}>
+                <div style={{ paddingTop: "10px", borderTop: "1px solid var(--border-subtle)" }}>
                   <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "6px" }}>Código copia e cola</p>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                     <code style={{ fontSize: "11px", color: "var(--text-secondary)", flex: 1, wordBreak: "break-all", letterSpacing: "0.04em" }}>{barCode}</code>

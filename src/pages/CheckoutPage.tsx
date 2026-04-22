@@ -172,6 +172,13 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Store pixQrCode in sessionStorage (too long for URL params)
+    if (data.payment?.pixQrCode) {
+      sessionStorage.setItem("pix_qr_code", data.payment.pixQrCode);
+    } else {
+      sessionStorage.removeItem("pix_qr_code");
+    }
+
     // For PIX/boleto: show success state inline with payment details
     setSuccessData({
       orderId:    data.orderId ?? "",
@@ -231,18 +238,50 @@ export default function CheckoutPage() {
           {/* PIX details */}
           {paymentMethod === "pix" && (
             <div className="card-dark" style={{ padding: "20px", marginBottom: "16px", textAlign: "left" }}>
-              <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "10px" }}>
-                Chave PIX
+              <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "14px" }}>
+                Pagamento via PIX
               </p>
+
+              {/* QR Code */}
+              {successData.pixQrCode && (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "16px", gap: "10px" }}>
+                  <div style={{
+                    background: "#fff", borderRadius: "16px", padding: "14px",
+                    border: "2px solid rgba(198,168,112,0.30)",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+                    display: "inline-flex",
+                  }}>
+                    <img
+                      src={`data:image/png;base64,${successData.pixQrCode}`}
+                      alt="QR Code PIX"
+                      width={180} height={180}
+                      style={{ display: "block", borderRadius: "6px" }}
+                    />
+                  </div>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", textAlign: "center", lineHeight: 1.6 }}>
+                    Escaneie o QR Code com o app do seu banco
+                  </p>
+                </div>
+              )}
+
+              {/* Divider between QR and key */}
+              {successData.pixQrCode && successData.pixKey && (
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                  <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
+                  <span className="font-label" style={{ fontSize: "8px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)" }}>ou copie a chave</span>
+                  <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
+                </div>
+              )}
+
               {successData.pixKey ? (
                 <div>
-                  <code style={{ fontSize: "13px", color: "var(--text-primary)", wordBreak: "break-all", display: "block", marginBottom: "10px" }}>
+                  <code style={{ fontSize: "12px", color: "var(--text-primary)", wordBreak: "break-all", display: "block", marginBottom: "10px", lineHeight: 1.6, background: "var(--bg-surface-2)", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
                     {successData.pixKey}
                   </code>
                   <button
                     onClick={() => { navigator.clipboard.writeText(successData.pixKey!); toast.success("Chave copiada!"); }}
-                    className="btn-outline-gold" style={{ fontSize: "9px", padding: "8px 18px", minHeight: "40px" }}>
-                    Copiar chave PIX
+                    className="btn-outline-gold" style={{ fontSize: "9px", padding: "8px 18px", minHeight: "40px", width: "100%", justifyContent: "center" }}>
+                    Copiar chave PIX copia e cola
                   </button>
                 </div>
               ) : (
