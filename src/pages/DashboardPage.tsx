@@ -54,11 +54,50 @@ const CAT_COLOR: Record<string, string> = {
 };
 const FALLBACK = mulherEspiralProduct;
 
-function Spinner() {
+/* ── Skeleton shimmer helper ── */
+function Sk({ w = "100%", h = "14px", r = "8px", style }: { w?: string; h?: string; r?: string; style?: React.CSSProperties }) {
+  return <div className="skeleton" style={{ width: w, height: h, borderRadius: r, flexShrink: 0, ...style }} />;
+}
+
+function DashboardCourseSkeleton() {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" }}>
-      <div style={{ width: "22px", height: "22px", borderRadius: "50%", border: "2px solid var(--border-subtle)", borderTopColor: "var(--gold)", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Featured card skeleton */}
+      <div className="card-dark" style={{ overflow: "hidden" }}>
+        <Sk h="clamp(160px,28vw,220px)" r="0" />
+        <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <Sk w="120px" h="12px" />
+            <Sk w="36px" h="12px" />
+          </div>
+          <Sk h="3px" r="100px" />
+          <Sk w="72%" h="12px" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommunitySkeletonList() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {[1,2,3,4].map((i) => (
+        <div key={i} style={{ padding: "14px 0", borderBottom: i < 4 ? "1px solid var(--border-subtle)" : "none", display: "flex", gap: "12px", alignItems: "flex-start" }}>
+          <Sk w="8px" h="8px" r="50%" style={{ marginTop: "6px" }} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <Sk w="80px" h="11px" />
+              <Sk w="30px" h="11px" />
+            </div>
+            <Sk h="15px" />
+            <Sk w="55%" h="13px" />
+            <div style={{ display: "flex", gap: "12px" }}>
+              <Sk w="32px" h="11px" />
+              <Sk w="32px" h="11px" />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -232,7 +271,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {loadingP ? <Spinner /> : mainProduct ? (
+          {loadingP ? <DashboardCourseSkeleton /> : mainProduct ? (
             /* Featured course hero card */
             <Link to={`/products/${mainProduct.slug}`} style={{ textDecoration: "none", display: "block" }}>
               <div className="card-dark" style={{ overflow: "hidden", position: "relative" }}>
@@ -334,7 +373,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {loadingC ? <Spinner /> : posts.length === 0 ? (
+          {loadingC ? <CommunitySkeletonList /> : posts.length === 0 ? (
             <div className="card-dark" style={{ padding: "28px 20px", textAlign: "center" }}>
               <p style={{ fontSize: "14px", color: "var(--text-muted)", lineHeight: 1.7, marginBottom: "14px" }}>
                 Nenhum post ainda. Seja a primeira.

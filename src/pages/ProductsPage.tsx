@@ -29,11 +29,36 @@ interface Product {
 
 const FALLBACK = mulherEspiralCover;
 
-function Spinner() {
+/* ── Skeleton card for ProductsPage ── */
+function Sk({ w = "100%", h = "14px", r = "8px", style }: { w?: string; h?: string; r?: string; style?: React.CSSProperties }) {
+  return <div className="skeleton" style={{ width: w, height: h, borderRadius: r, flexShrink: 0, ...style }} />;
+}
+
+function ProductCardSkeleton() {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px" }}>
-      <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid var(--border-subtle)", borderTopColor: "var(--gold)", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div className="card-dark" style={{ overflow: "hidden" }}>
+      {/* Thumbnail */}
+      <Sk h="clamp(180px,30vw,240px)" r="0" />
+      {/* Content */}
+      <div style={{ padding: "clamp(14px,3vw,20px)", display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <Sk w="100px" h="10px" />
+            <Sk w="72px" h="10px" />
+          </div>
+          <Sk w="38px" h="10px" />
+        </div>
+        <Sk h="4px" r="100px" />
+        <Sk w="60%" h="36px" r="14px" />
+      </div>
+    </div>
+  );
+}
+
+function ProductsSkeletonList() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "clamp(12px,2vw,16px)" }}>
+      {[1, 2].map((i) => <ProductCardSkeleton key={i} />)}
     </div>
   );
 }
@@ -136,7 +161,7 @@ export default function ProductsPage() {
         </div>
 
         {loading ? (
-          <Spinner />
+          <ProductsSkeletonList />
         ) : products.length === 0 ? (
           <div className="card-dark" style={{ padding: "clamp(40px,8vw,72px) clamp(20px,4vw,32px)", textAlign: "center" }}>
             <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "rgba(198,168,112,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto clamp(16px,3vw,24px)" }}>

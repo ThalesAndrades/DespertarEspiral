@@ -1,8 +1,3 @@
-/**
- * CommunityPage — Mobile-first forum — Supabase-connected
- * Persists posts and likes to community_posts / community_likes tables.
- * Optimistic UI for likes; full async for post creation.
- */
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -38,6 +33,49 @@ function timeAgo(iso: string) {
   if (hours < 24) return `${hours}h`;
   if (days === 1) return "ontem";
   return `${days}d`;
+}
+
+/* ── Skeleton helpers ── */
+function Sk({ w = "100%", h = "14px", r = "8px", style }: { w?: string; h?: string; r?: string; style?: React.CSSProperties }) {
+  return <div className="skeleton" style={{ width: w, height: h, borderRadius: r, flexShrink: 0, ...style }} />;
+}
+
+function PostSkeleton() {
+  return (
+    <article style={{ borderBottom: "1px solid var(--border-subtle)", borderTop: "1px solid var(--border-subtle)" }}>
+      <div style={{ padding: "16px 16px 12px" }}>
+        {/* Author row */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+          <Sk w="30px" h="30px" r="50%" />
+          <div style={{ flex: 1, display: "flex", gap: "6px" }}>
+            <Sk w="90px" h="13px" />
+            <Sk w="28px" h="13px" />
+          </div>
+          <Sk w="52px" h="20px" r="100px" />
+        </div>
+        {/* Title */}
+        <Sk h="17px" style={{ marginBottom: "8px" }} />
+        <Sk w="75%" h="14px" style={{ marginBottom: "6px" }} />
+        <Sk w="40%" h="14px" />
+      </div>
+      {/* Actions */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px 10px", borderTop: "1px solid var(--border-subtle)" }}>
+        <Sk w="50px" h="32px" r="8px" />
+        <Sk w="50px" h="32px" r="8px" />
+        <div style={{ marginLeft: "auto" }}>
+          <Sk w="60px" h="13px" />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function CommunitySkeletonList() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+      {[1, 2, 3, 4, 5].map((i) => <PostSkeleton key={i} />)}
+    </div>
+  );
 }
 
 export default function CommunityPage() {
@@ -260,10 +298,7 @@ export default function CommunityPage() {
         {/* ── Posts ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: "2px", padding: "0 0 8px" }}>
           {postsLoading ? (
-            <div style={{ padding: "60px 24px", display: "flex", justifyContent: "center" }}>
-              <Loader2 size={22} style={{ color: "var(--gold)", animation: "spin 1s linear infinite" }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            </div>
+            <CommunitySkeletonList />
           ) : filtered.length === 0 ? (
             <div style={{ padding: "60px 24px", textAlign: "center" }}>
               <p style={{ fontSize: "16px", color: "var(--text-muted)", marginBottom: "16px" }}>Nenhum post nessa categoria.</p>
