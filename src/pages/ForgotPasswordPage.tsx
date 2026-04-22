@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, CheckCircle, Mail } from "lucide-react";
 import { fireEventAsync } from "@/lib/sequenzy";
+import { mapAuthError } from "@/lib/authErrors";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -34,7 +35,7 @@ export default function ForgotPasswordPage() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(mapAuthError(error.message)); return; }
     setSent(true);
 
     // Sequenzy: password reset requested → triggers "Recuperação de Senha" sequence

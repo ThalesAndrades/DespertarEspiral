@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, KeyRound, Loader2 } from "lucide-react";
 import { fireEventAsync } from "@/lib/sequenzy";
+import { mapAuthError } from "@/lib/authErrors";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -81,7 +82,7 @@ export default function ResetPasswordPage() {
     setLoading(false);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(mapAuthError(error.message));
       return;
     }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, createContext, useContext } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { fireEventAsync } from "@/lib/sequenzy";
+import { mapAuthError } from "@/lib/authErrors";
 
 /* ─────────────────────────────────────────── */
 export interface AuthUser {
@@ -193,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       options: { shouldCreateUser: true },
     });
-    if (error) return { error: error.message };
+    if (error) return { error: mapAuthError(error.message) };
     return {};
   };
 
@@ -209,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token: otp,
       type: "email",
     });
-    if (error || !data.user) return { error: error?.message ?? "Código inválido" };
+    if (error || !data.user) return { error: mapAuthError(error?.message ?? "Código inválido") };
 
     const { data: updateData, error: updateErr } = await supabase.auth.updateUser({
       password,
@@ -219,9 +220,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // OTP already consumed — sign out to avoid orphan authenticated state
       await supabase.auth.signOut().catch(() => {});
       return {
-        error:
-          (updateErr?.message ?? "Não foi possível definir a senha") +
-          ". Use \"Esqueci a senha\" para definir uma nova.",
+        error: mapAuthError(updateErr?.message) +
+          (updateErr ? " Use \"Esqueci a senha\" para definir uma nova." : ""),
       };
     }
 
@@ -251,7 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string
   ): Promise<{ error?: string }> => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) return { error: error?.message ?? "Credenciais inválidas" };
+    if (error || !data.user) return { error: mapAuthError(error?.message ?? "Credenciais inválidas") };
 
     const { profile, slugs } = await fetchProfile(data.user.id);
     setUser(mapSupabaseUser(data.user, profile ?? undefined, slugs));
@@ -279,7 +279,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (error) {
       sessionStorage.removeItem("auth_next");
-      return { error: error.message };
+      return { error: mapAuthError(error.message) };
     }
     return {};
   };
