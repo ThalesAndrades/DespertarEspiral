@@ -232,8 +232,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq("id", updateData.user.id);
     if (profileErr) console.warn("[useAuth] profile update failed:", profileErr.message);
 
-    const { profile, slugs } = await fetchProfile(updateData.user.id);
-    setUser(mapSupabaseUser(updateData.user, profile ?? undefined, slugs));
+    const { profile, slugs: initialSlugs } = await fetchProfile(updateData.user.id);
+    setUser(mapSupabaseUser(updateData.user, profile ?? undefined, initialSlugs));
     hydratedUserIdRef.current = updateData.user.id;
 
     // Sequenzy: user registered → triggers Onboarding sequence
@@ -242,6 +242,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       firstName: name.split(" ")[0],
       properties: { source: "email_otp", platform: "web" },
     });
+
+    // ── Retroactive access grant ──────────────────────────────────────────
+    // Check if this email has paid orders from before account creation (guest
+    // checkout). If so, grant product access automatically.
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const { data: grantData, error: grantErr } = await supabase.functions.invoke(
+          "grant-pending-access",
+          { headers: { Authorization: `Bearer ${session.access_token}` } }
+        );
+
+        if (!grantErr && grantData?.granted > 0) {
+          console.log(`[useAuth] Retroactive access granted for ${grantData.granted} product(s):`, grantData.products);
+          // Re-fetch profile to pick up the newly granted products
+          const { profile: freshProfile, slugs: freshSlugs } = await fetchProfile(updateData.user.id);
+          setUser(mapSupabaseUser(updateData.user, freshProfile ?? undefined, freshSlugs));
+
+          // Notify user that their purchase was found and access was restored
+          const { toast } = await import("sonner");
+          toast.success(
+            `Sua compra anterior foi encontrada! Acesso a ${grantData.granted === 1 ? "1 produto" : `${grantData.granted} produtos`} liberado automaticamente. ✦`,
+            { duration: 6000 }
+          );
+        } else if (grantErr) {
+          console.warn("[useAuth] grant-pending-access error (non-critical):", grantErr);
+        }
+      }
+    } catch (grantCallErr) {
+      // Non-critical — log and continue
+      console.warn("[useAuth] grant-pending-access call failed (non-critical):", grantCallErr);
+    }
 
     return {};
   };
