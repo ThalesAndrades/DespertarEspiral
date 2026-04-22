@@ -5,6 +5,35 @@ import { fireEventAsync } from "@/lib/sequenzy";
 import { mapAuthError } from "@/lib/authErrors";
 
 /* ─────────────────────────────────────────── */
+// Optimistic localStorage cache — eliminates loading flash for returning users.
+// Cache stores only the AuthUser shape; always verified against a live session.
+const CACHE_KEY = "de_profile_v1";
+
+function readCache(userId?: string): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AuthUser;
+    // Validate: must be an object with an id, and match the expected user if provided
+    if (!parsed || typeof parsed.id !== "string") return null;
+    if (userId && parsed.id !== userId) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(user: AuthUser) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(user));
+  } catch { /* quota exceeded — ignore */ }
+}
+
+function clearCache() {
+  try { localStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+}
+
+/* ─────────────────────────────────────────── */
 export interface AuthUser {
   id: string;
   email: string;
@@ -119,16 +148,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch { /* non-browser or malformed URL — ignore */ }
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (mounted && session?.user) {
-        const { profile, slugs } = await fetchProfile(session.user.id);
-        if (mounted) {
-          setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+      if (!mounted) return;
+
+      if (session?.user) {
+        // ── Optimistic cache hit ──────────────────────────────────────────
+        // If we have a cached profile for this exact user, apply it immediately
+        // so the UI renders without any loading spinner, then refresh in background.
+        const cached = readCache(session.user.id);
+        if (cached) {
+          setUser(cached);
           hydratedUserIdRef.current = session.user.id;
+          setLoading(false); // ← instant: no flash for returning users
+
+          // Background refresh — silently update with fresh DB data
+          fetchProfile(session.user.id).then(({ profile, slugs }) => {
+            if (!mounted) return;
+            const fresh = mapSupabaseUser(session.user, profile ?? undefined, slugs);
+            setUser(fresh);
+            writeCache(fresh);
+          });
+        } else {
+          // No cache — full blocking fetch (first visit or cache cleared)
+          const { profile, slugs } = await fetchProfile(session.user.id);
+          if (mounted) {
+            const mapped = mapSupabaseUser(session.user, profile ?? undefined, slugs);
+            setUser(mapped);
+            writeCache(mapped);
+            hydratedUserIdRef.current = session.user.id;
+          }
         }
       }
-      if (mounted) {
-        setLoading(false);
-      }
+
+      if (mounted) setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -143,7 +194,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!alreadyHydrated) {
             const { profile, slugs } = await fetchProfile(session.user.id);
             if (!mounted) return;
-            setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+            const mapped = mapSupabaseUser(session.user, profile ?? undefined, slugs);
+            setUser(mapped);
+            writeCache(mapped);
             hydratedUserIdRef.current = session.user.id;
           }
 
@@ -165,19 +218,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else if (event === "SIGNED_OUT") {
           sessionStorage.removeItem("auth_next");
+          clearCache();
           hydratedUserIdRef.current = null;
           setUser(null);
           setLoading(false);
         } else if (event === "TOKEN_REFRESHED" && session?.user) {
           // Silently refresh profile slugs (e.g. new product access granted)
           const { profile, slugs } = await fetchProfile(session.user.id);
-          if (mounted) setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+          if (mounted) {
+            const mapped = mapSupabaseUser(session.user, profile ?? undefined, slugs);
+            setUser(mapped);
+            writeCache(mapped);
+          }
         } else if (event === "USER_UPDATED" && session?.user) {
           // Only re-fetch if this user isn't already the hydrated one
           if (hydratedUserIdRef.current !== session.user.id) {
             const { profile, slugs } = await fetchProfile(session.user.id);
             if (mounted) {
-              setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+              const mapped = mapSupabaseUser(session.user, profile ?? undefined, slugs);
+              setUser(mapped);
+              writeCache(mapped);
               hydratedUserIdRef.current = session.user.id;
             }
           }
@@ -240,7 +300,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (profileErr) console.warn("[useAuth] profile update failed:", profileErr.message);
 
     const { profile, slugs: initialSlugs } = await fetchProfile(updateData.user.id);
-    setUser(mapSupabaseUser(updateData.user, profile ?? undefined, initialSlugs));
+    const initialMapped = mapSupabaseUser(updateData.user, profile ?? undefined, initialSlugs);
+    setUser(initialMapped);
+    writeCache(initialMapped);
     hydratedUserIdRef.current = updateData.user.id;
 
     // Sequenzy: user registered → triggers Onboarding sequence
@@ -265,7 +327,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log(`[useAuth] Retroactive access granted for ${grantData.granted} product(s):`, grantData.products);
           // Re-fetch profile to pick up the newly granted products
           const { profile: freshProfile, slugs: freshSlugs } = await fetchProfile(updateData.user.id);
-          setUser(mapSupabaseUser(updateData.user, freshProfile ?? undefined, freshSlugs));
+          const freshMapped = mapSupabaseUser(updateData.user, freshProfile ?? undefined, freshSlugs);
+          setUser(freshMapped);
+          writeCache(freshMapped);
 
           // Notify user that their purchase was found and access was restored
           const { toast } = await import("sonner");
@@ -294,10 +358,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data.user) return { error: mapAuthError(error?.message ?? "Credenciais inválidas") };
 
     const { profile, slugs } = await fetchProfile(data.user.id);
+    const mapped = mapSupabaseUser(data.user, profile ?? undefined, slugs);
     // Mark as hydrated BEFORE setting user so the onAuthStateChange SIGNED_IN
     // handler (which fires after this) skips the redundant fetch.
     hydratedUserIdRef.current = data.user.id;
-    setUser(mapSupabaseUser(data.user, profile ?? undefined, slugs));
+    setUser(mapped);
+    writeCache(mapped);
     return {};
   };
 
@@ -333,6 +399,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /* ── logout ── */
   const logout = async () => {
     setUser(null); // clear immediately so UI responds instantly
+    clearCache();
     await supabase.auth.signOut();
   };
 
@@ -341,7 +408,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
     const { profile, slugs } = await fetchProfile(session.user.id);
-    setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+    const mapped = mapSupabaseUser(session.user, profile ?? undefined, slugs);
+    setUser(mapped);
+    writeCache(mapped);
     hydratedUserIdRef.current = session.user.id;
   };
 
