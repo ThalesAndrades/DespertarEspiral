@@ -268,12 +268,21 @@ export default function LandingPage() {
               </h1>
             </div>
 
-            {/* ── 2 · Mockup Atualizado (centred between headline and body on mobile) ── */}
+            {/* ── 2 · Mockup — clean display + metrics strip below ── */}
             <div
-              className="order-2 lg:order-none animate-fade-up delay-300 flex justify-center lg:justify-end"
+              className="order-2 lg:order-none animate-fade-up delay-300"
               style={{ width: "100%", position: "relative", zIndex: 10 }}
             >
+              {/* Mockup image — clean, no overlapping cards */}
               <div style={{ position: "relative", width: "100%" }}>
+                {/* Decorative glow ring behind mockup */}
+                <div aria-hidden="true" style={{
+                  position: "absolute", inset: "-12px",
+                  borderRadius: "clamp(16px,3vw,28px)",
+                  background: `radial-gradient(ellipse 80% 60% at 50% 50%, ${isLight ? "rgba(122,94,30,0.08)" : "rgba(198,168,112,0.09)"} 0%, transparent 70%)`,
+                  pointerEvents: "none", zIndex: 0,
+                }} />
+
                 <img
                   src={mockupAtualizado}
                   alt="Plataforma Despertar Espiral no MacBook"
@@ -288,77 +297,80 @@ export default function LandingPage() {
                     height: "auto",
                     display: "block",
                     objectFit: "contain",
-                    filter: "drop-shadow(0 32px 56px rgba(0,0,0,0.30)) drop-shadow(0 8px 16px rgba(198,168,112,0.10))",
+                    position: "relative", zIndex: 1,
+                    filter: "drop-shadow(0 24px 48px rgba(0,0,0,0.28)) drop-shadow(0 4px 12px rgba(198,168,112,0.08))",
                   }} />
+              </div>
 
-                {/* Floating card — top left: alunas online */}
-                <div className="animate-pop-in delay-600" style={{
-                  position: "absolute", top: "10%", left: "-2%",
-                  background: isLight ? "rgba(255,255,255,0.96)" : "rgba(12,15,34,0.92)",
-                  backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-                  border: `1px solid ${isLight ? "rgba(122,94,30,0.15)" : "rgba(198,168,112,0.20)"}`,
-                  borderRadius: "16px", padding: "12px 16px",
-                  boxShadow: "0 16px 48px rgba(0,0,0,0.26)",
-                  display: "flex", alignItems: "center", gap: "10px",
-                  minWidth: "170px",
+              {/* ── Metrics strip — below mockup, visible on all breakpoints ── */}
+              <div className="animate-pop-in delay-600" style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: "8px",
+                marginTop: "clamp(12px,2vw,18px)",
+              }}>
+                {/* Card 1: Alunas */}
+                <div style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  gap: "5px", padding: "clamp(10px,2vw,14px) clamp(8px,1.5vw,12px)",
+                  background: isLight ? "rgba(255,255,255,0.88)" : "rgba(12,15,34,0.85)",
+                  backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+                  border: `1px solid ${isLight ? "rgba(122,94,30,0.14)" : "rgba(198,168,112,0.18)"}`,
+                  borderRadius: "clamp(12px,1.5vw,16px)",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.14)",
                 }}>
-                  <div style={{ display: "flex", flexShrink: 0 }}>
-                    {["#c6a870","#c99aaa","#a49ed0","#8caa96"].map((c, i) => (
+                  {/* Avatar stack */}
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    {["#c6a870","#c99aaa","#a49ed0"].map((c, i) => (
                       <div key={i} style={{
-                        width: "26px", height: "26px", borderRadius: "50%",
-                        background: c + "28", border: `2px solid ${c}55`,
+                        width: "22px", height: "22px", borderRadius: "50%",
+                        background: c + "22", border: `1.5px solid ${c}66`,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        marginLeft: i > 0 ? "-8px" : "0",
-                        fontSize: "10px", color: c, fontFamily: "Montserrat,sans-serif", fontWeight: 600,
-                        zIndex: 4 - i, position: "relative",
-                      }}>{["L","V","R","M"][i]}</div>
+                        marginLeft: i > 0 ? "-7px" : "0",
+                        fontSize: "9px", color: c, fontFamily: "Montserrat,sans-serif", fontWeight: 700,
+                        zIndex: 3 - i, position: "relative",
+                      }}>{["L","V","R"][i]}</div>
                     ))}
                   </div>
-                  <div>
-                    <p style={{ fontSize: "12px", fontWeight: 600, color: heroText, fontFamily: "DM Sans,sans-serif", lineHeight: 1.2 }}>280+ alunas</p>
-                    <p style={{ fontSize: "10px", color: heroMuted, fontFamily: "DM Sans,sans-serif" }}>em jornada agora</p>
-                  </div>
+                  <p style={{ fontSize: "clamp(11px,1.3vw,13px)", fontWeight: 700, color: heroText, fontFamily: "DM Sans,sans-serif", lineHeight: 1.1, textAlign: "center" }}>280+ alunas</p>
+                  <p style={{ fontSize: "clamp(9px,1vw,10px)", color: heroMuted, fontFamily: "DM Sans,sans-serif", textAlign: "center", lineHeight: 1.2 }}>em jornada</p>
                 </div>
 
-                {/* Floating card — bottom right: progresso */}
-                <div className="animate-pop-in delay-700" style={{
-                  position: "absolute", bottom: "20%", right: "-2%",
-                  background: isLight ? "rgba(255,255,255,0.96)" : "rgba(12,15,34,0.92)",
-                  backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-                  border: `1px solid ${isLight ? "rgba(122,94,30,0.15)" : "rgba(198,168,112,0.20)"}`,
-                  borderRadius: "16px", padding: "14px 18px",
-                  boxShadow: "0 16px 48px rgba(0,0,0,0.26)",
-                  minWidth: "188px",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(140,170,150,0.18)", border: "1px solid rgba(140,170,150,0.38)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#8caa96" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: "10px", color: heroMuted, fontFamily: "DM Sans,sans-serif", lineHeight: 1.1 }}>Módulo completado</p>
-                      <p style={{ fontSize: "12px", fontWeight: 600, color: heroText, fontFamily: "DM Sans,sans-serif", lineHeight: 1.3 }}>"O Corpo como Sabedoria"</p>
-                    </div>
-                  </div>
-                  <div style={{ background: isLight ? "rgba(10,12,26,0.07)" : "rgba(255,255,255,0.06)", borderRadius: "100px", height: "4px", overflow: "hidden" }}>
-                    <div style={{ width: "72%", height: "100%", borderRadius: "100px", background: "linear-gradient(90deg, #c6a870, #dac394)" }} />
-                  </div>
-                  <p style={{ fontSize: "10px", color: "var(--gold)", marginTop: "5px", fontFamily: "Montserrat,sans-serif", fontWeight: 600 }}>72% concluído</p>
-                </div>
-
-                {/* Floating badge — top right: certificado */}
-                <div className="animate-pop-in delay-800" style={{
-                  position: "absolute", top: "4%", right: "5%",
-                  background: "linear-gradient(135deg, rgba(198,168,112,0.20), rgba(198,168,112,0.07))",
+                {/* Card 2: Progresso */}
+                <div style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  gap: "6px", padding: "clamp(10px,2vw,14px) clamp(8px,1.5vw,12px)",
+                  background: isLight ? "rgba(255,255,255,0.88)" : "rgba(12,15,34,0.85)",
                   backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-                  border: "1px solid rgba(198,168,112,0.30)",
-                  borderRadius: "100px", padding: "7px 14px 7px 9px",
-                  boxShadow: "0 8px 28px rgba(198,168,112,0.18)",
-                  display: "flex", alignItems: "center", gap: "7px",
+                  border: `1px solid ${isLight ? "rgba(122,94,30,0.14)" : "rgba(198,168,112,0.18)"}`,
+                  borderRadius: "clamp(12px,1.5vw,16px)",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.14)",
                 }}>
-                  <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "rgba(198,168,112,0.22)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: "10px" }}>🏅</span>
+                  <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(140,170,150,0.16)", border: "1.5px solid rgba(140,170,150,0.40)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#8caa96" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </div>
-                  <span style={{ fontSize: "9px", color: "var(--gold)", fontFamily: "Montserrat,sans-serif", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600 }}>Certificado incluso</span>
+                  <div style={{ width: "100%" }}>
+                    <div style={{ background: isLight ? "rgba(10,12,26,0.08)" : "rgba(255,255,255,0.07)", borderRadius: "100px", height: "3px", overflow: "hidden", marginBottom: "3px" }}>
+                      <div style={{ width: "72%", height: "100%", borderRadius: "100px", background: "linear-gradient(90deg, #c6a870, #dac394)" }} />
+                    </div>
+                    <p style={{ fontSize: "clamp(9px,1vw,10px)", color: "var(--gold)", fontFamily: "Montserrat,sans-serif", fontWeight: 700, textAlign: "center" }}>72% concluído</p>
+                  </div>
+                </div>
+
+                {/* Card 3: Certificado */}
+                <div style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  gap: "5px", padding: "clamp(10px,2vw,14px) clamp(8px,1.5vw,12px)",
+                  background: isLight
+                    ? "rgba(255,255,255,0.88)"
+                    : "linear-gradient(135deg, rgba(198,168,112,0.14), rgba(12,15,34,0.85))",
+                  backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+                  border: "1px solid rgba(198,168,112,0.25)",
+                  borderRadius: "clamp(12px,1.5vw,16px)",
+                  boxShadow: "0 4px 20px rgba(198,168,112,0.10)",
+                }}>
+                  <div style={{ fontSize: "20px", lineHeight: 1 }}>🏅</div>
+                  <p style={{ fontSize: "clamp(9px,1vw,10px)", color: "var(--gold)", fontFamily: "Montserrat,sans-serif", letterSpacing: "0.10em", textTransform: "uppercase", fontWeight: 600, textAlign: "center", lineHeight: 1.3 }}>Certificado{"\n"}incluso</p>
                 </div>
               </div>
             </div>
