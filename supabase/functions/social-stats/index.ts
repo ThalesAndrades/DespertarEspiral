@@ -170,7 +170,7 @@ Deno.serve(async (req: Request) => {
   const preflight = handleCors(req);
   if (preflight) return preflight;
 
-  if (req.method !== "GET") return json(405, { error: "Method not allowed" }, cors);
+  if (req.method !== "GET" && req.method !== "POST") return json(405, { error: "Method not allowed" }, cors);
 
   // Auth: require valid admin JWT
   const authHeader = req.headers.get("Authorization");
@@ -192,7 +192,14 @@ Deno.serve(async (req: Request) => {
   if (profile?.role !== "admin") return json(403, { error: "Admin only" }, cors);
 
   const url = new URL(req.url);
-  const platform = url.searchParams.get("platform") ?? "all";
+  // Accept params from query string (GET) or JSON body (POST — default for supabase.functions.invoke)
+  let platform = url.searchParams.get("platform") ?? "all";
+  if (req.method === "POST") {
+    try {
+      const body = await req.json().catch(() => ({})) as Record<string, string>;
+      platform = body.platform ?? platform;
+    } catch { /* use query params */ }
+  }
 
   const metaToken    = Deno.env.get("META_ACCESS_TOKEN");
   const igAccountId  = Deno.env.get("INSTAGRAM_BUSINESS_ACCOUNT_ID");

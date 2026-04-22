@@ -98,6 +98,7 @@ export default function AdminSocialPage() {
 
     const { data: { session } } = await supabase.auth.getSession();
     const { data, error } = await supabase.functions.invoke("social-stats", {
+      body: { platform: "all" },
       headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
     });
 

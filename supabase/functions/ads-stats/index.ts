@@ -313,13 +313,21 @@ Deno.serve(async (req: Request) => {
   const preflight = handleCors(req);
   if (preflight) return preflight;
 
-  if (req.method !== "GET") return json(405, { error: "Method not allowed" }, cors);
+  if (req.method !== "GET" && req.method !== "POST") return json(405, { error: "Method not allowed" }, cors);
 
   if (!(await requireAdmin(req))) return json(401, { error: "Admin access required" }, cors);
 
-  const url       = new URL(req.url);
-  const platform  = url.searchParams.get("platform")  ?? "all";
-  const dateRange = url.searchParams.get("dateRange") ?? "last_30d";
+  const url = new URL(req.url);
+  // Accept params from query string (GET) or JSON body (POST — default for supabase.functions.invoke)
+  let platform  = url.searchParams.get("platform")  ?? "all";
+  let dateRange = url.searchParams.get("dateRange") ?? "last_30d";
+  if (req.method === "POST") {
+    try {
+      const body = await req.json().catch(() => ({})) as Record<string, string>;
+      platform  = body.platform  ?? platform;
+      dateRange = body.dateRange ?? dateRange;
+    } catch { /* use query params */ }
+  }
 
   const metaToken   = Deno.env.get("META_ACCESS_TOKEN");
   const metaAccId   = Deno.env.get("META_AD_ACCOUNT_ID");

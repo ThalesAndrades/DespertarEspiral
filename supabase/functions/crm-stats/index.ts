@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
   const preflight = handleCors(req);
   if (preflight) return preflight;
 
-  if (req.method !== "GET") return json(405, { error: "Method not allowed" }, cors);
+  if (req.method !== "GET" && req.method !== "POST") return json(405, { error: "Method not allowed" }, cors);
 
   // Admin auth
   const authHeader = req.headers.get("Authorization");
@@ -63,7 +63,15 @@ Deno.serve(async (req: Request) => {
   }
 
   const url = new URL(req.url);
-  const view = url.searchParams.get("view") ?? "overview";
+  // Accept view param from query string (GET) or JSON body (POST)
+  let parsedBody: Record<string, string> = {};
+  let view = url.searchParams.get("view") ?? "overview";
+  if (req.method === "POST") {
+    try {
+      parsedBody = await req.json().catch(() => ({})) as Record<string, string>;
+      view = parsedBody.view ?? view;
+    } catch { /* use query params */ }
+  }
 
   if (view === "overview" || view === "all") {
     // Fetch multiple endpoints in parallel
@@ -110,12 +118,13 @@ Deno.serve(async (req: Request) => {
   }
 
   if (view === "subscribers") {
-    const page = url.searchParams.get("page") ?? "1";
-    const limit = url.searchParams.get("limit") ?? "25";
-    const tag = url.searchParams.get("tag");
-    const params: Record<string, string> = { page, limit };
-    if (tag) params.tag = tag;
-    const data = await seqFetch(apiKey, "/subscribers", params);
+    // For POST requests, page/limit/tag come from body; for GET from query
+    const page  = url.searchParams.get("page")  ?? parsedBody?.page  ?? "1";
+    const limit = url.searchParams.get("limit") ?? parsedBody?.limit ?? "25";
+    const tag   = url.searchParams.get("tag")   ?? parsedBody?.tag;
+    const qParams: Record<string, string> = { page, limit };
+    if (tag) qParams.tag = tag;
+    const data = await seqFetch(apiKey, "/subscribers", qParams);
     return json(200, data ?? { error: "Falha ao buscar assinantes" }, cors);
   }
 

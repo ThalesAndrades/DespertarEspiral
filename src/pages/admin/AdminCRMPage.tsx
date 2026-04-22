@@ -90,6 +90,7 @@ export default function AdminCRMPage() {
 
     const { data: { session } } = await supabase.auth.getSession();
     const { data, error } = await supabase.functions.invoke("crm-stats", {
+      body: { view: activeTab === "overview" ? "overview" : activeTab },
       headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
     });
 
@@ -105,7 +106,7 @@ export default function AdminCRMPage() {
 
     if (showLoader) setLoading(false);
     else setRefreshing(false);
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

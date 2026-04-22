@@ -172,13 +172,10 @@ export default function AdminTrafficPage() {
     else setRefreshing(true);
 
     const { data: { session } } = await supabase.auth.getSession();
-    const { data, error } = await supabase.functions.invoke(
-      `ads-stats?platform=${platform}&dateRange=${dateRange}`,
-      {
-        method: "GET",
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
-      } as Parameters<typeof supabase.functions.invoke>[1]
-    );
+    const { data, error } = await supabase.functions.invoke("ads-stats", {
+      body: { platform, dateRange },
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+    });
 
     if (error) {
       let msg = error.message;

@@ -235,10 +235,10 @@ export default function AdminMediaPage() {
   const fetchBoards = useCallback(async () => {
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
-    const { data, error } = await supabase.functions.invoke("trello-boards?action=boards", {
-      method: "GET",
+    const { data, error } = await supabase.functions.invoke("trello-boards", {
+      body: { action: "boards" },
       headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
-    } as Parameters<typeof supabase.functions.invoke>[1]);
+    });
 
     if (error) {
       let msg = error.message;
@@ -260,10 +260,10 @@ export default function AdminMediaPage() {
     else setRefreshing(true);
 
     const { data: { session } } = await supabase.auth.getSession();
-    const { data, error } = await supabase.functions.invoke(`trello-boards?action=board&boardId=${boardId}`, {
-      method: "GET",
+    const { data, error } = await supabase.functions.invoke("trello-boards", {
+      body: { action: "board", boardId },
       headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
-    } as Parameters<typeof supabase.functions.invoke>[1]);
+    });
 
     if (error) {
       toast.error("Erro ao carregar quadro.");

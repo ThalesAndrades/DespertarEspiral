@@ -7,8 +7,8 @@
  *   TRELLO_TOKEN     – Trello user OAuth token
  *   TRELLO_BOARD_ID  – Default board ID (optional — if set, fetches this board by default)
  *
- * GET  /trello-boards?action=boards|board&boardId=xxx
- * POST /trello-boards – body: { action: "createCard", listId, name, desc, due? }
+ * Accepts both POST (default for supabase.functions.invoke) and GET.
+ * Params can be passed via query string or POST body: { action, boardId, cardId, ... }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeadersFor, handleCors } from "../_shared/cors.ts";
@@ -86,81 +86,83 @@ Deno.serve(async (req: Request) => {
     }, cors);
   }
 
-  const url = new URL(req.url);
+  const qUrl = new URL(req.url);
 
-  if (req.method === "GET") {
-    const action  = url.searchParams.get("action") ?? "boards";
-    const boardId = url.searchParams.get("boardId") ?? Deno.env.get("TRELLO_BOARD_ID");
-
-    if (action === "boards") {
-      // List all boards for the authenticated member
-      const member = await trelloRequest("GET", "/members/me/boards?fields=id,name,desc,url,closed,prefs,dateLastActivity", apiKey, token);
-      return json(200, member, cors);
-    }
-
-    if (action === "board" && boardId) {
-      // Fetch board with all lists and cards
-      const [board, lists, cards, members] = await Promise.all([
-        trelloRequest("GET", `/boards/${boardId}?fields=id,name,desc,url,prefs,dateLastActivity`, apiKey, token),
-        trelloRequest("GET", `/boards/${boardId}/lists?cards=open&card_fields=id,name,desc,due,dueComplete,labels,url,dateLastActivity,idMembers,cover,badges`, apiKey, token),
-        trelloRequest("GET", `/boards/${boardId}/cards?fields=id,name,desc,due,dueComplete,labels,url,dateLastActivity,idList,idMembers,cover,badges&limit=100`, apiKey, token),
-        trelloRequest("GET", `/boards/${boardId}/members?fields=id,username,fullName,avatarUrl`, apiKey, token),
-      ]);
-
-      return json(200, { board, lists, cards, members }, cors);
-    }
-
-    if (action === "card" && url.searchParams.get("cardId")) {
-      const cardId = url.searchParams.get("cardId")!;
-      const [card, actions] = await Promise.all([
-        trelloRequest("GET", `/cards/${cardId}?fields=all`, apiKey, token),
-        trelloRequest("GET", `/cards/${cardId}/actions?filter=commentCard,updateCard&limit=20`, apiKey, token),
-      ]);
-      return json(200, { card, actions }, cors);
-    }
-
-    return json(400, { error: "Invalid action" }, cors);
-  }
-
+  // ── Parse params: query string takes precedence, POST body is fallback ──
+  let params: Record<string, unknown> = {};
   if (req.method === "POST") {
-    const body = await req.json().catch(() => ({})) as Record<string, unknown>;
-    const action = body.action as string;
-
-    if (action === "createCard") {
-      const { listId, name, desc, due, labels } = body as {
-        listId: string; name: string; desc?: string; due?: string; labels?: string;
-      };
-      if (!listId || !name) return json(400, { error: "listId e name são obrigatórios" }, cors);
-
-      const card = await trelloRequest("POST", "/cards", apiKey, token, {
-        idList: listId, name, desc: desc ?? "", due: due ?? null, idLabels: labels ?? "",
-      });
-      return json(200, card, cors);
-    }
-
-    if (action === "moveCard") {
-      const { cardId, listId } = body as { cardId: string; listId: string };
-      if (!cardId || !listId) return json(400, { error: "cardId e listId são obrigatórios" }, cors);
-      const card = await trelloRequest("PUT", `/cards/${cardId}`, apiKey, token, { idList: listId });
-      return json(200, card, cors);
-    }
-
-    if (action === "updateCard") {
-      const { cardId, ...updates } = body as { cardId: string } & Record<string, unknown>;
-      if (!cardId) return json(400, { error: "cardId é obrigatório" }, cors);
-      const card = await trelloRequest("PUT", `/cards/${cardId}`, apiKey, token, updates);
-      return json(200, card, cors);
-    }
-
-    if (action === "archiveCard") {
-      const { cardId } = body as { cardId: string };
-      if (!cardId) return json(400, { error: "cardId é obrigatório" }, cors);
-      const card = await trelloRequest("PUT", `/cards/${cardId}`, apiKey, token, { closed: true });
-      return json(200, card, cors);
-    }
-
-    return json(400, { error: "Invalid action" }, cors);
+    try { params = await req.clone().json().catch(() => ({})); } catch { /* ignore */ }
   }
 
-  return json(405, { error: "Method not allowed" }, cors);
+  const action  = (qUrl.searchParams.get("action")  ?? params.action  as string ?? "boards");
+  const boardId = (qUrl.searchParams.get("boardId") ?? params.boardId as string ?? Deno.env.get("TRELLO_BOARD_ID") ?? null);
+  const cardId  = (qUrl.searchParams.get("cardId")  ?? params.cardId  as string ?? null);
+
+  // ── READ actions (boards / board / card details) ──
+  if (action === "boards") {
+    const member = await trelloRequest(
+      "GET",
+      "/members/me/boards?fields=id,name,desc,url,closed,prefs,dateLastActivity",
+      apiKey, token
+    );
+    return json(200, member, cors);
+  }
+
+  if (action === "board") {
+    if (!boardId) return json(400, { error: "boardId é obrigatório" }, cors);
+
+    const [board, lists, cards, members] = await Promise.all([
+      trelloRequest("GET", `/boards/${boardId}?fields=id,name,desc,url,prefs,dateLastActivity`, apiKey, token),
+      trelloRequest("GET", `/boards/${boardId}/lists?cards=open&card_fields=id,name,desc,due,dueComplete,labels,url,dateLastActivity,idMembers,cover,badges`, apiKey, token),
+      trelloRequest("GET", `/boards/${boardId}/cards?fields=id,name,desc,due,dueComplete,labels,url,dateLastActivity,idList,idMembers,cover,badges&limit=100`, apiKey, token),
+      trelloRequest("GET", `/boards/${boardId}/members?fields=id,username,fullName,avatarUrl`, apiKey, token),
+    ]);
+
+    return json(200, { board, lists, cards, members }, cors);
+  }
+
+  if (action === "card") {
+    if (!cardId) return json(400, { error: "cardId é obrigatório" }, cors);
+
+    const [card, actions] = await Promise.all([
+      trelloRequest("GET", `/cards/${cardId}?fields=all`, apiKey, token),
+      trelloRequest("GET", `/cards/${cardId}/actions?filter=commentCard,updateCard&limit=20`, apiKey, token),
+    ]);
+    return json(200, { card, actions }, cors);
+  }
+
+  // ── WRITE actions ──
+  if (action === "createCard") {
+    const { listId, name, desc, due, labels } = params as {
+      listId: string; name: string; desc?: string; due?: string; labels?: string;
+    };
+    if (!listId || !name) return json(400, { error: "listId e name são obrigatórios" }, cors);
+
+    const card = await trelloRequest("POST", "/cards", apiKey, token, {
+      idList: listId, name, desc: desc ?? "", due: due ?? null, idLabels: labels ?? "",
+    });
+    return json(200, card, cors);
+  }
+
+  if (action === "moveCard") {
+    const { listId } = params as { listId: string };
+    if (!cardId || !listId) return json(400, { error: "cardId e listId são obrigatórios" }, cors);
+    const card = await trelloRequest("PUT", `/cards/${cardId}`, apiKey, token, { idList: listId });
+    return json(200, card, cors);
+  }
+
+  if (action === "updateCard") {
+    if (!cardId) return json(400, { error: "cardId é obrigatório" }, cors);
+    const { action: _a, cardId: _c, ...updates } = params as Record<string, unknown>;
+    const card = await trelloRequest("PUT", `/cards/${cardId}`, apiKey, token, updates);
+    return json(200, card, cors);
+  }
+
+  if (action === "archiveCard") {
+    if (!cardId) return json(400, { error: "cardId é obrigatório" }, cors);
+    const card = await trelloRequest("PUT", `/cards/${cardId}`, apiKey, token, { closed: true });
+    return json(200, card, cors);
+  }
+
+  return json(400, { error: `Ação desconhecida: ${action}` }, cors);
 });
