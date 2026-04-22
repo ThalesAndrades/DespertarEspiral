@@ -27,6 +27,7 @@ const PUBLIC_EVENTS = new Set([
   "lead.diagnostic_completed",
   "checkout.started",
   "checkout_iniciado",
+  "checkout.completed",    // fired client-side when order is registered (pre-payment)
   "high_ticket.application_submitted",
   "contact.subscribed",
 ]);
@@ -38,7 +39,7 @@ const EVENT_TAGS: Record<string, { add: string[]; remove: string[] }> = {
   "user.password_reset_completed":    { add: ["senha-redefinida"], remove: ["recuperacao-senha-solicitada"] },
   "checkout.started":                 { add: ["checkout-iniciado", "interesse-confirmado"], remove: [] },
   "checkout_iniciado":                { add: ["checkout-iniciado"], remove: [] },
-  "checkout.completed":               { add: ["checkout-completo"], remove: ["checkout-iniciado"] },
+  "checkout.completed":               { add: ["checkout-completo", "pedido-registrado"], remove: ["checkout-iniciado"] },
   "order.paid":                       { add: ["compra-confirmada", "cliente-ativo", "plataforma-despertar"], remove: ["checkout-iniciado", "lead-morno"] },
   "product.access_granted":           { add: ["acesso-liberado", "cliente-ativo"], remove: [] },
   "lesson.completed":                 { add: ["engajada", "em-progresso"], remove: [] },
@@ -132,9 +133,8 @@ Deno.serve(async (req: Request) => {
   ];
 
   /* Built-in SaaS event mapping */
-  if (event === "order.paid") {
-    calls.push(sequenzyEvent(apiKey, email, "saas.purchase", properties as Record<string, string | number | boolean | null>));
-  }
+  // NOTE: saas.purchase is fired directly by asaas-webhook (server-side) on confirmed payment.
+  // Do NOT duplicate it here to avoid double-counting in Sequenzy metrics.
   if (event === "checkout.started") {
     calls.push(sequenzyEvent(apiKey, email, "checkout_iniciado", properties as Record<string, string | number | boolean | null>));
   }

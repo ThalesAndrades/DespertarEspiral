@@ -88,12 +88,6 @@ export default function ResetPasswordPage() {
 
     toast.success("Senha atualizada com sucesso. ✦");
 
-    // Invalidate sessions on other devices after a password reset.
-    await supabase.auth.signOut({ scope: "others" }).catch(() => {});
-
-    // Clear any stale auth_next to prevent onAuthStateChange from hijacking navigation
-    sessionStorage.removeItem("auth_next");
-
     // Sequenzy: password reset completed → triggers "Senha redefinida" sequence
     if (data?.user?.email) {
       fireEventAsync("user.password_reset_completed", {
@@ -103,7 +97,16 @@ export default function ResetPasswordPage() {
       });
     }
 
-    navigate("/dashboard");
+    // Invalidate sessions on other devices after a password reset.
+    // Use scope: "others" to keep the current session so PrivateRoute lets the user through.
+    await supabase.auth.signOut({ scope: "others" }).catch(() => {});
+
+    // Clear any stale auth_next to prevent onAuthStateChange from hijacking navigation
+    sessionStorage.removeItem("auth_next");
+
+    // Small delay so the USER_UPDATED event can hydrate useAuth before /dashboard check
+    await new Promise((r) => setTimeout(r, 300));
+    navigate("/dashboard", { replace: true });
   };
 
   return (

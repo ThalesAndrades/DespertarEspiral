@@ -88,11 +88,12 @@ export default function RegisterPage() {
   };
 
   const doVerify = async (code: string) => {
-    if (!code || code.length < 4) return;
+    const trimmedCode = code.trim();
+    if (!trimmedCode || trimmedCode.length < 4) return;
     setLoading(true);
     // Clear any stale auth_next before registering to avoid onAuthStateChange hijacking navigation
     sessionStorage.removeItem("auth_next");
-    const result = await verifyOtpAndRegister(form.email, code, form.password, form.name);
+    const result = await verifyOtpAndRegister(form.email, trimmedCode, form.password, form.name);
     if (result.error) { toast.error(result.error); setLoading(false); return; }
     toast.success("Bem-vinda à espiral. ✦");
     navigate("/dashboard", { replace: true });
@@ -300,7 +301,7 @@ export default function RegisterPage() {
                       onChange={(e) => {
                         const val = e.target.value.replace(/\D/g, "").slice(0, 4);
                         setOtp(val);
-                        // Auto-submit when 4th digit is typed
+                        // Auto-submit when 4th digit is typed — pass val directly to avoid stale closure
                         if (val.length === 4 && !loading) {
                           setTimeout(() => doVerify(val), 80);
                         }

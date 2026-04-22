@@ -293,7 +293,7 @@ Deno.serve(async (req: Request) => {
             .from("orders")
             .update({
               asaas_payment_id: asaasData.asaasId,
-              sequenzy_session_id: asaasData.invoiceUrl ?? null,
+              // sequenzy_session_id reserved for Sequenzy checkout session IDs only
             })
             .eq("id", order.id);
         }

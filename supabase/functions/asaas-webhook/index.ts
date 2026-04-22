@@ -75,9 +75,17 @@ Deno.serve(async (req: Request) => {
 
   const asaasPaymentId = (payment.id               as string | undefined) ?? "";
   const externalRef    = (payment.externalReference as string | undefined) ?? "";
-  const billingType    = (payment.billingType       as string | undefined) ?? "";
+  const billingTypeRaw = (payment.billingType       as string | undefined) ?? "";
   const confirmedValue = (payment.value             as number | undefined) ?? 0;
-  const confirmedAt    = (payment.confirmedDate     as string | undefined) ?? new Date().toISOString().slice(0, 10);
+  // Use confirmedDate from Asaas (YYYY-MM-DD in BRT); fallback to current date in BRT
+  const confirmedAt    = (payment.confirmedDate as string | undefined)
+    ?? new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10); // UTC-3
+
+  // Normalize billingType to match our schema's payment_method values
+  const billingType = billingTypeRaw === "CREDIT_CARD" ? "credit"
+    : billingTypeRaw === "BOLETO" ? "boleto"
+    : billingTypeRaw === "PIX"    ? "pix"
+    : billingTypeRaw.toLowerCase();
 
   if (!asaasPaymentId) return json(400, { error: "payment.id ausente" });
 
@@ -249,8 +257,8 @@ Deno.serve(async (req: Request) => {
       sequenzyTags(
         sequenzyApiKey,
         order.email,
-        ["compra-confirmada", `produto-${productSlug}`, `metodo-${billingType.toLowerCase()}`, "cliente-ativo", "plataforma-despertar"],
-        ["checkout-iniciado", "lead-morno", "visitante"]
+        ["compra-confirmada", `produto-${productSlug}`, `metodo-${billingType}`, "cliente-ativo", "plataforma-despertar"],
+        ["checkout-iniciado", "lead-morno", "visitante", "pedido-registrado"]
       ),
     ]);
   }

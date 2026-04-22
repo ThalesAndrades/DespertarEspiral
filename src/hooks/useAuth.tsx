@@ -234,6 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { profile, slugs } = await fetchProfile(updateData.user.id);
     setUser(mapSupabaseUser(updateData.user, profile ?? undefined, slugs));
+    hydratedUserIdRef.current = updateData.user.id;
 
     // Sequenzy: user registered → triggers Onboarding sequence
     fireEventAsync("user.registered", {

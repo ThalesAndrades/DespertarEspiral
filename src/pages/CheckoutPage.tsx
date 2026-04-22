@@ -139,10 +139,12 @@ export default function CheckoutPage() {
 
     toast.success("Pedido registrado! ✦");
 
-    // Sequenzy: checkout.completed — fired immediately when order is registered
+    // Sequenzy: checkout.completed — fired immediately when order is registered (pre-payment)
+    // NOTE: order.paid is fired server-side by asaas-webhook on actual payment confirmation
     const attribution = getAttribution();
+    const checkoutEmail = form.email.trim().toLowerCase();
     fireEventAsync("checkout.completed", {
-      email: form.email.trim().toLowerCase(),
+      email: checkoutEmail,
       firstName: form.name.trim().split(" ")[0],
       properties: {
         product_slug: slug ?? "",
