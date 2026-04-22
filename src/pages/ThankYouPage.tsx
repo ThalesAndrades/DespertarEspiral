@@ -74,7 +74,7 @@ function StepItem({ num, title, desc, icon: Icon, status = "pending" }: {
 }
 
 // Helper to avoid TS issues
-function clamp(min: number, _: number, max: number) { return Math.max(min, Math.min(max, 16)); }
+function clamp(min: number, _: number, max: number) { return Math.max(min, Math.min(max, 18)); }
 
 export default function ThankYouPage() {
   const [params] = useSearchParams();
@@ -87,6 +87,7 @@ export default function ThankYouPage() {
   const payMethod    = (params.get("method")  ?? "pix") as "pix" | "credit" | "boleto";
   const invoiceUrl   = params.get("invoiceUrl") ?? "";
   const pixKey       = params.get("pixKey")   ?? "";
+  const barCode      = params.get("barCode")  ?? "";
   const shortId      = orderId ? orderId.slice(0, 8).toUpperCase() : "—";
 
   // Suppress unused warning
@@ -221,10 +222,19 @@ export default function ThankYouPage() {
               </p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
                 <code style={{ fontSize: "clamp(12px,1.5vw,14px)", color: "var(--text-primary)", flex: 1, wordBreak: "break-all" }}>
-                  contato@despertarespiral.com
+                  {pixKey || "contato@despertarespiral.com"}
                 </code>
-                <CopyButton text="contato@despertarespiral.com" />
+                <CopyButton text={pixKey || "contato@despertarespiral.com"} />
               </div>
+              {barCode && (
+                <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-subtle)" }}>
+                  <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "6px" }}>Código copia e cola</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                    <code style={{ fontSize: "11px", color: "var(--text-secondary)", flex: 1, wordBreak: "break-all", letterSpacing: "0.04em" }}>{barCode}</code>
+                    <CopyButton text={barCode} />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -278,8 +288,8 @@ export default function ThankYouPage() {
           <Link to="/dashboard" className="btn-gold" style={{ width: "100%", justifyContent: "center" }}>
             Ir para minha área <ArrowRight size={14} />
           </Link>
-          <Link to="/login" className="btn-outline-gold" style={{ width: "100%", justifyContent: "center" }}>
-            Criar / acessar conta
+          <Link to="/dashboard" className="btn-outline-gold" style={{ width: "100%", justifyContent: "center" }}>
+            Acessar minha conta
           </Link>
         </div>
 

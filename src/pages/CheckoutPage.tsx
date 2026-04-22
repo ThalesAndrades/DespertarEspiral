@@ -212,6 +212,7 @@ export default function CheckoutPage() {
       method: paymentMethod,
       ...(successData.invoiceUrl ? { invoiceUrl: successData.invoiceUrl } : {}),
       ...(successData.pixKey     ? { pixKey: successData.pixKey } : {}),
+      ...(successData.barCode    ? { barCode: successData.barCode } : {}),
     });
 
     return (

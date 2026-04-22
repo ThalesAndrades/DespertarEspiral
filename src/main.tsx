@@ -7,7 +7,11 @@ import { Toaster } from "sonner";
 import App from "./App";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/lib/ErrorBoundary";
+import { captureAttribution } from "@/lib/analytics";
 import "./index.css";
+
+/* ── UTM attribution capture — on first load ── */
+captureAttribution();
 
 /* ── React Query — optimized defaults ── */
 const queryClient = new QueryClient({

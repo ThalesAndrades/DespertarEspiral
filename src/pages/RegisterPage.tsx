@@ -59,9 +59,7 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!form.name || !form.email || !form.password) { toast.error("Preencha todos os campos."); return; }
     if (form.password !== form.confirm) { toast.error("As senhas não coincidem."); return; }
-    if (form.password.length < 8) { toast.error("A senha deve ter no mínimo 8 caracteres."); return; }
-    if (!/[A-Z]/.test(form.password)) { toast.error("A senha deve conter ao menos uma letra maiúscula."); return; }
-    if (!/[0-9]/.test(form.password)) { toast.error("A senha deve conter ao menos um número."); return; }
+    if (form.password.length < 6) { toast.error("A senha deve ter no mínimo 6 caracteres."); return; }
     setLoading(true);
     const result = await sendOtp(form.email);
     setLoading(false);
@@ -72,7 +70,7 @@ export default function RegisterPage() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp || otp.length < 6) { toast.error("Digite o código de 6 dígitos."); return; }
+    if (!otp || otp.length < 4) { toast.error("Digite o código de verificação."); return; }
     setLoading(true);
     const result = await verifyOtpAndRegister(form.email, otp, form.password, form.name);
     if (result.error) { toast.error(result.error); setLoading(false); return; }
@@ -263,7 +261,7 @@ export default function RegisterPage() {
                     Código enviado
                   </h1>
                   <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.78 }}>
-                    Digite o código de 6 dígitos enviado para<br />
+                    Digite o código de verificação enviado para<br />
                     <strong style={{ color: "var(--text-primary)", fontWeight: 500 }}>{form.email}</strong>
                   </p>
                 </div>
@@ -273,8 +271,8 @@ export default function RegisterPage() {
                     <label style={LABEL}>Código de verificação</label>
                     <input
                       type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6}
-                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      placeholder="• • • • • •" className="input-dark"
+                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}  // accept up to 6 but 4 is enough
+                      placeholder="• • • •" className="input-dark"
                       autoComplete="one-time-code"
                       style={{ textAlign: "center", fontSize: "clamp(22px,5vw,30px)", letterSpacing: "0.32em", fontFamily: "Montserrat, sans-serif", fontWeight: 500, minHeight: "64px" }}
                       autoFocus

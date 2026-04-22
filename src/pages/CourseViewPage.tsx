@@ -62,6 +62,11 @@ export default function CourseViewPage() {
       });
   }, [user, slug]);
 
+  // Safe guard — normalize modules to always be an array
+  if (product && !Array.isArray(product.modules)) {
+    (product as Record<string, unknown>).modules = [];
+  }
+
   if (!product) return (
     <DashboardLayout>
       <div style={{ padding: "64px 24px", textAlign: "center" }}>
@@ -134,7 +139,7 @@ export default function CourseViewPage() {
     );
   }
 
-  const allLessons     = product.modules.flatMap((m: { lessons: { id: string }[] }) => m.lessons);
+  const allLessons     = (product.modules as { lessons: { id: string }[] }[] ?? []).flatMap((m) => m.lessons);
   const totalLessons   = allLessons.length;
   const completedCount = allLessons.filter((l: { id: string }) => completed.has(l.id)).length;
   const progress       = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -144,7 +149,7 @@ export default function CourseViewPage() {
     setOpenModules((p) => ({ ...p, [id]: !p[id] }));
 
   /* Find first uncompleted lesson for "continuar" CTA */
-  const nextLesson = allLessons.find((l: { id: string }) => !completed.has(l.id)) ?? allLessons[0];
+  const nextLesson = allLessons.find((l) => !completed.has((l as { id: string }).id)) ?? allLessons[0];
 
   return (
     <DashboardLayout>
