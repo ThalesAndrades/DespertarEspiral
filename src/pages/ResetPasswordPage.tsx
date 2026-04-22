@@ -90,6 +90,9 @@ export default function ResetPasswordPage() {
     // Invalidate sessions on other devices after a password reset.
     await supabase.auth.signOut({ scope: "others" }).catch(() => {});
 
+    // Clear any stale auth_next to prevent onAuthStateChange from hijacking navigation
+    sessionStorage.removeItem("auth_next");
+
     // Sequenzy: password reset completed → triggers "Senha redefinida" sequence
     if (data?.user?.email) {
       fireEventAsync("user.password_reset_completed", {

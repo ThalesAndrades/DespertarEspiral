@@ -70,8 +70,10 @@ export default function RegisterPage() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp || otp.length < 4) { toast.error("Digite o código de verificação."); return; }
+    if (!otp || otp.length < 4) { toast.error("Digite o código de 4 dígitos enviado ao seu e-mail."); return; }
     setLoading(true);
+    // Clear any stale auth_next before registering to avoid onAuthStateChange hijacking navigation
+    sessionStorage.removeItem("auth_next");
     const result = await verifyOtpAndRegister(form.email, otp, form.password, form.name);
     if (result.error) { toast.error(result.error); setLoading(false); return; }
     toast.success("Bem-vinda à espiral. ✦");
@@ -270,11 +272,11 @@ export default function RegisterPage() {
                   <div>
                     <label style={LABEL}>Código de verificação</label>
                     <input
-                      type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6}
-                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}  // accept up to 6 but 4 is enough
+                      type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4}
+                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
                       placeholder="• • • •" className="input-dark"
                       autoComplete="one-time-code"
-                      style={{ textAlign: "center", fontSize: "clamp(22px,5vw,30px)", letterSpacing: "0.32em", fontFamily: "Montserrat, sans-serif", fontWeight: 500, minHeight: "64px" }}
+                      style={{ textAlign: "center", fontSize: "clamp(22px,5vw,30px)", letterSpacing: "0.48em", fontFamily: "Montserrat, sans-serif", fontWeight: 500, minHeight: "64px" }}
                       autoFocus
                     />
                   </div>

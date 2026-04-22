@@ -55,6 +55,8 @@ export default function LoginPage() {
     e.preventDefault();
     if (!email || !password) { toast.error("Preencha todos os campos."); return; }
     setLoading(true);
+    // Clear stale auth_next so onAuthStateChange doesn’t hijack navigation
+    sessionStorage.removeItem("auth_next");
     const result = await loginWithPassword(email, password);
     if (result.error) { toast.error(result.error); setLoading(false); return; }
     toast.success("Bem-vinda de volta. ✦");

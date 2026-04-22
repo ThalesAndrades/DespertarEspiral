@@ -145,17 +145,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
           }
 
-          // Post-OAuth redirect — consume `auth_next` once.
+          // Post-OAuth redirect only — consumed once from sessionStorage.
+          // We only redirect here for Google OAuth (which lands on "/").
+          // Email+password login uses navigate() directly in the page component.
           const savedNext = sessionStorage.getItem("auth_next");
-          if (savedNext) {
+          const isOAuthCallback = /[#&?]access_token|code=/.test(
+            window.location.hash + window.location.search
+          );
+          if (savedNext && isOAuthCallback) {
             sessionStorage.removeItem("auth_next");
-            const authPages = new Set(["/", "/login", "/register"]);
-            if (authPages.has(window.location.pathname)) {
-              const safePath = savedNext.startsWith("/") && !savedNext.startsWith("//")
-                ? savedNext
-                : "/dashboard";
-              window.location.replace(safePath);
-            }
+            const safePath = savedNext.startsWith("/") && !savedNext.startsWith("//")
+              ? savedNext
+              : "/dashboard";
+            window.location.replace(safePath);
           }
         } else if (event === "SIGNED_OUT") {
           sessionStorage.removeItem("auth_next");
@@ -263,14 +265,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Sanitize redirect destination (same-origin absolute path only)
     const raw = nextPath ?? "/dashboard";
     const dest = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard";
+    // Store destination so the SIGNED_IN handler can redirect after OAuth callback
     sessionStorage.setItem("auth_next", dest);
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        // Land directly on the intended destination; Supabase PKCE parses the
-        // code from the URL on arrival via detectSessionInUrl.
-        redirectTo: `${window.location.origin}${dest}`,
+        // Always land on the app root; the SIGNED_IN handler will consume auth_next
+        redirectTo: `${window.location.origin}/`,
         queryParams: { access_type: "offline", prompt: "consent" },
         skipBrowserRedirect: false,
       },
