@@ -2,9 +2,9 @@ import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/lib/ErrorBoundary";
+import LandingPage from "@/pages/LandingPage"; // static — first page users see, no lazy delay
 
 /* Lazy-loaded pages for optimal bundle splitting */
-const LandingPage           = React.lazy(() => import("@/pages/LandingPage"));
 const LoginPage             = React.lazy(() => import("@/pages/LoginPage"));
 const RegisterPage          = React.lazy(() => import("@/pages/RegisterPage"));
 const ForgotPasswordPage    = React.lazy(() => import("@/pages/ForgotPasswordPage"));
@@ -91,11 +91,15 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/* Redirect authenticated users away from login/register pages. */
+/* Redirect authenticated users away from login/register pages.
+ * IMPORTANT: We do NOT show GlobalLoader here — the form renders immediately
+ * and navigation to /dashboard only happens once auth resolves (if user is set).
+ * This eliminates the blank-screen delay on /login while getSession() is pending.
+ */
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <GlobalLoader />;
-  if (user) return <Navigate to="/dashboard" replace />;
+  // Only redirect once we KNOW the user is logged in — never block render
+  if (!loading && user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -114,7 +118,7 @@ export default function App() {
   return (
     <Suspense>
       <Routes>
-        {/* Public */}
+        {/* Public — LandingPage is static import for instant load */}
         <Route path="/"                element={<LandingPage />} />
         <Route path="/login"           element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
         <Route path="/register"        element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />

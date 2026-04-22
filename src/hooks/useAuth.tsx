@@ -56,19 +56,22 @@ function mapSupabaseUser(
 }
 
 async function fetchProfile(userId: string) {
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("role, anonymous_name, full_name, username")
-    .eq("id", userId)
-    .single();
+  // Run both queries in parallel to cut latency by ~50%
+  const [profileRes, productsRes] = await Promise.all([
+    supabase
+      .from("user_profiles")
+      .select("role, anonymous_name, full_name, username")
+      .eq("id", userId)
+      .single(),
+    supabase
+      .from("user_products")
+      .select("products(slug)")
+      .eq("user_id", userId),
+  ]);
 
-  const { data: userProducts } = await supabase
-    .from("user_products")
-    .select("products(slug)")
-    .eq("user_id", userId);
-
+  const profile = profileRes.data;
   const slugs =
-    userProducts
+    productsRes.data
       ?.map((up: Record<string, unknown>) => {
         const p = up.products as { slug?: string } | null;
         return p?.slug ?? null;
