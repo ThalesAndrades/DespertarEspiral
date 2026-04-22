@@ -11,7 +11,8 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, BookOpen, Users, ShoppingBag,
   MessageSquare, LogOut, X, ChevronRight,
-  ArrowLeft, Shield, Menu,
+  ArrowLeft, Shield, Menu, Instagram, BarChart2,
+  Trello, Megaphone,
 } from "lucide-react";
 
 interface NavItem { label: string; icon: React.ElementType; href: string; }
@@ -22,6 +23,13 @@ const adminNav: NavItem[] = [
   { label: "Produtos",   icon: BookOpen,        href: "/admin/products" },
   { label: "Pedidos",    icon: ShoppingBag,     href: "/admin/orders" },
   { label: "Comunidade", icon: MessageSquare,   href: "/admin/community" },
+];
+
+const marketingNav: NavItem[] = [
+  { label: "Redes Sociais", icon: Instagram,   href: "/admin/social" },
+  { label: "CRM & Automação", icon: Megaphone, href: "/admin/crm" },
+  { label: "Projetos",      icon: Trello,      href: "/admin/media" },
+  { label: "Anúncios",      icon: BarChart2,   href: "/admin/traffic" },
 ];
 
 function isActive(href: string, pathname: string) {
@@ -91,8 +99,28 @@ function AdminSidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      <nav style={{ flex: 1, padding: "0 10px", display: "flex", flexDirection: "column", gap: "2px" }}>
+      <nav style={{ flex: 1, padding: "0 10px", display: "flex", flexDirection: "column", gap: "2px", overflowY: "auto" }} className="scrollbar-thin">
         {adminNav.map(({ label, icon: Icon, href }) => {
+          const active = isActive(href, location.pathname);
+          return (
+            <Link
+              key={href} to={href} onClick={onClose}
+              className={`sidebar-link ${active ? "active" : ""}`}
+              style={{ textDecoration: "none" }}
+            >
+              <Icon size={15} strokeWidth={active ? 2 : 1.5} />
+              <span style={{ fontSize: "14px" }}>{label}</span>
+              {active && <ChevronRight size={11} style={{ marginLeft: "auto", color: "var(--gold)", opacity: 0.5 }} />}
+            </Link>
+          );
+        })}
+        {/* ─── Marketing ─── */}
+        <div style={{ margin: "10px 4px 4px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
+          <span className="font-label" style={{ fontSize: "7px", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--text-faint)", whiteSpace: "nowrap" }}>Marketing</span>
+          <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
+        </div>
+        {marketingNav.map(({ label, icon: Icon, href }) => {
           const active = isActive(href, location.pathname);
           return (
             <Link
@@ -150,7 +178,7 @@ function AdminBottomNav() {
         zIndex: 150,
       }}
     >
-      {adminNav.map(({ label, icon: Icon, href }) => {
+      {[...adminNav, ...marketingNav].map(({ label, icon: Icon, href }) => {
         const active = isActive(href, location.pathname);
         return (
           <Link
@@ -212,6 +240,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     "/admin/products":  "Produtos",
     "/admin/orders":    "Pedidos",
     "/admin/community": "Comunidade",
+    "/admin/social":    "Redes Sociais",
+    "/admin/crm":       "CRM & Automação",
+    "/admin/media":     "Projetos",
+    "/admin/traffic":   "Anúncios",
   };
   const currentTitle = Object.entries(titles).find(([p]) => isActive(p, location.pathname))?.[1] ?? "Admin";
 

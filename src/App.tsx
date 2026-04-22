@@ -26,6 +26,10 @@ const AdminProductsPage     = React.lazy(() => import("@/pages/admin/AdminProduc
 const AdminProductContentPage = React.lazy(() => import("@/pages/admin/AdminProductContentPage"));
 const AdminOrdersPage       = React.lazy(() => import("@/pages/admin/AdminOrdersPage"));
 const AdminCommunityPage    = React.lazy(() => import("@/pages/admin/AdminCommunityPage"));
+const AdminSocialPage       = React.lazy(() => import("@/pages/admin/AdminSocialPage"));
+const AdminCRMPage          = React.lazy(() => import("@/pages/admin/AdminCRMPage"));
+const AdminMediaPage        = React.lazy(() => import("@/pages/admin/AdminMediaPage"));
+const AdminTrafficPage      = React.lazy(() => import("@/pages/admin/AdminTrafficPage"));
 const CertificatePage       = React.lazy(() => import("@/pages/CertificatePage"));
 const ProfilePage           = React.lazy(() => import("@/pages/ProfilePage"));
 
@@ -142,6 +146,10 @@ export default function App() {
         <Route path="/admin/products/:id/content" element={<AdminRoute><AdminProductContentPage /></AdminRoute>} />
         <Route path="/admin/orders"               element={<AdminRoute><AdminOrdersPage /></AdminRoute>} />
         <Route path="/admin/community"            element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />
+        <Route path="/admin/social"               element={<AdminRoute><AdminSocialPage /></AdminRoute>} />
+        <Route path="/admin/crm"                  element={<AdminRoute><AdminCRMPage /></AdminRoute>} />
+        <Route path="/admin/media"                element={<AdminRoute><AdminMediaPage /></AdminRoute>} />
+        <Route path="/admin/traffic"              element={<AdminRoute><AdminTrafficPage /></AdminRoute>} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
