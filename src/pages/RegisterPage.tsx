@@ -2,14 +2,14 @@
  * RegisterPage — Mobile-first, theme-aware
  * Passo 1: dados + OTP | Passo 2: verificação
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
 import { LazyAuthSpiral3D as AuthSpiral3D } from "@/components/layout/LazyDecorative";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowRight, Mail, KeyRound, ChevronLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Mail, KeyRound, ChevronLeft, RefreshCw, Loader2 } from "lucide-react";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -45,6 +45,23 @@ export default function RegisterPage() {
   const [showPass,      setShowPass]      = useState(false);
   const [loading,       setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      if (cooldownRef.current) { clearInterval(cooldownRef.current); cooldownRef.current = null; }
+      return;
+    }
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) { clearInterval(cooldownRef.current!); cooldownRef.current = null; return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
+  }, [resendCooldown]);
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -65,19 +82,25 @@ export default function RegisterPage() {
     setLoading(false);
     if (result.error) { toast.error(result.error); return; }
     toast.success("Código enviado! Verifique seu e-mail.");
+    setOtp("");
+    setResendCooldown(60);
     setStep("otp");
+  };
+
+  const doVerify = async (code: string) => {
+    if (!code || code.length < 4) return;
+    setLoading(true);
+    // Clear any stale auth_next before registering to avoid onAuthStateChange hijacking navigation
+    sessionStorage.removeItem("auth_next");
+    const result = await verifyOtpAndRegister(form.email, code, form.password, form.name);
+    if (result.error) { toast.error(result.error); setLoading(false); return; }
+    toast.success("Bem-vinda à espiral. ✦");
+    navigate("/dashboard", { replace: true });
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp || otp.length < 4) { toast.error("Digite o código de 4 dígitos enviado ao seu e-mail."); return; }
-    setLoading(true);
-    // Clear any stale auth_next before registering to avoid onAuthStateChange hijacking navigation
-    sessionStorage.removeItem("auth_next");
-    const result = await verifyOtpAndRegister(form.email, otp, form.password, form.name);
-    if (result.error) { toast.error(result.error); setLoading(false); return; }
-    toast.success("Bem-vinda à espiral. ✦");
-    navigate("/dashboard", { replace: true });
+    await doVerify(otp);
   };
 
   return (
@@ -273,31 +296,63 @@ export default function RegisterPage() {
                     <label style={LABEL}>Código de verificação</label>
                     <input
                       type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4}
-                      value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      value={otp}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                        setOtp(val);
+                        // Auto-submit when 4th digit is typed
+                        if (val.length === 4 && !loading) {
+                          setTimeout(() => doVerify(val), 80);
+                        }
+                      }}
                       placeholder="• • • •" className="input-dark"
                       autoComplete="one-time-code"
-                      style={{ textAlign: "center", fontSize: "clamp(22px,5vw,30px)", letterSpacing: "0.48em", fontFamily: "Montserrat, sans-serif", fontWeight: 500, minHeight: "64px" }}
+                      disabled={loading}
+                      style={{ textAlign: "center", fontSize: "clamp(22px,5vw,30px)", letterSpacing: "0.48em", fontFamily: "Montserrat, sans-serif", fontWeight: 500, minHeight: "64px", transition: "opacity 0.2s", opacity: loading ? 0.6 : 1 }}
                       autoFocus
                     />
+                    {loading && (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "7px", marginTop: "8px" }}>
+                        <Loader2 size={13} style={{ color: "var(--gold)", animation: "spin 0.8s linear infinite" }} />
+                        <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Verificando…</span>
+                      </div>
+                    )}
                   </div>
                   <button type="submit" disabled={loading} className="btn-gold" style={{ width: "100%", borderRadius: "16px", minHeight: "54px" }}>
                     {loading ? "Verificando…" : <><span>Confirmar e criar conta</span><ArrowRight size={14} /></>}
                   </button>
                 </form>
 
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", marginTop: "20px" }}>
+                {/* Resend + expiry info */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", marginTop: "20px" }}>
                   <button
+                    disabled={resendCooldown > 0 || loading}
                     onClick={async () => {
-                      setLoading(true);
                       const r = await sendOtp(form.email);
-                      setLoading(false);
-                      if (r.error) toast.error(r.error);
-                      else toast.success("Novo código enviado!");
+                      if (r.error) { toast.error(r.error); return; }
+                      toast.success("Novo código enviado!");
+                      setOtp("");
+                      setResendCooldown(60);
                     }}
-                    style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "14px", color: "var(--gold)", padding: "10px", minHeight: "44px", fontFamily: "DM Sans, sans-serif" }}>
-                    Reenviar código
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "6px",
+                      background: "transparent", border: "none",
+                      cursor: resendCooldown > 0 || loading ? "default" : "pointer",
+                      fontSize: "14px",
+                      color: resendCooldown > 0 || loading ? "var(--text-faint)" : "var(--gold)",
+                      padding: "10px", minHeight: "44px", fontFamily: "DM Sans, sans-serif",
+                      transition: "color 0.2s",
+                    }}>
+                    <RefreshCw size={13} style={{ opacity: resendCooldown > 0 ? 0.45 : 0.85 }} />
+                    {resendCooldown > 0
+                      ? `Reenviar em ${resendCooldown}s`
+                      : "Reenviar código"}
                   </button>
+                  <p style={{ fontSize: "11px", color: "var(--text-faint)", lineHeight: 1.6 }}>
+                    O código expira em 60 minutos.
+                  </p>
                 </div>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </>
             )}
           </div>
