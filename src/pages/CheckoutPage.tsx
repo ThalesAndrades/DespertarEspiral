@@ -146,10 +146,10 @@ export default function CheckoutPage() {
       firstName: form.name.trim().split(" ")[0],
       properties: {
         product_slug: slug ?? "",
-        product_title: product.title as string,
+        product_title: product?.title ?? "",
         payment_method: paymentMethod,
         order_id: data?.orderId ?? "",
-        amount: product.price as number,
+        amount: product?.price ?? 0,
         completed_at: new Date().toISOString(),
         utm_source:   attribution.utm_source   ?? "",
         utm_medium:   attribution.utm_medium   ?? "",

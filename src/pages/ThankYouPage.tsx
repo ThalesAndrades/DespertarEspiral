@@ -56,7 +56,7 @@ function StepItem({ num, title, desc, icon: Icon, status = "pending" }: {
         background: colors.bg, border: `1px solid ${colors.border}`,
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <Icon size={clamp(15, 2, 18)} style={{ color: colors.icon }} strokeWidth={1.5} />
+        <Icon size={clamp(15, 18, 22)} style={{ color: colors.icon }} strokeWidth={1.5} />
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
@@ -73,8 +73,8 @@ function StepItem({ num, title, desc, icon: Icon, status = "pending" }: {
   );
 }
 
-// Helper to avoid TS issues
-function clamp(min: number, _: number, max: number) { return Math.max(min, Math.min(max, 18)); }
+// Helper: clamp a number between min and max
+function clamp(min: number, val: number, max: number) { return Math.max(min, Math.min(val, max)); }
 
 export default function ThankYouPage() {
   const [params] = useSearchParams();

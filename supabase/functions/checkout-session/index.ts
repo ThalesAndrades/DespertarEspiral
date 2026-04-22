@@ -88,7 +88,6 @@ async function upsertAsaasCustomer(
   name: string,
   cpfCnpj?: string
 ): Promise<string | null> {
-  // Check if customer already exists by email
   const searchRes = await asaasRequest(apiKey, "GET", `/customers?email=${encodeURIComponent(email)}&limit=1`);
   if (searchRes.ok && searchRes.data) {
     const existing = (searchRes.data as Record<string, unknown>).data;
@@ -97,7 +96,6 @@ async function upsertAsaasCustomer(
     }
   }
 
-  // Create new customer
   const createBody: Record<string, unknown> = {
     name: name || email.split("@")[0],
     email,
@@ -135,13 +133,12 @@ async function createAsaasPayment(
     dueDate,
     description,
     externalReference: orderId,
-    fine:        { value: 1 },   // 1% mora
-    interest:    { value: 0.033 }, // 1% ao mês (0.033% ao dia)
+    fine:        { value: 1 },
+    interest:    { value: 0.033 },
     postalService: false,
   };
 
   if (billingType === "CREDIT_CARD") {
-    // For credit card, Asaas needs installments config or redirect to hosted checkout
     body.installmentCount = 12;
     body.installmentValue = parseFloat((amount / 12).toFixed(2));
   }
@@ -156,7 +153,6 @@ async function createAsaasPayment(
     invoiceUrl: data.invoiceUrl as string | undefined,
   };
 
-  // For PIX: fetch QR code
   if (billingType === "PIX" && data.id) {
     const qrRes = await asaasRequest(apiKey, "GET", `/payments/${data.id}/pixQrCode`);
     if (qrRes.ok && qrRes.data) {
@@ -166,7 +162,6 @@ async function createAsaasPayment(
     }
   }
 
-  // For BOLETO: fetch barcode
   if (billingType === "BOLETO" && data.id) {
     const lineRes = await asaasRequest(apiKey, "GET", `/payments/${data.id}/identificationField`);
     if (lineRes.ok && lineRes.data) {
@@ -194,7 +189,6 @@ Deno.serve(async (req: Request) => {
 
     const { productSlug, email, name, paymentMethod, cpfCnpj } = await req.json();
 
-    // Input validation
     if (!productSlug || !email) {
       return jsonResponse(req, 400, { error: "productSlug e email são obrigatórios" });
     }
@@ -239,6 +233,16 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(req, 404, { error: "Produto não encontrado ou inativo" });
     }
 
+    // Ensure price is a valid number
+    const productPrice = typeof product.price === "number"
+      ? product.price
+      : parseFloat(String(product.price));
+
+    if (!isFinite(productPrice) || productPrice <= 0) {
+      console.error("Invalid product price:", product.price);
+      return jsonResponse(req, 500, { error: "Produto com preço inválido" });
+    }
+
     // 2. Create pending order
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
@@ -247,7 +251,7 @@ Deno.serve(async (req: Request) => {
         product_id: product.id,
         email: email.toLowerCase().trim(),
         name: name?.trim() || null,
-        amount: product.price,
+        amount: productPrice,
         status: "pending",
         payment_method: paymentMethod || "pix",
       })
@@ -270,7 +274,6 @@ Deno.serve(async (req: Request) => {
       const customerId = await upsertAsaasCustomer(asaasApiKey, email.toLowerCase().trim(), name?.trim() || firstName, cpfCnpj);
 
       if (customerId) {
-        // Due date: today + 3 days for boleto/PIX, today for credit
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + (paymentMethod === "boleto" ? 3 : paymentMethod === "credit" ? 0 : 1));
         const dueDateStr = dueDate.toISOString().slice(0, 10);
@@ -278,7 +281,7 @@ Deno.serve(async (req: Request) => {
         asaasData = await createAsaasPayment(
           asaasApiKey,
           customerId,
-          parseFloat(product.price),
+          productPrice,
           paymentMethod || "pix",
           `${product.title} — Despertar Espiral`,
           order.id,
@@ -298,7 +301,6 @@ Deno.serve(async (req: Request) => {
         console.warn("Could not create/find Asaas customer");
       }
 
-      // If Asaas is configured but payment creation failed, mark order failed and surface the error
       if (asaasData === null) {
         await supabaseAdmin
           .from("orders")
@@ -313,14 +315,13 @@ Deno.serve(async (req: Request) => {
       console.warn("ASAAS_API_KEY not configured — payment gateway skipped");
     }
 
-    // 4. Sequenzy — fire checkout.started and checkout_iniciado (non-blocking)
+    // 4. Sequenzy — fire checkout events (non-blocking)
     const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
     if (sequenzyApiKey) {
       const firstName = (name?.split(" ")[0] || email.split("@")[0]).trim();
-      const amountFmt = `R$ ${parseFloat(product.price).toFixed(2).replace(".", ",")}`;
+      const amountFmt = `R$ ${productPrice.toFixed(2).replace(".", ",")}`;
 
       sequenzyBatch([
-        /* Upsert subscriber */
         sequenzyUpsertSubscriber(sequenzyApiKey, {
           email,
           firstName,
@@ -328,36 +329,32 @@ Deno.serve(async (req: Request) => {
             product_slug:   product.slug,
             product_title:  product.title,
             order_id:       order.id,
-            amount:         product.price,
+            amount:         productPrice,
             checkout_at:    new Date().toISOString(),
             status:         "checkout_pendente",
           },
         }),
-        /* Tags */
         sequenzyTags(sequenzyApiKey, email, [
           "checkout-iniciado",
           `produto-${product.slug}`,
           "lead-quente",
           "plataforma-despertar",
         ]),
-        /* checkout_iniciado — triggers "Recuperação de Checkout" sequence */
         sequenzyEvent(sequenzyApiKey, email, "checkout_iniciado", {
           product_title:  product.title,
           product_slug:   product.slug,
-          amount:         product.price,
+          amount:         productPrice,
           order_id:       order.id,
           payment_method: paymentMethod || "pix",
           started_at:     new Date().toISOString(),
         }),
-        /* checkout.started — custom dashboard event */
         sequenzyEvent(sequenzyApiKey, email, "checkout.started", {
           product_title:  product.title,
           product_slug:   product.slug,
-          amount:         product.price,
+          amount:         productPrice,
           order_id:       order.id,
           payment_method: paymentMethod || "pix",
         }),
-        /* Transactional email — checkout confirmation */
         sequenzyTransactional(sequenzyApiKey, email, "checkout-confirmado", {
           firstName,
           productTitle:    product.title,
@@ -378,9 +375,8 @@ Deno.serve(async (req: Request) => {
         title:    product.title,
         subtitle: product.subtitle,
         slug:     product.slug,
-        price:    product.price,
+        price:    productPrice,
       },
-      // Pass payment details to frontend for ThankYouPage
       payment: asaasData ? {
         invoiceUrl: asaasData.invoiceUrl,
         pixQrCode:  asaasData.pixQrCode,

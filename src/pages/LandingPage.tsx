@@ -281,6 +281,7 @@ export default function LandingPage() {
                   height={454}
                   loading="eager"
                   decoding="async"
+                  // @ts-expect-error fetchPriority is valid HTML5 but not yet in React types
                   fetchPriority="high"
                   style={{
                     width: "100%",
@@ -531,10 +532,10 @@ export default function LandingPage() {
                   <div>
                     <p className="overline" style={{ color: "rgba(245,240,232,0.32)", marginBottom: "4px", fontSize: "8px" }}>Investimento</p>
                     <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
-                      <p className="font-display" style={{ fontSize: "clamp(32px,4vw,44px)", color: "#c6a870", fontWeight: 300, lineHeight: 1 }}>R$ 497</p>
-                      <p style={{ fontSize: "13px", color: "rgba(245,240,232,0.28)", textDecoration: "line-through" }}>R$ 697</p>
+                      <p className="font-display" style={{ fontSize: "clamp(32px,4vw,44px)", color: "#c6a870", fontWeight: 300, lineHeight: 1 }}>R$ 997</p>
+                      <p style={{ fontSize: "13px", color: "rgba(245,240,232,0.28)", textDecoration: "line-through" }}>R$ 1.997</p>
                     </div>
-                    <p className="font-label" style={{ fontSize: "9px", color: "rgba(140,170,150,0.78)", letterSpacing: "0.12em", marginTop: "4px" }}>ou 12× de R$ 49,70</p>
+                    <p className="font-label" style={{ fontSize: "9px", color: "rgba(140,170,150,0.78)", letterSpacing: "0.12em", marginTop: "4px" }}>ou 12× de R$ 97,10</p>
                   </div>
                   <Link to="/checkout/mulher-espiral" className="btn-gold">
                     Quero começar <ArrowRight size={14} />

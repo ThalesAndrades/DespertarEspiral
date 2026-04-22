@@ -296,6 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!session?.user) return;
     const { profile, slugs } = await fetchProfile(session.user.id);
     setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+    hydratedUserIdRef.current = session.user.id;
   };
 
   return (

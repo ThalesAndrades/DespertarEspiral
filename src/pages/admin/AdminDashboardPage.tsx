@@ -57,13 +57,16 @@ export default function AdminDashboardPage() {
     Promise.all([
       supabase.from("user_profiles").select("id", { count: "exact", head: true }).eq("role", "member"),
       supabase.from("orders").select("id,status,amount,email,created_at,product_id,products(title)").order("created_at", { ascending: false }).limit(10),
+      supabase.from("orders").select("amount").eq("status", "paid"),
       supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
       supabase.from("community_posts").select("id", { count: "exact", head: true }).eq("is_visible", true),
-    ]).then(([members, ordersRes, products, posts]) => {
+    ]).then(([members, ordersRes, allPaidRes, products, posts]) => {
       const allOrders = (ordersRes.data ?? []) as RecentOrder[];
       const paid = allOrders.filter((o) => o.status === "paid");
       const pending = allOrders.filter((o) => o.status === "pending");
-      const revenue = paid.reduce((s, o) => s + Number(o.amount), 0);
+      // Revenue calculated from ALL paid orders (not just the 10 most recent)
+      const allPaid = (allPaidRes.data ?? []) as { amount: number }[];
+      const revenue = allPaid.reduce((s, o) => s + Number(o.amount), 0);
 
       setStats({
         totalMembers:  members.count ?? 0,
