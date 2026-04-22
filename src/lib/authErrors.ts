@@ -35,9 +35,9 @@ const ERROR_MAP: Array<[RegExp | string, string]> = [
   ["token is invalid",
     "Código inválido. Verifique os dígitos e tente novamente."],
   ["Otp expired",
-    "Código expirado. Clique em \"Reenviar código\" e tente novamente."], // Fix: Escaped inner double quotes
+    "Código expirado. Clique em 'Reenviar código' e tente novamente."],
   ["otp_expired",
-    "Código expirado. Clique em \"Reenviar código\" e tente novamente."], // Fix: Escaped inner double quotes
+    "Código expirado. Clique em 'Reenviar código' e tente novamente."],
   ["Email link is invalid or has expired",
     "Link inválido ou expirado. Solicite um novo link de recuperação."],
 

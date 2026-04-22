@@ -101,7 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /* ── hydrate from session on mount ── */
   useEffect(() => {
     let mounted = true;
-    let initialSessionResolved = false;
 
     // Surface OAuth provider errors returned in the callback URL.
     try {
@@ -125,7 +124,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       if (mounted) {
-        initialSessionResolved = true;
         setLoading(false);
       }
     });
@@ -135,16 +133,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (event === "SIGNED_IN" && session?.user) {
-          const alreadyHydrated =
-            initialSessionResolved && hydratedUserIdRef.current === session.user.id;
+          // Skip if we already hydrated this exact user (e.g. email+password login
+          // calls setUser directly in loginWithPassword — no need to fetch again).
+          const alreadyHydrated = hydratedUserIdRef.current === session.user.id;
 
           if (!alreadyHydrated) {
             const { profile, slugs } = await fetchProfile(session.user.id);
             if (!mounted) return;
             setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
             hydratedUserIdRef.current = session.user.id;
-            setLoading(false);
           }
+
+          if (mounted) setLoading(false);
 
           // Post-OAuth redirect only — consumed once from sessionStorage.
           // We only redirect here for Google OAuth (which lands on "/").
@@ -170,11 +170,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { profile, slugs } = await fetchProfile(session.user.id);
           if (mounted) setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
         } else if (event === "USER_UPDATED" && session?.user) {
-          const { profile, slugs } = await fetchProfile(session.user.id);
-          if (mounted) {
-            setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
-            setLoading(false);
+          // Only re-fetch if this user isn't already the hydrated one
+          if (hydratedUserIdRef.current !== session.user.id) {
+            const { profile, slugs } = await fetchProfile(session.user.id);
+            if (mounted) {
+              setUser(mapSupabaseUser(session.user, profile ?? undefined, slugs));
+              hydratedUserIdRef.current = session.user.id;
+            }
           }
+          if (mounted) setLoading(false);
         } else if (event === "PASSWORD_RECOVERY") {
           // When Supabase sends a recovery link, ensure loading clears
           if (mounted) setLoading(false);
@@ -287,9 +291,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data.user) return { error: mapAuthError(error?.message ?? "Credenciais inválidas") };
 
     const { profile, slugs } = await fetchProfile(data.user.id);
-    setUser(mapSupabaseUser(data.user, profile ?? undefined, slugs));
-    // Prevent the onAuthStateChange SIGNED_IN handler from duplicating the fetch
+    // Mark as hydrated BEFORE setting user so the onAuthStateChange SIGNED_IN
+    // handler (which fires after this) skips the redundant fetch.
     hydratedUserIdRef.current = data.user.id;
+    setUser(mapSupabaseUser(data.user, profile ?? undefined, slugs));
     return {};
   };
 
@@ -298,8 +303,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Sanitize redirect destination (same-origin absolute path only)
     const raw = nextPath ?? "/dashboard";
     const dest = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard";
-    // Store destination so the SIGNED_IN handler can redirect after OAuth callback
-    sessionStorage.setItem("auth_next", dest);
+    // Store destination so the SIGNED_IN handler can redirect after OAuth callback.
+    // Only set if coming from a protected route — avoid setting for /login itself.
+    if (dest !== "/" && dest !== "/login" && dest !== "/register") {
+      sessionStorage.setItem("auth_next", dest);
+    } else {
+      sessionStorage.setItem("auth_next", "/dashboard");
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
