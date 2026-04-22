@@ -3,17 +3,18 @@
  * + Certificate configuration panel per product
  * Mobile-first: accordion cards, sticky header, floating save
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save, Download, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface LessonRow { id: string; title: string; type: string; content: string; duration_min: number; sort_order: number; is_free: boolean; }
 interface ModuleRow { id: string; title: string; sort_order: number; lessons: LessonRow[]; }
 
 interface CertConfig {
+  courseName?: string;
   instructorName?: string;
   instructorTitle?: string;
   courseTagline?: string;
@@ -21,6 +22,7 @@ interface CertConfig {
   signatureLabel?: string;
   institutionLabel?: string;
   footerNote?: string;
+  issueDate?: string;
 }
 interface ProductInfo { id: string; title: string; subtitle: string | null; certificate_config?: CertConfig; }
 
@@ -50,6 +52,8 @@ export default function AdminProductContentPage() {
   const [certConfig,    setCertConfig]    = useState<CertConfig>({});
   const [savingCert,    setSavingCert]    = useState(false);
   const [certOpen,      setCertOpen]      = useState(false);
+  const [showPreview,   setShowPreview]   = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   /* Load product + modules + lessons */
   useEffect(() => {
@@ -163,6 +167,217 @@ export default function AdminProductContentPage() {
       toast.success("Aula removida.");
     }
     setDeleting(null);
+  };
+
+  /* Draw certificate preview on canvas */
+  const drawCertificate = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const W = canvas.width;   // 1200
+    const H = canvas.height;  // 848
+
+    // ── Background ──
+    ctx.fillStyle = "#FAF7F2";
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle cream texture lines
+    ctx.strokeStyle = "rgba(198,168,112,0.06)";
+    ctx.lineWidth = 1;
+    for (let y = 0; y < H; y += 28) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    // ── Outer border ──
+    const pad = 32;
+    ctx.strokeStyle = "#C6A870";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(pad, pad, W - pad * 2, H - pad * 2);
+
+    // ── Inner border ──
+    const pad2 = 44;
+    ctx.strokeStyle = "rgba(198,168,112,0.35)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad2, pad2, W - pad2 * 2, H - pad2 * 2);
+
+    // ── Corner ornaments ──
+    const corners = [
+      [pad + 10, pad + 10],
+      [W - pad - 10, pad + 10],
+      [pad + 10, H - pad - 10],
+      [W - pad - 10, H - pad - 10],
+    ] as [number, number][];
+    corners.forEach(([cx, cy]) => {
+      ctx.strokeStyle = "#C6A870";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      // Small L-shape ornament
+      const s = 18;
+      const dx = cx < W / 2 ? 1 : -1;
+      const dy = cy < H / 2 ? 1 : -1;
+      ctx.moveTo(cx, cy + dy * s); ctx.lineTo(cx, cy); ctx.lineTo(cx + dx * s, cy);
+      ctx.stroke();
+      // Diamond dot
+      ctx.fillStyle = "#C6A870";
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-3, -3, 6, 6);
+      ctx.restore();
+    });
+
+    // ── Top gold bar ──
+    const barY = 72;
+    const grad = ctx.createLinearGradient(pad2 + 20, 0, W - pad2 - 20, 0);
+    grad.addColorStop(0,   "rgba(198,168,112,0)");
+    grad.addColorStop(0.3, "rgba(198,168,112,0.85)");
+    grad.addColorStop(0.7, "rgba(198,168,112,0.85)");
+    grad.addColorStop(1,   "rgba(198,168,112,0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(pad2 + 20, barY, W - (pad2 + 20) * 2, 1.5);
+
+    // ── Institution label ──
+    const institution = certConfig.institutionLabel || "Despertar Espiral";
+    ctx.fillStyle = "#C6A870";
+    ctx.font = "500 13px 'Montserrat', sans-serif";
+    ctx.textAlign = "center";
+    ctx.letterSpacing = "0.3em";
+    ctx.fillText(institution.toUpperCase(), W / 2, 108);
+    ctx.letterSpacing = "0";
+
+    // Small divider diamonds
+    const drawDiamond = (x: number, y: number, r: number) => {
+      ctx.fillStyle = "#C6A870";
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-r, -r, r * 2, r * 2); ctx.restore();
+    };
+    drawDiamond(W / 2 - 80, 122, 3);
+    drawDiamond(W / 2,       122, 3);
+    drawDiamond(W / 2 + 80, 122, 3);
+
+    // ── "CERTIFICADO" headline ──
+    ctx.fillStyle = "#1A1209";
+    ctx.font = "300 62px 'Cormorant Garamond', 'Georgia', serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Certificado", W / 2, 190);
+
+    // ── "de Conclusão" sub ──
+    ctx.fillStyle = "rgba(26,18,9,0.55)";
+    ctx.font = "italic 300 28px 'Cormorant Garamond', 'Georgia', serif";
+    ctx.fillText("de Conclusão", W / 2, 225);
+
+    // ── Certifica que ──
+    ctx.fillStyle = "rgba(26,18,9,0.45)";
+    ctx.font = "400 14px 'DM Sans', sans-serif";
+    ctx.fillText("Certificamos que", W / 2, 276);
+
+    // ── Student name placeholder ──
+    ctx.fillStyle = "#1A1209";
+    ctx.font = "italic 300 44px 'Cormorant Garamond', 'Georgia', serif";
+    ctx.fillText("Nome da Aluna", W / 2, 330);
+
+    // Name underline
+    const nameW = ctx.measureText("Nome da Aluna").width;
+    const gradLine = ctx.createLinearGradient(W / 2 - nameW / 2, 0, W / 2 + nameW / 2, 0);
+    gradLine.addColorStop(0,   "rgba(198,168,112,0)");
+    gradLine.addColorStop(0.5, "rgba(198,168,112,0.8)");
+    gradLine.addColorStop(1,   "rgba(198,168,112,0)");
+    ctx.strokeStyle = gradLine;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(W / 2 - nameW / 2, 340); ctx.lineTo(W / 2 + nameW / 2, 340); ctx.stroke();
+
+    // ── Description text ──
+    const desc = certConfig.certDescription ||
+      `concluiu com êxito o programa ${certConfig.courseName || product?.title || "[nome do curso]"}${certConfig.courseTagline ? " — " + certConfig.courseTagline : ""}.`;
+    ctx.fillStyle = "rgba(26,18,9,0.52)";
+    ctx.font = "400 14px 'DM Sans', sans-serif";
+    ctx.textAlign = "center";
+    // Word-wrap
+    const words = desc.split(" ");
+    let line = "";
+    let lineY = 374;
+    const maxW = W - 280;
+    for (const word of words) {
+      const testLine = line + word + " ";
+      if (ctx.measureText(testLine).width > maxW && line) {
+        ctx.fillText(line.trim(), W / 2, lineY);
+        line = word + " ";
+        lineY += 22;
+      } else { line = testLine; }
+    }
+    ctx.fillText(line.trim(), W / 2, lineY);
+
+    // ── Date ──
+    const dateStr = certConfig.issueDate
+      ? new Date(certConfig.issueDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+      : new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+    ctx.fillStyle = "rgba(26,18,9,0.40)";
+    ctx.font = "400 13px 'DM Sans', sans-serif";
+    ctx.fillText(dateStr, W / 2, lineY + 32);
+
+    // ── Horizontal divider ──
+    const divY = H - 178;
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad2 + 40, divY); ctx.lineTo(W - pad2 - 40, divY); ctx.stroke();
+    drawDiamond(W / 2, divY, 3.5);
+
+    // ── Signature block ──
+    const sigBlockW = 220;
+    const sigCX = W / 2;
+    const sigY = H - 148;
+
+    // Signature script (stylized)
+    ctx.fillStyle = "#1A1209";
+    ctx.font = "italic 300 32px 'Cormorant Garamond', 'Georgia', serif";
+    ctx.textAlign = "center";
+    ctx.fillText(certConfig.instructorName || "Sunyan Nunes", sigCX, sigY);
+
+    // Signature underline
+    ctx.strokeStyle = "rgba(198,168,112,0.6)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(sigCX - sigBlockW / 2, sigY + 8); ctx.lineTo(sigCX + sigBlockW / 2, sigY + 8); ctx.stroke();
+
+    // Name label
+    ctx.fillStyle = "rgba(26,18,9,0.65)";
+    ctx.font = "600 11px 'Montserrat', sans-serif";
+    ctx.letterSpacing = "0.12em";
+    ctx.fillText((certConfig.instructorName || "Sunyan Nunes").toUpperCase(), sigCX, sigY + 26);
+    ctx.letterSpacing = "0";
+
+    // Title label
+    ctx.fillStyle = "rgba(26,18,9,0.40)";
+    ctx.font = "400 11px 'DM Sans', sans-serif";
+    ctx.fillText(certConfig.instructorTitle || "Mentora & Fundadora · Despertar Espiral", sigCX, sigY + 43);
+
+    // ── Footer note ──
+    ctx.fillStyle = "rgba(26,18,9,0.30)";
+    ctx.font = "400 11px 'DM Sans', sans-serif";
+    ctx.textAlign = "center";
+    const footerNote = certConfig.footerNote ||
+      "Este certificado atesta a conclusão integral do programa, com dedicação, presença e comprometimento.";
+    ctx.fillText(footerNote.slice(0, 110), W / 2, H - 56);
+
+    // ── Bottom bar ──
+    ctx.fillStyle = grad;
+    ctx.fillRect(pad2 + 20, H - 72, W - (pad2 + 20) * 2, 1.5);
+  }, [certConfig, product]);
+
+  useEffect(() => {
+    if (showPreview) drawCertificate();
+  }, [showPreview, drawCertificate]);
+
+  /* Download canvas as PNG */
+  const downloadCert = () => {
+    drawCertificate();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const a = document.createElement("a");
+    a.download = `certificado-${(product?.title ?? "curso").toLowerCase().replace(/\s+/g, "-")}.png`;
+    a.href = canvas.toDataURL("image/png");
+    a.click();
   };
 
   /* Save certificate config */
@@ -389,83 +604,165 @@ export default function AdminProductContentPage() {
           </button>
 
           {certOpen && (
-            <div style={{ borderTop: "1px solid var(--border-subtle)", padding: "clamp(16px,3vw,24px)", display: "flex", flexDirection: "column", gap: "16px", background: "rgba(198,168,112,0.02)" }}>
-              <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.75 }}>
-                Estas informações aparecem no certificado gerado automaticamente quando uma aluna conclui 100% das aulas do curso.
-              </p>
+            <div style={{ borderTop: "1px solid var(--border-subtle)", background: "rgba(198,168,112,0.02)" }}>
 
-              {/* Field grid */}
-              <div style={{ display: "grid", gap: "14px" }} className="grid sm:grid-cols-2">
-                {[
-                  { key: "instructorName",   label: "Nome da mentora / instrutora",     ph: "Sunyan Nunes" },
-                  { key: "signatureLabel",   label: "Legenda da assinatura",             ph: "Assinatura da mentora" },
-                  { key: "institutionLabel", label: "Nome da instituição",               ph: "Despertar Espiral" },
-                  { key: "courseTagline",    label: "Tagline do curso no certificado",   ph: "Método de Reconexão e Cura" },
-                ].map(({ key, label, ph }) => (
-                  <div key={key}>
-                    <label style={LABEL_STYLE}>{label}</label>
-                    <input
-                      type="text"
-                      value={(certConfig as Record<string, string>)[key] ?? ""}
-                      onChange={(e) => setCertConfig((c) => ({ ...c, [key]: e.target.value }))}
-                      placeholder={ph}
-                      className="input-dark"
-                      style={{ borderRadius: "10px" }}
+              {/* ── Fields ── */}
+              <div style={{ padding: "clamp(16px,3vw,24px)", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.75 }}>
+                  Preencha os campos abaixo para personalizar o certificado. Use o botão <strong style={{ color: "var(--gold)" }}>Visualizar</strong> para ver o preview em tempo real antes de salvar.
+                </p>
+
+                {/* Row 1 */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "14px" }}>
+                  <div>
+                    <label style={LABEL_STYLE}>Nome do curso no certificado</label>
+                    <input type="text"
+                      value={certConfig.courseName ?? product?.title ?? ""}
+                      onChange={(e) => setCertConfig((c) => ({ ...c, courseName: e.target.value }))}
+                      placeholder={product?.title ?? "Nome do curso"}
+                      className="input-dark" style={{ borderRadius: "10px" }}
                     />
                   </div>
-                ))}
+                  <div>
+                    <label style={LABEL_STYLE}>Tagline / subtítulo do curso</label>
+                    <input type="text"
+                      value={certConfig.courseTagline ?? ""}
+                      onChange={(e) => setCertConfig((c) => ({ ...c, courseTagline: e.target.value }))}
+                      placeholder="Método de Reconexão e Cura"
+                      className="input-dark" style={{ borderRadius: "10px" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2 */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "14px" }}>
+                  <div>
+                    <label style={LABEL_STYLE}>Nome da mentora / instrutora</label>
+                    <input type="text"
+                      value={certConfig.instructorName ?? ""}
+                      onChange={(e) => setCertConfig((c) => ({ ...c, instructorName: e.target.value }))}
+                      placeholder="Sunyan Nunes"
+                      className="input-dark" style={{ borderRadius: "10px" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={LABEL_STYLE}>Cargo / título da mentora</label>
+                    <input type="text"
+                      value={certConfig.instructorTitle ?? ""}
+                      onChange={(e) => setCertConfig((c) => ({ ...c, instructorTitle: e.target.value }))}
+                      placeholder="Mentora & Fundadora · Despertar Espiral"
+                      className="input-dark" style={{ borderRadius: "10px" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3 */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "14px" }}>
+                  <div>
+                    <label style={LABEL_STYLE}>Nome da instituição</label>
+                    <input type="text"
+                      value={certConfig.institutionLabel ?? ""}
+                      onChange={(e) => setCertConfig((c) => ({ ...c, institutionLabel: e.target.value }))}
+                      placeholder="Despertar Espiral"
+                      className="input-dark" style={{ borderRadius: "10px" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={LABEL_STYLE}>Data de emissão padrão</label>
+                    <input type="date"
+                      value={certConfig.issueDate ?? ""}
+                      onChange={(e) => setCertConfig((c) => ({ ...c, issueDate: e.target.value }))}
+                      className="input-dark" style={{ borderRadius: "10px" }}
+                    />
+                    <p style={{ fontSize: "10px", color: "var(--text-faint)", marginTop: "4px" }}>Deixe em branco para usar a data real de conclusão de cada aluna.</p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={LABEL_STYLE}>Descrição personalizada (opcional)</label>
+                  <textarea
+                    value={certConfig.certDescription ?? ""}
+                    onChange={(e) => setCertConfig((c) => ({ ...c, certDescription: e.target.value }))}
+                    placeholder="Deixe em branco para gerar automaticamente: \"concluiu com êxito o programa [nome do curso]…\""
+                    className="input-dark" rows={2}
+                    style={{ borderRadius: "10px", resize: "none" }}
+                  />
+                </div>
+
+                {/* Footer */}
+                <div>
+                  <label style={LABEL_STYLE}>Nota de rodapé</label>
+                  <textarea
+                    value={certConfig.footerNote ?? ""}
+                    onChange={(e) => setCertConfig((c) => ({ ...c, footerNote: e.target.value }))}
+                    placeholder="Este certificado atesta a conclusão integral do programa, com dedicação, presença e comprometimento."
+                    className="input-dark" rows={2}
+                    style={{ borderRadius: "10px", resize: "none" }}
+                  />
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                  <button
+                    onClick={saveCertConfig} disabled={savingCert}
+                    className="btn-gold"
+                    style={{ padding: "11px 24px", fontSize: "9px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "7px" }}
+                  >
+                    {savingCert
+                      ? <><Loader2 size={12} style={{ animation: "spin 0.8s linear infinite" }} /> Salvando…</>
+                      : <><Save size={12} /> Salvar configuração</>
+                    }
+                  </button>
+                  <button
+                    onClick={() => { setShowPreview(p => !p); if (!showPreview) setTimeout(drawCertificate, 50); }}
+                    className="btn-ghost"
+                    style={{ padding: "10px 20px", fontSize: "9px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "7px" }}
+                  >
+                    {showPreview ? <><EyeOff size={12} /> Ocultar preview</> : <><Eye size={12} /> Visualizar certificado</>}
+                  </button>
+                  {showPreview && (
+                    <button
+                      onClick={downloadCert}
+                      className="btn-ghost"
+                      style={{ padding: "10px 20px", fontSize: "9px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "7px", color: "var(--sage)", borderColor: "rgba(140,170,150,0.35)" }}
+                    >
+                      <Download size={12} /> Baixar PNG
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label style={LABEL_STYLE}>Título / cargo da mentora</label>
-                <input
-                  type="text"
-                  value={certConfig.instructorTitle ?? ""}
-                  onChange={(e) => setCertConfig((c) => ({ ...c, instructorTitle: e.target.value }))}
-                  placeholder="Mentora & Fundadora · Despertar Espiral"
-                  className="input-dark"
-                  style={{ borderRadius: "10px" }}
-                />
-              </div>
-
-              <div>
-                <label style={LABEL_STYLE}>Nota de rodapé do certificado</label>
-                <textarea
-                  value={certConfig.footerNote ?? ""}
-                  onChange={(e) => setCertConfig((c) => ({ ...c, footerNote: e.target.value }))}
-                  placeholder="Este certificado atesta a conclusão integral do programa, com dedicação, presença e comprometimento."
-                  className="input-dark"
-                  rows={2}
-                  style={{ borderRadius: "10px", resize: "none" }}
-                />
-              </div>
-
-              <div>
-                <label style={LABEL_STYLE}>Descrição personalizada (opcional)</label>
-                <textarea
-                  value={certConfig.certDescription ?? ""}
-                  onChange={(e) => setCertConfig((c) => ({ ...c, certDescription: e.target.value }))}
-                  placeholder="Certificamos que [nome] concluiu o programa [curso]…"
-                  className="input-dark"
-                  rows={3}
-                  style={{ borderRadius: "10px", resize: "none" }}
-                />
-                <p style={{ fontSize: "11px", color: "var(--text-faint)", marginTop: "5px" }}>
-                  Deixe em branco para usar o texto gerado automaticamente com nome, curso e carga horária.
-                </p>
-              </div>
-
-              <button
-                onClick={saveCertConfig}
-                className="btn-gold"
-                style={{ alignSelf: "flex-start", padding: "11px 26px", fontSize: "9px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "7px" }}
-                disabled={savingCert}
-              >
-                {savingCert
-                  ? <><Loader2 size={12} style={{ animation: "spin 0.8s linear infinite" }} /> Salvando…</>
-                  : <><Save size={12} /> Salvar configuração</>
-                }
-              </button>
+              {/* ── Canvas Preview ── */}
+              {showPreview && (
+                <div style={{ borderTop: "1px solid var(--border-subtle)", padding: "clamp(16px,3vw,24px)", background: "rgba(0,0,0,0.04)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+                    <Award size={13} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                    <p className="font-label" style={{ fontSize: "8.5px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-muted)" }}>Preview do certificado</p>
+                    <button
+                      onClick={() => { drawCertificate(); }}
+                      className="btn-ghost"
+                      style={{ marginLeft: "auto", padding: "5px 12px", fontSize: "8.5px", display: "flex", alignItems: "center", gap: "5px" }}
+                    >
+                      <Eye size={10} /> Atualizar
+                    </button>
+                  </div>
+                  <div style={{ overflowX: "auto", borderRadius: "12px", border: "1px solid var(--border-subtle)", lineHeight: 0 }}>
+                    <canvas
+                      ref={canvasRef}
+                      width={1200}
+                      height={848}
+                      style={{
+                        width: "100%", maxWidth: "760px", height: "auto",
+                        display: "block", borderRadius: "12px",
+                      }}
+                    />
+                  </div>
+                  <p style={{ fontSize: "10px", color: "var(--text-faint)", marginTop: "10px", lineHeight: 1.5 }}>
+                    O preview usa o nome <em style={{ color: "var(--text-muted)" }}>"Nome da Aluna"</em> como placeholder. O certificado gerado para cada aluna usará o nome real do perfil dela.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
