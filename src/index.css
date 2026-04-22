@@ -1045,13 +1045,16 @@ img { animation: imgFadeIn 0.25s ease both; }
   .animate-float, .animate-glow,
   .btn-gold, .btn-outline-gold,
   .card-lift { animation: none !important; transition: none !important; }
-  .reveal, .reveal-left, .reveal-right {
+  .reveal, .reveal-left, .reveal-right, .reveal-scale {
     opacity: 1 !important; transform: none !important; transition: none !important;
   }
+  [data-parallax] { transform: none !important; }
 }
 
 /* Print */
 @media print {
-  .spiral-tracker, .scroll-progress-line, canvas { display: none !important; }
+  .spiral-tracker, .scroll-progress-line, canvas,
+  .scroll-cue { display: none !important; }
   body { background: #fff !important; color: #000 !important; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 10px; color: #666; }
 }
