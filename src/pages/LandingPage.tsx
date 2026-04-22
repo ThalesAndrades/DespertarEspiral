@@ -19,6 +19,14 @@ import { testimonials, steps, guarantees, faqs, LANDING_STATS, COMMUNITY_STATS }
 import QuizSection from "@/components/features/QuizSection";
 
 /* ─────────────────────────────────────────────────────────────────
+   Prefetch helpers — fire-and-forget dynamic imports on hover/focus
+   so the JS chunk is already in the browser cache when the user
+   clicks. Vite deduplicates repeated import() calls by URL.
+───────────────────────────────────────────────────────────────── */
+const prefetchLogin    = () => import("@/pages/LoginPage").catch(() => {});
+const prefetchCheckout = () => import("@/pages/CheckoutPage").catch(() => {});
+
+/* ─────────────────────────────────────────────────────────────────
    Scroll progress bar
 ───────────────────────────────────────────────────────────────── */
 function useScrollProgress(ref: React.RefObject<HTMLDivElement | null>) {
@@ -676,17 +684,23 @@ export default function LandingPage() {
                 </p>
 
                 <div className="animate-fade-up delay-400" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "360px", marginBottom: "clamp(18px,2.5vw,26px)" }}>
+                  {/* Primary CTA — prefetch CheckoutPage on hover/focus */}
                   <Link
                     to="/checkout/mulher-espiral"
                     className="btn-gold"
                     style={{ justifyContent: "center", minHeight: "58px", borderRadius: "18px" }}
+                    onMouseEnter={prefetchCheckout}
+                    onFocus={prefetchCheckout}
                   >
                     Quero começar minha jornada <ArrowRight size={15} />
                   </Link>
+                  {/* Secondary CTA — prefetch LoginPage on hover/focus */}
                   <Link
                     to="/login"
                     className="btn-outline-gold"
                     style={{ justifyContent: "center", minHeight: "52px", borderRadius: "18px" }}
+                    onMouseEnter={prefetchLogin}
+                    onFocus={prefetchLogin}
                   >
                     Já sou aluna
                   </Link>
@@ -790,7 +804,12 @@ export default function LandingPage() {
               <p style={{ fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-secondary)", lineHeight: 1.92, marginBottom: "32px" }}>
                 Cada volta representa um nível mais profundo de consciência. Não é linearidade — é aprofundamento. Você volta ao mesmo ponto, mas sempre mais inteira.
               </p>
-              <Link to="/checkout/mulher-espiral" className="btn-outline-gold">
+              <Link
+                to="/checkout/mulher-espiral"
+                className="btn-outline-gold"
+                onMouseEnter={prefetchCheckout}
+                onFocus={prefetchCheckout}
+              >
                 Conhecer o método <ArrowUpRight size={13} />
               </Link>
             </div>
@@ -884,7 +903,12 @@ export default function LandingPage() {
                       </div>
                       <p className="font-label" style={{ fontSize: "9px", color: "rgba(140,170,150,0.78)", letterSpacing: "0.12em", marginTop: "4px" }}>ou 12× de R$ 97,10</p>
                     </div>
-                    <Link to="/checkout/mulher-espiral" className="btn-gold">
+                    <Link
+                      to="/checkout/mulher-espiral"
+                      className="btn-gold"
+                      onMouseEnter={prefetchCheckout}
+                      onFocus={prefetchCheckout}
+                    >
                       Quero começar <ArrowRight size={14} />
                     </Link>
                   </div>
@@ -1057,7 +1081,13 @@ export default function LandingPage() {
                     </div>
                   ))}
                 </div>
-                <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ fontSize: "10px" }}>
+                <Link
+                  to="/checkout/mulher-espiral"
+                  className="btn-gold"
+                  style={{ fontSize: "10px" }}
+                  onMouseEnter={prefetchCheckout}
+                  onFocus={prefetchCheckout}
+                >
                   Entrar para a comunidade <ArrowRight size={14} />
                 </Link>
               </div>
@@ -1089,7 +1119,12 @@ export default function LandingPage() {
                   <p style={{ fontSize: "clamp(13px,1.4vw,14px)", color: "rgba(245,240,232,0.40)", fontFamily: "Montserrat,sans-serif", marginBottom: "12px", lineHeight: 1.6 }}>
                     Sua voz também pertence aqui.
                   </p>
-                  <Link to="/checkout/mulher-espiral" style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "10px", color: "rgba(164,158,208,0.90)", letterSpacing: "0.18em", textTransform: "uppercase", fontFamily: "Montserrat,sans-serif", fontWeight: 500, textDecoration: "none" }}>
+                  <Link
+                    to="/checkout/mulher-espiral"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "10px", color: "rgba(164,158,208,0.90)", letterSpacing: "0.18em", textTransform: "uppercase", fontFamily: "Montserrat,sans-serif", fontWeight: 500, textDecoration: "none" }}
+                    onMouseEnter={prefetchCheckout}
+                    onFocus={prefetchCheckout}
+                  >
                     Fazer parte da comunidade <ArrowRight size={12} />
                   </Link>
                 </div>
@@ -1140,7 +1175,12 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link to="/checkout/mulher-espiral" className="btn-gold">
+              <Link
+                to="/checkout/mulher-espiral"
+                className="btn-gold"
+                onMouseEnter={prefetchCheckout}
+                onFocus={prefetchCheckout}
+              >
                 Quero aprender com Sunyan <ArrowRight size={14} />
               </Link>
             </div>
@@ -1213,6 +1253,8 @@ export default function LandingPage() {
                 to="/checkout/mulher-espiral"
                 className="btn-gold"
                 style={{ padding: "17px clamp(32px,5vw,60px)", fontSize: "10px", width: "100%", maxWidth: "440px", justifyContent: "center" }}
+                onMouseEnter={prefetchCheckout}
+                onFocus={prefetchCheckout}
               >
                 Quero começar minha jornada <ArrowRight size={15} />
               </Link>
@@ -1264,8 +1306,11 @@ export default function LandingPage() {
                       to={href}
                       className="font-label"
                       style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s", minHeight: "44px", display: "inline-flex", alignItems: "center" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--gold)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = "var(--gold)";
+                        if (href === "/login") prefetchLogin();
+                      }}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-muted)")}
                     >{label}</Link>
                   )
                 )}
