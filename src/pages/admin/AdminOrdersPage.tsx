@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { TrendingUp, CheckCircle, Loader2, RefreshCw, X, CreditCard, Zap, FileText } from "lucide-react";
+import { TrendingUp, CheckCircle, Loader2, RefreshCw, X, CreditCard, Zap, FileText, AlertTriangle, Send } from "lucide-react";
 
 interface Order {
   id: string;
@@ -50,7 +50,38 @@ export default function AdminOrdersPage() {
   const [loadingOrders,  setLoadingOrders]  = useState(true);
   const [confirming,     setConfirming]     = useState<string | null>(null);
   const [confirmModal,   setConfirmModal]   = useState<{ orderId: string; email: string; name: string | null } | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<PayMethod>("pix");
+  const [selectedMethod,   setSelectedMethod]   = useState<PayMethod>("pix");
+  const [recovering,       setRecovering]       = useState(false);
+  const [recoveryResult,   setRecoveryResult]   = useState<{ processed: number; skipped: number } | null>(null);
+
+  const triggerRecovery = async (dryRun = false) => {
+    setRecovering(true);
+    setRecoveryResult(null);
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data, error } = await supabase.functions.invoke("order-recovery", {
+      body: { dryRun },
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+    });
+    if (error) {
+      let msg = error.message;
+      if (error instanceof FunctionsHttpError) {
+        try { const t = await error.context?.text(); msg = `[${error.context?.status}] ${t || msg}`; } catch { /* ignore */ }
+      }
+      toast.error(msg);
+    } else {
+      const processed = data?.processed ?? 0;
+      const skipped   = data?.skipped   ?? 0;
+      setRecoveryResult({ processed, skipped });
+      if (dryRun) {
+        toast.success(`Simulação: ${processed} pedido(s) seriam disparados via Sequenzy.`);
+      } else if (processed === 0) {
+        toast.success("Nenhum pedido pendente elegível para recuperação.");
+      } else {
+        toast.success(`${processed} evento(s) order.overdue disparado(s) via Sequenzy. ✦`);
+      }
+    }
+    setRecovering(false);
+  };
 
   const fetchOrders = async () => {
     setLoadingOrders(true);
@@ -149,6 +180,18 @@ export default function AdminOrdersPage() {
               </p>
             </div>
             <button
+              onClick={() => triggerRecovery(false)}
+              disabled={recovering}
+              className="btn-ghost"
+              style={{ display: "flex", alignItems: "center", gap: "6px", padding: "10px 16px", borderColor: "rgba(201,154,170,0.35)", color: "var(--rose)" }}
+              title="Disparar evento order.overdue para pedidos pendentes há mais de 2h"
+            >
+              {recovering
+                ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
+                : <Send size={13} />}
+              <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.15em" }}>Recuperar</span>
+            </button>
+            <button
               onClick={fetchOrders}
               className="btn-ghost"
               style={{ display: "flex", alignItems: "center", gap: "6px", padding: "10px 16px" }}
@@ -158,6 +201,62 @@ export default function AdminOrdersPage() {
             </button>
           </div>
         </div>
+
+        {/* Recovery result banner */}
+        {recoveryResult !== null && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: "12px",
+            padding: "12px 18px", borderRadius: "12px", marginBottom: "20px",
+            background: recoveryResult.processed > 0
+              ? "rgba(140,170,150,0.09)"
+              : "rgba(198,168,112,0.07)",
+            border: `1px solid ${recoveryResult.processed > 0 ? "rgba(140,170,150,0.3)" : "rgba(198,168,112,0.2)"}`,
+          }}>
+            {recoveryResult.processed > 0
+              ? <Send size={14} style={{ color: "var(--sage)", flexShrink: 0 }} strokeWidth={1.5} />
+              : <AlertTriangle size={14} style={{ color: "var(--gold)", flexShrink: 0 }} strokeWidth={1.5} />}
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", flex: 1 }}>
+              {recoveryResult.processed > 0
+                ? <><strong style={{ color: "var(--sage)" }}>{recoveryResult.processed}</strong> pedido(s) em atraso notificados via Sequenzy — sequência <em>Recuperação de Checkout</em> ativada.
+                  {recoveryResult.skipped > 0 && <span style={{ color: "var(--text-faint)" }}> ({recoveryResult.skipped} ignorados)</span>}
+                </>
+                : "Nenhum pedido pendente elegível encontrado (< 2h ou já notificados)."
+              }
+            </p>
+            <button
+              onClick={() => setRecoveryResult(null)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-faint)", padding: "4px", minWidth: "28px", minHeight: "28px", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <X size={12} strokeWidth={1.5} />
+            </button>
+          </div>
+        )}
+
+        {/* Pending overdue info strip */}
+        {(() => {
+          const overdueCount = orders.filter((o) => o.status === "pending" && (Date.now() - new Date(o.created_at).getTime()) > 2 * 60 * 60 * 1000).length;
+          if (overdueCount === 0) return null;
+          return (
+            <div style={{
+              display: "flex", alignItems: "center", gap: "10px",
+              padding: "10px 16px", borderRadius: "10px", marginBottom: "16px",
+              background: "rgba(201,154,170,0.07)",
+              border: "1px solid rgba(201,154,170,0.22)",
+            }}>
+              <AlertTriangle size={13} style={{ color: "var(--rose)", flexShrink: 0 }} strokeWidth={1.5} />
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", flex: 1 }}>
+                <strong style={{ color: "var(--rose)" }}>{overdueCount}</strong> pedido(s) pendente(s) há mais de 2h.
+                {" "}
+                <button
+                  onClick={() => triggerRecovery(false)}
+                  disabled={recovering}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--gold)", fontSize: "12px", fontFamily: "DM Sans, sans-serif", padding: 0, textDecoration: "underline" }}>
+                  Disparar recuperação agora
+                </button>
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Filters */}
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>

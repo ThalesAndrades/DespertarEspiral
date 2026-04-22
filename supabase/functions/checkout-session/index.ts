@@ -368,6 +368,22 @@ Deno.serve(async (req: Request) => {
       ]);
     }
 
+    // 5. Fire-and-forget: trigger overdue order recovery in the background
+    // This piggybacks on new checkout traffic to process abandoned orders
+    // without needing a cron job.
+    {
+      const recoveryUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/order-recovery`;
+      const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      fetch(recoveryUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({}),
+      }).catch((e) => console.warn("[checkout-session] order-recovery dispatch error:", e));
+    }
+
     return jsonResponse(req, 200, {
       success: true,
       orderId:  order.id,
