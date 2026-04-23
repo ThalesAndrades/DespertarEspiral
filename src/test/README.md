@@ -97,6 +97,35 @@
  *                           Navegação: breadcrumb /products/:slug, módulo título
  *                           Navegação: barra de progresso do módulo
  *
+ *   AdminProductContentPage.test.tsx → Loading spinner antes dos dados carregarem
+ *                              Renderização: título, subtítulo, overline, back link /admin/products
+ *                              Accordion: módulos abrir/fechar, first open by default, segundo colapsado
+ *                              Lesson count badge por módulo ('X aulas')
+ *                              Lista de aulas: título, type badge (video/text/pdf), duration, GRÁTIS badge
+ *                              Edit buttons: pencil (aria-label) e trash por aula
+ *                              Inline edit: clicar lápis abre form com data-testid correto
+ *                              Inline edit: title, type selector, duration pré-preenchidos
+ *                              Inline edit: salvar chama supabase.update → toast 'Aula atualizada. ✦'
+ *                              Inline edit: erro DB → toast.error
+ *                              Inline edit: cancelar fecha form sem chamar update
+ *                              Inline edit: dois lápis simultâneos bloqueados (disabled)
+ *                              Inline edit: título vazio → toast.error sem chamar update
+ *                              Inline edit: novo título aparece na lista após salvar
+ *                              Add module: botão mostra form, submit chama insert com title
+ *                              Add module: toast.success 'Módulo criado.'
+ *                              Add module: título vazio → toast.error sem insert
+ *                              Add module: cancelar fecha form
+ *                              Add lesson: botão mostra form, submit chama insert com module_id/title/type
+ *                              Add lesson: toast.success 'Aula criada.'
+ *                              Add lesson: título vazio → toast.error sem insert
+ *                              Delete lesson: trash → supabase.delete → aula removida da lista
+ *                              Delete lesson: toast.success 'Aula removida.'
+ *                              Delete module: trash → supabase.delete → toast 'Módulo removido.'
+ *                              Certificate: painel colapsado por default
+ *                              Certificate: toggle expande campos (instructor, tagline, etc.)
+ *                              Certificate: 'Salvar configuração' → supabase.update products + toast
+ *                              Certificate: botão 'Visualizar certificado' visível quando aberto
+ *
  *   ProductsPage.test.tsx → Loading skeleton (.skeleton divs) durante fetch
  *                              Empty state ('Nenhum curso disponível') quando products=[]
  *                              Empty state: link '← Voltar ao dashboard'
