@@ -6,8 +6,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
+import QuizEditor from "@/components/features/QuizEditor";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save, Download, Eye, EyeOff, Upload, Video, Pencil, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save, Download, Eye, EyeOff, Upload, Video, Pencil, AlertCircle, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 
 interface LessonRow { id: string; title: string; type: string; content: string; duration_min: number; sort_order: number; is_free: boolean; }
@@ -58,6 +59,7 @@ export default function AdminProductContentPage() {
   const [modules,       setModules]       = useState<ModuleRow[]>([]);
   const [loading,       setLoading]       = useState(true);
   const [openModules,   setOpenModules]   = useState<Record<string, boolean>>({});
+  const [openQuiz,      setOpenQuiz]      = useState<Record<string, boolean>>({});  // moduleId → quiz panel open
   const [showAddMod,    setShowAddMod]    = useState(false);
   const [newModTitle,   setNewModTitle]   = useState("");
   const [addingMod,     setAddingMod]     = useState(false);
@@ -670,6 +672,35 @@ export default function AdminProductContentPage() {
                     {isDeletingMod ? <Loader2 size={12} style={{ animation: "spin 0.8s linear infinite" }} /> : <Trash2 size={13} strokeWidth={1.5} />}
                   </button>
                 </div>
+
+                {/* ── Quiz section per module ── */}
+                {isOpen && (
+                  <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                    <button
+                      onClick={() => setOpenQuiz((p) => ({ ...p, [mod.id]: !p[mod.id] }))}
+                      style={{
+                        width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                        padding: "10px 16px 10px 18px",
+                        background: openQuiz[mod.id] ? "rgba(164,158,208,0.04)" : "transparent",
+                        border: "none", cursor: "pointer", textAlign: "left", minHeight: "44px",
+                        transition: "background 0.15s",
+                      }}
+                      data-testid={`quiz-toggle-${mod.id}`}
+                    >
+                      <ClipboardList size={13} style={{ color: "var(--lavender)", flexShrink: 0 }} strokeWidth={1.5} />
+                      <span style={{ flex: 1, fontSize: "12px", color: "var(--text-muted)", fontFamily: "DM Sans" }}>Quiz do módulo</span>
+                      {openQuiz[mod.id]
+                        ? <ChevronDown  size={12} style={{ color: "var(--border-mid)" }} />
+                        : <ChevronRight size={12} style={{ color: "var(--border-mid)" }} />
+                      }
+                    </button>
+                    {openQuiz[mod.id] && (
+                      <div style={{ borderTop: "1px solid var(--border-subtle)", background: "rgba(164,158,208,0.02)" }}>
+                        <QuizEditor moduleId={mod.id} productId={id ?? ""} />
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Lessons */}
                 {isOpen && (

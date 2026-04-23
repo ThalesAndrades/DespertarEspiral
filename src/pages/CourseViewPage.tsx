@@ -2,15 +2,17 @@
  * CourseViewPage — Device-optimized course overview
  * Mobile: stacked hero card + collapsible module accordion, full-width tap targets
  * Desktop: hero banner + spacious accordion with side margins
+ * + Quiz CTA per module (opens QuizPlayer inline when user has completed lessons)
  */
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+import QuizPlayer from "@/components/features/QuizPlayer";
 import {
   ChevronDown, ChevronRight, Play, FileText, File, Volume2,
-  CheckCircle, ArrowLeft, BookOpen, Clock, Award,
+  CheckCircle, ArrowLeft, BookOpen, Clock, Award, ClipboardList,
 } from "lucide-react";
 
 const lessonIcon: Record<string, React.ElementType> = {
@@ -31,6 +33,7 @@ export default function CourseViewPage() {
   const [product,     setProduct]     = useState<null | Record<string, unknown>>(null);
   const [completed,   setCompleted]   = useState<Set<string>>(new Set());
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
+  const [activeQuiz,  setActiveQuiz]  = useState<string | null>(null); // moduleId of open quiz
 
   /* -- Load real progress from Supabase */
   useEffect(() => {
@@ -79,9 +82,9 @@ export default function CourseViewPage() {
   const hasAccess = Boolean(user?.products?.includes((product as unknown as { slug?: string }).slug ?? slug ?? ""));
 
   if (!hasAccess) {
-    const previewLessons = product.modules
-      .flatMap((m: { lessons: { is_free_preview?: boolean; is_free?: boolean }[] }) => m.lessons)
-      .filter((l: { is_free_preview?: boolean; is_free?: boolean }) => Boolean(l.is_free_preview ?? l.is_free));
+    const previewLessons = (product.modules as { lessons: { is_free_preview?: boolean; is_free?: boolean }[] }[])
+      .flatMap((m) => m.lessons)
+      .filter((l) => Boolean(l.is_free_preview ?? l.is_free));
 
     return (
       <DashboardLayout>
@@ -183,7 +186,7 @@ export default function CourseViewPage() {
                 src={(product as unknown as { thumbnail_url?: string }).thumbnail_url
                   ?? (product as unknown as { thumbnail?: string }).thumbnail
                   ?? FALLBACK}
-                alt={product.title}
+                alt={product.title as string}
                 loading="lazy" decoding="async"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
@@ -193,14 +196,14 @@ export default function CourseViewPage() {
               <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "clamp(16px,3vw,28px)" }}>
                 {product.subtitle && (
                   <span className="badge-rose" style={{ marginBottom: "10px", alignSelf: "flex-start" }}>
-                    {product.subtitle}
+                    {product.subtitle as string}
                   </span>
                 )}
                 <h1 className="font-display" style={{ fontSize: "clamp(22px,4.5vw,40px)", fontWeight: 300, color: "#f5f0e8", lineHeight: 1.1, marginBottom: "6px" }}>
-                  {product.title}
+                  {product.title as string}
                 </h1>
                 <p style={{ fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(245,240,232,0.40)" }}>
-                  {product.modules.length} módulos · {totalLessons} aulas
+                  {(product.modules as unknown[]).length} módulos · {totalLessons} aulas
                 </p>
               </div>
             </div>
@@ -232,7 +235,7 @@ export default function CourseViewPage() {
                   </Link>
                 ) : nextLesson ? (
                   <Link
-                    to={`/products/${slug}/lesson/${nextLesson.id}`}
+                    to={`/products/${slug}/lesson/${(nextLesson as { id: string }).id}`}
                     className="btn-gold"
                     style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap" }}
                   >
@@ -246,10 +249,10 @@ export default function CourseViewPage() {
         </div>
 
         {/* ── Module progress quick view ── */}
-        {product.modules.length > 0 && (
+        {(product.modules as unknown[]).length > 0 && (
           <div style={{ padding: "0 clamp(14px,4vw,24px)", margin: "clamp(8px,1.5vw,12px) 0" }}>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {product.modules.slice(0, 4).map((mod: { id: string; title: string; lessons: { id: string }[] }, i: number) => {
+              {(product.modules as { id: string; title: string; lessons: { id: string }[] }[]).slice(0, 4).map((mod, i) => {
                 const modLessons = mod.lessons.map((l) => l.id);
                 const modDone    = modLessons.filter((id) => completed.has(id)).length;
                 const pct        = modLessons.length > 0 ? Math.round((modDone / modLessons.length) * 100) : 0;
@@ -272,21 +275,13 @@ export default function CourseViewPage() {
         <div style={{ padding: "0 clamp(14px,4vw,24px)", margin: "clamp(12px,2vw,16px) 0" }}>
           <div style={{ display: "flex", gap: "12px", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
             {[
-              { icon: BookOpen, val: `${product.modules.length}`,   lbl: "módulos" },
-              { icon: Play,     val: `${totalLessons}`,             lbl: "aulas" },
-              { icon: CheckCircle, val: `${completedCount}`,        lbl: "concluídas" },
-              { icon: Clock,    val: progress > 0 ? `${progress}%` : "0%", lbl: "progresso" },
+              { icon: BookOpen,    val: `${(product.modules as unknown[]).length}`, lbl: "módulos" },
+              { icon: Play,        val: `${totalLessons}`,                          lbl: "aulas" },
+              { icon: CheckCircle, val: `${completedCount}`,                        lbl: "concluídas" },
+              { icon: Clock,       val: progress > 0 ? `${progress}%` : "0%",      lbl: "progresso" },
               ...(isCourseComplete ? [{ icon: Award, val: "✦", lbl: "certificado" }] : []),
             ].map(({ icon: Icon, val, lbl }) => (
-              <div
-                key={lbl}
-                style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  padding: "10px 14px", borderRadius: "12px", flexShrink: 0,
-                  background: "var(--bg-surface-2)",
-                  border: "1px solid var(--border-subtle)",
-                }}
-              >
+              <div key={lbl} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", borderRadius: "12px", flexShrink: 0, background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
                 <Icon size={13} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
                 <div>
                   <p style={{ fontSize: "14px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, color: "var(--text-primary)", lineHeight: 1 }}>{val}</p>
@@ -295,23 +290,13 @@ export default function CourseViewPage() {
               </div>
             ))}
           </div>
-          <style>{`.scroll-x-hide::-webkit-scrollbar { display: none; }`}</style>
         </div>
 
         {/* ── Certificate CTA — shown when 100% complete ── */}
         {isCourseComplete && (
           <div style={{ padding: "0 clamp(14px,4vw,24px)", marginBottom: "clamp(8px,1.5vw,14px)" }}>
-            <Link
-              to={`/products/${slug}/certificado`}
-              style={{ textDecoration: "none", display: "block" }}
-            >
-              <div style={{
-                display: "flex", alignItems: "center", gap: "14px",
-                padding: "clamp(14px,2.5vw,20px) clamp(16px,3vw,22px)",
-                borderRadius: "clamp(14px,2vw,18px)",
-                background: "linear-gradient(135deg, rgba(198,168,112,0.12) 0%, rgba(198,168,112,0.05) 100%)",
-                border: "1px solid rgba(198,168,112,0.35)",
-              }}>
+            <Link to={`/products/${slug}/certificado`} style={{ textDecoration: "none", display: "block" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "clamp(14px,2.5vw,20px) clamp(16px,3vw,22px)", borderRadius: "clamp(14px,2vw,18px)", background: "linear-gradient(135deg, rgba(198,168,112,0.12) 0%, rgba(198,168,112,0.05) 100%)", border: "1px solid rgba(198,168,112,0.35)" }}>
                 <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(198,168,112,0.12)", border: "1px solid rgba(198,168,112,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Award size={20} style={{ color: "var(--gold)" }} strokeWidth={1.3} />
                 </div>
@@ -336,25 +321,23 @@ export default function CourseViewPage() {
           <p className="overline" style={{ color: "var(--gold)", marginBottom: "clamp(12px,2vw,16px)", fontSize: "8px" }}>Conteúdo do curso</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {product.modules.map((mod: { id: string; title: string; lessons: { id: string; title: string; type: string; duration_min?: number }[] }, mIdx: number) => {
-              const isOpen   = !!openModules[mod.id];
-              const modDone  = mod.lessons.filter((l) => completed.has(l.id)).length;
-              const allDone  = modDone === mod.lessons.length && mod.lessons.length > 0;
+            {(product.modules as { id: string; title: string; lessons: { id: string; title: string; type: string; duration_min?: number }[] }[]).map((mod, mIdx) => {
+              const isOpen  = !!openModules[mod.id];
+              const modDone = mod.lessons.filter((l) => completed.has(l.id)).length;
+              const allDone = modDone === mod.lessons.length && mod.lessons.length > 0;
 
               return (
                 <div key={mod.id} className="card-dark" style={{ overflow: "hidden" }}>
-                  {/* Module header — full tap target */}
+                  {/* Module header */}
                   <button
                     onClick={() => toggleModule(mod.id)}
                     style={{
                       width: "100%", display: "flex", alignItems: "center", gap: "clamp(10px,2vw,14px)",
                       padding: "clamp(14px,2vw,18px) clamp(14px,2.5vw,20px)",
                       background: "transparent", border: "none", cursor: "pointer", textAlign: "left",
-                      minHeight: "clamp(60px,8vw,72px)",
-                      transition: "background 0.15s",
+                      minHeight: "clamp(60px,8vw,72px)", transition: "background 0.15s",
                     }}
                   >
-                    {/* Number badge */}
                     <span style={{
                       width: "clamp(28px,4vw,34px)", height: "clamp(28px,4vw,34px)",
                       borderRadius: "50%", flexShrink: 0,
@@ -365,35 +348,27 @@ export default function CourseViewPage() {
                     }}>
                       {allDone ? <CheckCircle size={14} strokeWidth={2} /> : mIdx + 1}
                     </span>
-
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontSize: "clamp(14px,1.8vw,16px)", fontWeight: 500,
-                        color: "var(--text-primary)", lineHeight: 1.3, marginBottom: "3px",
-                      }}>
+                      <p style={{ fontSize: "clamp(14px,1.8vw,16px)", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.3, marginBottom: "3px" }}>
                         {mod.title}
                       </p>
-                      <p style={{
-                        fontSize: "11px", fontFamily: "Montserrat, sans-serif",
-                        letterSpacing: "0.08em", textTransform: "uppercase",
-                        color: allDone ? "var(--sage)" : "var(--text-faint)",
-                      }}>
+                      <p style={{ fontSize: "11px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", color: allDone ? "var(--sage)" : "var(--text-faint)" }}>
                         {modDone}/{mod.lessons.length} aulas concluídas
                       </p>
                     </div>
-
                     {isOpen
                       ? <ChevronDown  size={15} style={{ color: "var(--border-mid)", flexShrink: 0 }} />
                       : <ChevronRight size={15} style={{ color: "var(--border-mid)", flexShrink: 0 }} />
                     }
                   </button>
 
-                  {/* Lessons list */}
+                  {/* Lessons list + quiz CTA */}
                   {isOpen && (
                     <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                      {/* Lessons */}
                       {mod.lessons.map((lesson, lIdx) => {
-                        const Icon = lessonIcon[lesson.type] ?? FileText;
-                        const done = completed.has(lesson.id);
+                        const Icon   = lessonIcon[lesson.type] ?? FileText;
+                        const done   = completed.has(lesson.id);
                         const isLast = lIdx === mod.lessons.length - 1;
 
                         return (
@@ -411,7 +386,6 @@ export default function CourseViewPage() {
                             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)")}
                             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "transparent")}
                           >
-                            {/* Lesson icon */}
                             <div style={{
                               width: "clamp(28px,4vw,32px)", height: "clamp(28px,4vw,32px)",
                               borderRadius: "50%", flexShrink: 0,
@@ -424,34 +398,78 @@ export default function CourseViewPage() {
                                 : <Icon size={12} style={{ color: "rgba(198,168,112,0.55)" }} strokeWidth={1.5} />
                               }
                             </div>
-
-                            {/* Title */}
                             <p style={{
-                              flex: 1, minWidth: 0,
-                              fontSize: "clamp(13px,1.6vw,15px)", lineHeight: 1.4,
+                              flex: 1, minWidth: 0, fontSize: "clamp(13px,1.6vw,15px)", lineHeight: 1.4,
                               color: done ? "var(--sage)" : "var(--text-muted)",
                               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                             }}>
                               {lesson.title}
                             </p>
-
-                            {/* Meta */}
                             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
                               {lesson.duration_min != null && lesson.duration_min > 0 && (
                                 <span style={{ fontSize: "10px", fontFamily: "Montserrat", color: "var(--text-faint)", letterSpacing: "0.06em" }}>
                                   {lesson.duration_min}min
                                 </span>
                               )}
-                              <span style={{
-                                fontSize: "8px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.14em",
-                                textTransform: "uppercase", color: "var(--text-faint)",
-                              }}>
+                              <span style={{ fontSize: "8px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-faint)" }}>
                                 {lessonLabel[lesson.type] ?? lesson.type}
                               </span>
                             </div>
                           </Link>
                         );
                       })}
+
+                      {/* ── Quiz CTA — shown when user has completed ≥1 lesson in this module ── */}
+                      {modDone > 0 && (
+                        <div style={{ borderTop: "1px solid var(--border-subtle)", padding: "10px 14px" }}>
+                          {activeQuiz === mod.id ? (
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                                <p className="font-label" style={{ fontSize: "8.5px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--lavender)" }}>
+                                  Quiz do módulo
+                                </p>
+                                <button
+                                  onClick={() => setActiveQuiz(null)}
+                                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-faint)", fontSize: "18px", lineHeight: 1, padding: "2px 8px" }}
+                                  aria-label="Fechar quiz"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                              <QuizPlayer
+                                moduleId={mod.id}
+                                moduleTitle={mod.title}
+                                onClose={() => setActiveQuiz(null)}
+                                onPassed={() => setActiveQuiz(null)}
+                              />
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setActiveQuiz(mod.id)}
+                              style={{
+                                display: "flex", alignItems: "center", gap: "10px",
+                                padding: "10px 14px", borderRadius: "12px",
+                                background: "rgba(164,158,208,0.06)",
+                                border: "1px solid rgba(164,158,208,0.18)",
+                                cursor: "pointer", width: "100%", textAlign: "left",
+                                minHeight: "48px", transition: "background 0.15s",
+                              }}
+                              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(164,158,208,0.10)")}
+                              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(164,158,208,0.06)")}
+                              data-testid={`start-quiz-${mod.id}`}
+                            >
+                              <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(164,158,208,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <ClipboardList size={14} style={{ color: "var(--lavender)" }} strokeWidth={1.5} />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <p style={{ fontSize: "13px", color: "var(--lavender)", fontWeight: 500, marginBottom: "2px" }}>Quiz do módulo</p>
+                                <p style={{ fontSize: "11px", color: "var(--text-faint)" }}>Teste seus conhecimentos antes de avançar</p>
+                              </div>
+                              <ChevronRight size={13} style={{ color: "var(--lavender)", flexShrink: 0 }} />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

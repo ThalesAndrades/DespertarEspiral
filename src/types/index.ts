@@ -69,6 +69,45 @@ export interface CommunityPost {
   created_at: string;
 }
 
+// ── Quiz System ──────────────────────────────────────────
+
+export interface QuizOption {
+  id: string;
+  question_id: string;
+  text: string;
+  is_correct: boolean;
+  sort_order: number;
+}
+
+export interface QuizQuestion {
+  id: string;
+  quiz_id: string;
+  question: string;
+  type: "multiple_choice" | "true_false";
+  sort_order: number;
+  options: QuizOption[];
+}
+
+export interface ModuleQuiz {
+  id: string;
+  module_id: string;
+  title: string;
+  description: string | null;
+  passing_score: number;   // 0–100 %
+  is_active: boolean;
+  questions: QuizQuestion[];
+}
+
+export interface QuizAttempt {
+  id: string;
+  quiz_id: string;
+  user_id: string;
+  score: number;     // 0–100 %
+  passed: boolean;
+  answers: Record<string, string>;  // { question_id: option_id }
+  completed_at: string;
+}
+
 export interface CommunityComment {
   id: string;
   post_id: string;
