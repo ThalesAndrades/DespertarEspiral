@@ -97,7 +97,22 @@
  *                           Navegação: breadcrumb /products/:slug, módulo título
  *                           Navegação: barra de progresso do módulo
  *
- *   CourseViewPage.test.tsx → Loading state: layout rendered while product loads
+ *   ProductsPage.test.tsx → Loading skeleton (.skeleton divs) durante fetch
+ *                              Empty state ('Nenhum curso disponível') quando products=[]
+ *                              Empty state: link '← Voltar ao dashboard'
+ *                              Card com acesso: título, thumbnail, módulos, aulas count
+ *                              Card com acesso: 'Progresso' label + 'X/Y · Z%'
+ *                              Card com acesso: progress-bar-fill element
+ *                              Card com acesso: CTA 'Continuar' quando progress > 0
+ *                              Card com acesso: CTA 'Começar' quando progress = 0
+ *                              Card com acesso: badge 'Concluído' + '5/5 · 100%' a 100%
+ *                              Card com acesso: link correto /products/:slug
+ *                              Card sem acesso: título, preço BRL, 'Adquirir' CTA → /checkout/:slug
+ *                              Card sem acesso: 'Sem acesso' lock overlay
+ *                              Card sem acesso: sem barra de progresso
+ *                              Múltiplos produtos: Começar + Adquirir simultâneos
+ *                              Supabase: user_products.eq(user_id) verificado
+ *                              Helmet: document.title contém 'Meus Cursos'
  *                              Produto não encontrado → navigate('/products')
  *                              Acesso negado: 'Acesso necessário' + CTA /checkout/:slug
  *                              Acesso negado: free preview lessons com badge GRÁTIS

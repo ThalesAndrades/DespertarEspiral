@@ -7,10 +7,19 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save, Download, Eye, EyeOff, Upload, Video, FileVideo, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save, Download, Eye, EyeOff, Upload, Video, Pencil, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface LessonRow { id: string; title: string; type: string; content: string; duration_min: number; sort_order: number; is_free: boolean; }
+
+interface EditLessonState {
+  lessonId: string;
+  title: string;
+  type: typeof LESSON_TYPES[number];
+  content: string;
+  duration_min: number;
+  is_free: boolean;
+}
 
 const VIDEO_BUCKET = "video-content";
 const MAX_VIDEO_MB  = 500;
@@ -56,6 +65,14 @@ export default function AdminProductContentPage() {
   const [newLesson,     setNewLesson]     = useState({ title: "", type: "video" as typeof LESSON_TYPES[number], content: "", duration_min: 0, is_free: false });
   const [addingLesson,  setAddingLesson]  = useState(false);
   const [deleting,      setDeleting]      = useState<string | null>(null);
+  const [editingLesson, setEditingLesson] = useState<EditLessonState | null>(null);
+  const [savingLesson,  setSavingLesson]  = useState(false);
+
+  // Video upload state for inline edit form
+  const [editVideoUploading,  setEditVideoUploading]  = useState(false);
+  const [editVideoProgress,   setEditVideoProgress]   = useState(0);
+  const [editVideoError,      setEditVideoError]      = useState<string | null>(null);
+  const editVideoInputRef = useRef<HTMLInputElement>(null);
   const [certConfig,    setCertConfig]    = useState<CertConfig>({});
   const [savingCert,    setSavingCert]    = useState(false);
   const [certOpen,      setCertOpen]      = useState(false);
@@ -174,6 +191,93 @@ export default function AdminProductContentPage() {
       toast.success("Aula removida.");
     }
     setDeleting(null);
+  };
+
+  /* ── Open lesson for inline editing ── */
+  const startEditLesson = (lesson: LessonRow) => {
+    setEditingLesson({
+      lessonId:    lesson.id,
+      title:       lesson.title,
+      type:        lesson.type as typeof LESSON_TYPES[number],
+      content:     lesson.content,
+      duration_min: lesson.duration_min,
+      is_free:     lesson.is_free,
+    });
+    setEditVideoError(null);
+    setEditVideoProgress(0);
+    setEditVideoUploading(false);
+  };
+
+  const cancelEditLesson = () => {
+    setEditingLesson(null);
+    setEditVideoError(null);
+    if (editVideoInputRef.current) editVideoInputRef.current.value = "";
+  };
+
+  /* ── Save inline lesson edits ── */
+  const saveEditLesson = async (modId: string) => {
+    if (!editingLesson || !editingLesson.title.trim()) {
+      toast.error("Título não pode estar vazio.");
+      return;
+    }
+    setSavingLesson(true);
+    const { error } = await supabase
+      .from("lessons")
+      .update({
+        title:       editingLesson.title.trim(),
+        type:        editingLesson.type,
+        content:     editingLesson.content.trim(),
+        duration_min: editingLesson.duration_min || 0,
+        is_free:     editingLesson.is_free,
+      })
+      .eq("id", editingLesson.lessonId);
+
+    if (error) {
+      toast.error("Erro ao salvar aula.");
+    } else {
+      setModules((prev) =>
+        prev.map((m) =>
+          m.id === modId
+            ? {
+                ...m,
+                lessons: m.lessons.map((l) =>
+                  l.id === editingLesson.lessonId
+                    ? {
+                        ...l,
+                        title:       editingLesson.title.trim(),
+                        type:        editingLesson.type,
+                        content:     editingLesson.content.trim(),
+                        duration_min: editingLesson.duration_min || 0,
+                        is_free:     editingLesson.is_free,
+                      }
+                    : l
+                ),
+              }
+            : m
+        )
+      );
+      toast.success("Aula atualizada. ✦");
+      setEditingLesson(null);
+    }
+    setSavingLesson(false);
+  };
+
+  /* ── Video upload for edit form ── */
+  const handleEditVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEditVideoError(null);
+    setEditVideoProgress(0);
+    setEditVideoUploading(true);
+    const url = await uploadVideo(file, setEditVideoProgress);
+    if (url) {
+      setEditingLesson((prev) => prev ? { ...prev, content: url, type: "video" } : prev);
+      toast.success("Vídeo enviado. Cole a URL ou salve.");
+    } else {
+      setEditVideoError("Falha no upload. Tente novamente.");
+    }
+    setEditVideoUploading(false);
+    if (editVideoInputRef.current) editVideoInputRef.current.value = "";
   };
 
   /* ── Upload video to Storage ── */
@@ -509,29 +613,189 @@ export default function AdminProductContentPage() {
                 {/* Lessons */}
                 {isOpen && (
                   <div>
-                    {mod.lessons.map((lesson) => (
-                      <div key={lesson.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px 10px 18px", borderBottom: "1px solid var(--border-subtle)", minHeight: "48px" }}>
-                        <GripVertical size={12} style={{ color: "var(--border-subtle)", flexShrink: 0 }} />
-                        <span style={{ fontSize: "8px", fontFamily: "Montserrat", letterSpacing: "0.14em", textTransform: "uppercase", padding: "3px 10px", borderRadius: "100px", background: "rgba(198,168,112,0.10)", color: "var(--gold)", flexShrink: 0 }}>
-                          {lesson.type}
-                        </span>
-                        <p style={{ flex: 1, fontSize: "clamp(12px,1.5vw,14px)", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {lesson.title}
-                        </p>
-                        {lesson.duration_min > 0 && (
-                          <span style={{ fontSize: "10px", color: "var(--text-faint)", fontFamily: "Montserrat", flexShrink: 0 }}>{lesson.duration_min}min</span>
-                        )}
-                        {lesson.is_free && (
-                          <span className="badge-sage" style={{ fontSize: "7px", padding: "2px 8px", flexShrink: 0 }}>GRÁTIS</span>
-                        )}
-                        <button
-                          onClick={() => deleteLesson(mod.id, lesson.id)} disabled={deleting === lesson.id}
-                          style={{ width: "28px", height: "28px", borderRadius: "6px", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(172,128,142,0.35)", flexShrink: 0 }}
+                    {mod.lessons.map((lesson) => {
+                      const isEditingThis = editingLesson?.lessonId === lesson.id;
+
+                      /* ── Inline edit form ── */
+                      if (isEditingThis && editingLesson) return (
+                        <div key={lesson.id} data-testid={`edit-lesson-form-${lesson.id}`}
+                          style={{ padding: "16px", background: "rgba(198,168,112,0.03)", borderBottom: "1px solid var(--border-subtle)" }}
                         >
-                          {deleting === lesson.id ? <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} /> : <Trash2 size={11} strokeWidth={1.5} />}
-                        </button>
-                      </div>
-                    ))}
+                          <p className="font-label" style={{ fontSize: "8.5px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--gold)", marginBottom: "12px" }}>Editar aula</p>
+
+                          {/* Row: type + title */}
+                          <div style={{ display: "flex", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
+                            <select
+                              value={editingLesson.type}
+                              onChange={(e) => setEditingLesson((l) => l ? { ...l, type: e.target.value as typeof LESSON_TYPES[number] } : l)}
+                              className="input-dark"
+                              style={{ width: "120px", flexShrink: 0, borderRadius: "10px", minHeight: "44px" }}
+                              aria-label="Tipo da aula"
+                            >
+                              {LESSON_TYPES.map((t) => (
+                                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              value={editingLesson.title}
+                              onChange={(e) => setEditingLesson((l) => l ? { ...l, title: e.target.value } : l)}
+                              placeholder="Título da aula"
+                              className="input-dark"
+                              style={{ flex: 1, borderRadius: "10px", minWidth: "160px" }}
+                              aria-label="Título da aula"
+                            />
+                          </div>
+
+                          {/* Content field: video upload or URL */}
+                          {editingLesson.type === "video" ? (
+                            <div style={{ marginBottom: "10px" }}>
+                              <input
+                                type="text"
+                                value={editingLesson.content}
+                                onChange={(e) => setEditingLesson((l) => l ? { ...l, content: e.target.value } : l)}
+                                placeholder="URL de embed (YouTube, Vimeo) ou faça upload abaixo"
+                                className="input-dark"
+                                style={{ borderRadius: "10px", marginBottom: "8px" }}
+                                aria-label="URL do vídeo"
+                              />
+                              <div style={{ border: `2px dashed ${editVideoUploading ? "var(--gold)" : "var(--border-soft)"}`, borderRadius: "12px", padding: "14px 16px", background: "rgba(198,168,112,0.03)", transition: "border-color 0.2s" }}>
+                                {editVideoUploading ? (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                      <Loader2 size={13} style={{ color: "var(--gold)", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+                                      <span style={{ fontSize: "12px", color: "var(--gold)" }}>Enviando vídeo…</span>
+                                      <span style={{ marginLeft: "auto", fontSize: "11px", color: "var(--text-faint)", fontFamily: "Montserrat" }}>{editVideoProgress}%</span>
+                                    </div>
+                                    <div style={{ height: "3px", borderRadius: "100px", background: "var(--border-subtle)", overflow: "hidden" }}>
+                                      <div style={{ height: "100%", width: `${editVideoProgress}%`, borderRadius: "100px", background: "var(--gold)", transition: "width 0.3s" }} />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <label htmlFor={`edit-video-input-${lesson.id}`} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(198,168,112,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                      <Upload size={14} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                                    </div>
+                                    <div>
+                                      <p style={{ fontSize: "12px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "2px" }}>Substituir vídeo</p>
+                                      <p style={{ fontSize: "10px", color: "var(--text-faint)" }}>MP4, WebM, OGG · máx. {MAX_VIDEO_MB}MB</p>
+                                    </div>
+                                    <input
+                                      id={`edit-video-input-${lesson.id}`}
+                                      ref={editVideoInputRef}
+                                      type="file"
+                                      accept={ALLOWED_VIDEO_TYPES.join(",")}
+                                      onChange={handleEditVideoFileChange}
+                                      style={{ display: "none" }}
+                                      data-testid={`edit-video-file-input-${lesson.id}`}
+                                    />
+                                  </label>
+                                )}
+                                {editVideoError && (
+                                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
+                                    <AlertCircle size={11} style={{ color: "rgba(201,80,80,0.8)", flexShrink: 0 }} />
+                                    <span style={{ fontSize: "11px", color: "rgba(201,80,80,0.8)" }}>{editVideoError}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={editingLesson.content}
+                              onChange={(e) => setEditingLesson((l) => l ? { ...l, content: e.target.value } : l)}
+                              placeholder={editingLesson.type === "pdf" ? "URL do PDF" : editingLesson.type === "audio" ? "URL do áudio" : "URL do conteúdo"}
+                              className="input-dark"
+                              style={{ marginBottom: "10px", borderRadius: "10px" }}
+                              aria-label="Conteúdo da aula"
+                            />
+                          )}
+
+                          {/* Duration + is_free + actions */}
+                          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <label style={{ ...LABEL_STYLE, marginBottom: 0 }}>Min:</label>
+                              <input
+                                type="number" min={0}
+                                value={editingLesson.duration_min}
+                                onChange={(e) => setEditingLesson((l) => l ? { ...l, duration_min: parseInt(e.target.value) || 0 } : l)}
+                                className="input-dark"
+                                style={{ width: "70px", borderRadius: "10px", textAlign: "center" }}
+                                aria-label="Duração em minutos"
+                              />
+                            </div>
+                            <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                              <input
+                                type="checkbox"
+                                checked={editingLesson.is_free}
+                                onChange={(e) => setEditingLesson((l) => l ? { ...l, is_free: e.target.checked } : l)}
+                              />
+                              <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Aula gratuita</span>
+                            </label>
+                            <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+                              <button
+                                onClick={() => saveEditLesson(mod.id)}
+                                disabled={savingLesson}
+                                className="btn-gold"
+                                style={{ padding: "9px 18px", fontSize: "9px", borderRadius: "10px" }}
+                                aria-label="Salvar alterações"
+                              >
+                                {savingLesson
+                                  ? <Loader2 size={12} style={{ animation: "spin 0.8s linear infinite" }} />
+                                  : <><Check size={12} /> Salvar</>
+                                }
+                              </button>
+                              <button
+                                onClick={cancelEditLesson}
+                                className="btn-ghost"
+                                style={{ padding: "9px 14px", fontSize: "9px", borderRadius: "10px" }}
+                                aria-label="Cancelar edição"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+
+                      /* ── Default lesson row ── */
+                      return (
+                        <div key={lesson.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px 10px 18px", borderBottom: "1px solid var(--border-subtle)", minHeight: "48px" }}>
+                          <GripVertical size={12} style={{ color: "var(--border-subtle)", flexShrink: 0 }} />
+                          <span style={{ fontSize: "8px", fontFamily: "Montserrat", letterSpacing: "0.14em", textTransform: "uppercase", padding: "3px 10px", borderRadius: "100px", background: "rgba(198,168,112,0.10)", color: "var(--gold)", flexShrink: 0 }}>
+                            {lesson.type}
+                          </span>
+                          <p style={{ flex: 1, fontSize: "clamp(12px,1.5vw,14px)", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {lesson.title}
+                          </p>
+                          {lesson.duration_min > 0 && (
+                            <span style={{ fontSize: "10px", color: "var(--text-faint)", fontFamily: "Montserrat", flexShrink: 0 }}>{lesson.duration_min}min</span>
+                          )}
+                          {lesson.is_free && (
+                            <span className="badge-sage" style={{ fontSize: "7px", padding: "2px 8px", flexShrink: 0 }}>GRÁTIS</span>
+                          )}
+                          {/* Edit button */}
+                          <button
+                            onClick={() => startEditLesson(lesson)}
+                            disabled={!!editingLesson}
+                            style={{ width: "28px", height: "28px", borderRadius: "6px", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(198,168,112,0.45)", flexShrink: 0, transition: "color 0.2s" }}
+                            aria-label={`Editar aula ${lesson.title}`}
+                            onMouseEnter={(e) => { if (!editingLesson) (e.currentTarget as HTMLElement).style.color = "var(--gold)"; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "rgba(198,168,112,0.45)"; }}
+                          >
+                            <Pencil size={11} strokeWidth={1.5} />
+                          </button>
+                          {/* Delete button */}
+                          <button
+                            onClick={() => deleteLesson(mod.id, lesson.id)} disabled={deleting === lesson.id}
+                            style={{ width: "28px", height: "28px", borderRadius: "6px", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(172,128,142,0.35)", flexShrink: 0 }}
+                            aria-label={`Remover aula ${lesson.title}`}
+                          >
+                            {deleting === lesson.id ? <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} /> : <Trash2 size={11} strokeWidth={1.5} />}
+                          </button>
+                        </div>
+                      );
+                    })}
 
                     {/* Add lesson form */}
                     {showAddLesson === mod.id ? (
