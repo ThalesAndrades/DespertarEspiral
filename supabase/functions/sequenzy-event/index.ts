@@ -126,9 +126,10 @@ Deno.serve(async (req: Request) => {
     /* 2. Fire the event → triggers associated sequences */
     sequenzyEvent(apiKey, email, event, properties as Record<string, string | number | boolean | null>),
 
-    /* 3. Apply tag rules */
-    ...(tagCfg.add.length > 0 || tagCfg.remove.length > 0
-      ? [sequenzyTags(apiKey, email, tagCfg.add, tagCfg.remove)]
+    /* 3. Apply tag rules (only additions — Sequenzy API bulk endpoint does not
+     support removeTags; pass empty array to satisfy interface signature) */
+    ...(tagCfg.add.length > 0
+      ? [sequenzyTags(apiKey, email, tagCfg.add)]
       : []),
   ];
 

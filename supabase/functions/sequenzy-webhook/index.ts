@@ -155,8 +155,11 @@ Deno.serve(async (req: Request) => {
         const amountFormatted = `R$ ${parseFloat(order.amount).toFixed(2).replace(".", ",")}`;
 
         await Promise.allSettled([
-          // 1. Update subscriber custom attributes
-          sequenzyRequest(sequenzyApiKey, "PATCH", `/subscribers/${encodeURIComponent(order.email)}`, {
+          // 1. Update subscriber custom attributes via POST (upsert)
+          // Note: PATCH /subscribers/:email requires the subscriber to exist;
+          // using POST /subscribers as upsert is more resilient.
+          sequenzyRequest(sequenzyApiKey, "POST", "/subscribers", {
+            email: order.email,
             customAttributes: {
               purchase_confirmed_at: new Date().toISOString(),
               payment_method: paymentMethod || "manual",
