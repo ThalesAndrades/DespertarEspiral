@@ -55,6 +55,23 @@
  *                           Password toggle: eye icon alterna type password↔text
  *                           Google OAuth: loginWithGoogle chamado, erro exibido em toast
  *
+ *   DashboardPage.test.tsx → Greeting com nome do usuário (Bom dia, Ana)
+ *                            anonymous_name badge + avatar com inicial
+ *                            Skeleton (.skeleton divs) durante loadingP e loadingC
+ *                            Usuário COM produto: card de curso (título, thumbnail, link)
+ *                            Usuário COM produto: lesson count "X de Y aulas" + progress %
+ *                            Usuário COM produto: progress bar (.progress-bar-fill)
+ *                            Usuário COM produto: stats gerais (concluídas, total, cursos)
+ *                            Usuário COM múltiplos produtos: compact row cards + link correto
+ *                            Usuário SEM produto: "Inicie sua jornada" empty state
+ *                            Usuário SEM produto: upsell "Você chegou até aqui por um motivo"
+ *                            Usuário SEM produto: CTA "Quero começar" → /checkout/mulher-espiral
+ *                            Comunidade: títulos, anonymous_name, likes, comments, links
+ *                            Comunidade: empty state "Nenhum post ainda"
+ *                            Supabase: user_products.eq(user_id), community_posts.eq(is_visible)
+ *                            Navegação: "Ver todos" → /products, "Ver tudo" → /community
+ *                            Helmet: document.title contém "Início"
+ *
  *   RegisterPage.test.tsx → Step 1 (form):
  *                             Rendering: 4 campos, botão OTP, botão Google, link /login
  *                             Validação: name/email/password vazios, mismatch, senha < 6 chars
