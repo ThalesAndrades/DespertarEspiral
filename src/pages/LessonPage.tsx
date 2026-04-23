@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { fireEventAsync } from "@/lib/sequenzy";
+import { sendEmailAsync } from "@/lib/email";
 
 const typeIcons: Record<string, React.ElementType> = {
   video: Play, text: FileText, pdf: File, audio: Volume2,
@@ -337,6 +338,19 @@ export default function LessonPage() {
             total_lessons: totalCount,
             completed_at: new Date().toISOString(),
           },
+        });
+        // Transactional: course completed email
+        sendEmailAsync({
+          to: user.email,
+          template: {
+            slug: "curso-concluido",
+            variables: {
+              firstName: user.name?.split(" ")[0] ?? "",
+              productTitle,
+              certificateUrl: `${window.location.origin}/products/${slug}/certificado`,
+            },
+          },
+          metadata: { product_slug: slug ?? "", total_lessons: totalCount },
         });
         // Show completion + certificate modal instead of auto-advancing
         setTimeout(() => setShowCertModal(true), 700);

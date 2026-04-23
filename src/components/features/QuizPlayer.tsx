@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { ModuleQuiz, QuizAttempt } from "@/types";
 import { CheckCircle, XCircle, Award, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { sendEmailAsync } from "@/lib/email";
 
 interface Props {
   moduleId: string;
@@ -151,6 +152,24 @@ export default function QuizPlayer({ moduleId, moduleTitle, onClose, onPassed }:
     if (passed) {
       toast.success("Parabéns! Quiz concluído com sucesso. ✦");
       onPassed?.();
+
+      // Transactional: quiz passed email
+      if (user?.email) {
+        sendEmailAsync({
+          to: user.email,
+          template: {
+            slug: "quiz-aprovado",
+            variables: {
+              firstName: user.name?.split(" ")[0] ?? "",
+              moduleTitle,
+              score,
+              passingScore: quiz.passing_score,
+              productTitle: moduleTitle,
+            },
+          },
+          metadata: { quiz_id: quiz.id, module_id: moduleId, score },
+        });
+      }
     }
   };
 

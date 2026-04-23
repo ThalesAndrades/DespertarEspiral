@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, createContext, useContext } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { fireEventAsync } from "@/lib/sequenzy";
+import { sendEmailAsync } from "@/lib/email";
 import { mapAuthError } from "@/lib/authErrors";
 
 /* ─────────────────────────────────────────── */
@@ -310,6 +311,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       firstName: name.split(" ")[0],
       properties: { source: "email_otp", platform: "web" },
+    });
+
+    // Transactional: welcome email
+    sendEmailAsync({
+      to: email,
+      template: {
+        slug: "welcome",
+        variables: { firstName: name.split(" ")[0] },
+      },
+      metadata: { source: "email_otp_registration" },
     });
 
     // ── Retroactive access grant ──────────────────────────────────────────
