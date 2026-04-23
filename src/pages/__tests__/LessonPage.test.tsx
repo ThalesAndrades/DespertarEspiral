@@ -66,8 +66,11 @@ vi.mock("@/lib/contentSafety", () => ({
   safeEmbedUrl: (url: unknown) => {
     if (!url || typeof url !== "string") return null;
     if (url.startsWith("https://www.youtube.com/embed/") || url.startsWith("https://player.vimeo.com/")) return url;
-    if (url === "INVALID_URL") return null;
     return null;
+  },
+  isStorageVideoUrl: (url: unknown) => {
+    if (!url || typeof url !== "string") return false;
+    return url.includes("video-content") || url.endsWith(".mp4") || url.endsWith(".webm");
   },
   safeExternalUrl: (url: unknown) => {
     if (!url || typeof url !== "string") return null;
@@ -164,6 +167,16 @@ const LESSON_INVALID_VIDEO = {
   type: "video",
   content: "INVALID_URL",
   sort_order: 6,
+  is_free: false,
+};
+
+const LESSON_STORAGE_VIDEO = {
+  id: "les-007",
+  module_id: "mod-001",
+  title: "Aula em Vídeo Storage",
+  type: "video",
+  content: "https://ejbdpbkyirqmlgtiejbd.backend.onspace.ai/storage/v1/object/public/video-content/products/prod-001/1718000000000-aula.mp4",
+  sort_order: 7,
   is_free: false,
 };
 
@@ -417,7 +430,7 @@ describe("LessonPage — video lesson", () => {
     });
   });
 
-  it("shows invalid URL fallback when safeEmbedUrl returns null", async () => {
+  it("shows invalid URL fallback when safeEmbedUrl returns null and not a storage URL", async () => {
     const productWithInvalidVideo = buildProduct([LESSON_INVALID_VIDEO]);
     setupSupabaseMocks({ productData: productWithInvalidVideo, lessonRow: LESSON_INVALID_VIDEO });
     renderLesson("mulher-espiral", "les-006");
@@ -432,6 +445,39 @@ describe("LessonPage — video lesson", () => {
     renderLesson("mulher-espiral", "les-006");
     await waitFor(() => {
       expect(screen.getByRole("link", { name: /falar com suporte/i })).toBeInTheDocument();
+    });
+  });
+
+  it("renders native <video> element (not iframe) for Storage URLs", async () => {
+    const productWithStorage = buildProduct([LESSON_STORAGE_VIDEO]);
+    setupSupabaseMocks({ productData: productWithStorage, lessonRow: LESSON_STORAGE_VIDEO });
+    renderLesson("mulher-espiral", "les-007");
+    await waitFor(() => {
+      const video = document.querySelector("video");
+      expect(video).toBeInTheDocument();
+      expect(video).toHaveAttribute("src", LESSON_STORAGE_VIDEO.content);
+      expect(video).toHaveAttribute("controls");
+      expect(video).toHaveAttribute("preload", "metadata");
+    });
+  });
+
+  it("Storage video element has controlsList='nodownload'", async () => {
+    const productWithStorage = buildProduct([LESSON_STORAGE_VIDEO]);
+    setupSupabaseMocks({ productData: productWithStorage, lessonRow: LESSON_STORAGE_VIDEO });
+    renderLesson("mulher-espiral", "les-007");
+    await waitFor(() => {
+      const video = document.querySelector("video");
+      expect(video).toHaveAttribute("controlslist", "nodownload");
+    });
+  });
+
+  it("does NOT render an iframe for Storage video URLs", async () => {
+    const productWithStorage = buildProduct([LESSON_STORAGE_VIDEO]);
+    setupSupabaseMocks({ productData: productWithStorage, lessonRow: LESSON_STORAGE_VIDEO });
+    renderLesson("mulher-espiral", "les-007");
+    await waitFor(() => {
+      expect(screen.queryByTitle("Aula em Vídeo Storage")).not.toBeInTheDocument();
+      expect(document.querySelector("video")).toBeInTheDocument();
     });
   });
 });

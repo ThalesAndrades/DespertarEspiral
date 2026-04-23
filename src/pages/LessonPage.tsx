@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { safeEmbedUrl, safeExternalUrl, sanitizeHtml } from "@/lib/contentSafety";
+import { safeEmbedUrl, safeExternalUrl, sanitizeHtml, isStorageVideoUrl } from "@/lib/contentSafety";
 import {
   CheckCircle, ArrowLeft, ArrowRight, Play, FileText,
   File, Volume2, ChevronRight, ChevronDown, List, X,
@@ -666,27 +666,68 @@ export default function LessonPage() {
             </div>
 
             {/* ── VIDEO ── */}
-            {lesson.type === "video" && (
-              <div style={{
-                position: "relative", width: "100%",
-                paddingTop: "56.25%",
-                borderRadius: "clamp(12px,2vw,18px)",
-                overflow: "hidden",
-                background: "#000",
-                marginBottom: "clamp(20px,3vw,32px)",
-                boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
-              }}>
-                {safeEmbedUrl(lesson.content) ? (
+            {lesson.type === "video" && (() => {
+              const contentUrl = lesson.content as string | null | undefined;
+              const storageUrl = isStorageVideoUrl(contentUrl) ? contentUrl as string : null;
+              const embedUrl   = !storageUrl ? safeEmbedUrl(contentUrl ?? "") : null;
+
+              /* ── Storage video: native <video> element ── */
+              if (storageUrl) return (
+                <div style={{
+                  borderRadius: "clamp(12px,2vw,18px)",
+                  overflow: "hidden",
+                  background: "#000",
+                  marginBottom: "clamp(20px,3vw,32px)",
+                  boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
+                  lineHeight: 0,
+                }}>
+                  <video
+                    src={storageUrl}
+                    controls
+                    controlsList="nodownload"
+                    preload="metadata"
+                    style={{ width: "100%", display: "block", maxHeight: "72vh", outline: "none" }}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
+                    Seu navegador não suporta a reprodução de vídeo.
+                  </video>
+                </div>
+              );
+
+              /* ── External embed: YouTube / Vimeo iframe ── */
+              if (embedUrl) return (
+                <div style={{
+                  position: "relative", width: "100%",
+                  paddingTop: "56.25%",
+                  borderRadius: "clamp(12px,2vw,18px)",
+                  overflow: "hidden",
+                  background: "#000",
+                  marginBottom: "clamp(20px,3vw,32px)",
+                  boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
+                }}>
                   <iframe
-                    src={safeEmbedUrl(lesson.content) as string}
-                    title={lesson.title}
+                    src={embedUrl}
+                    title={lesson.title as string}
                     style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
                     sandbox="allow-same-origin allow-scripts allow-presentation"
                     referrerPolicy="no-referrer"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
-                ) : (
+                </div>
+              );
+
+              /* ── Fallback: invalid / unsupported URL ── */
+              return (
+                <div style={{
+                  position: "relative", width: "100%",
+                  paddingTop: "56.25%",
+                  borderRadius: "clamp(12px,2vw,18px)",
+                  overflow: "hidden",
+                  background: "#000",
+                  marginBottom: "clamp(20px,3vw,32px)",
+                  boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
+                }}>
                   <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "18px" }}>
                     <div style={{ textAlign: "center" }}>
                       <p style={{ fontSize: "14px", color: "rgba(245,240,232,0.75)", lineHeight: 1.7, marginBottom: "10px" }}>
@@ -697,9 +738,9 @@ export default function LessonPage() {
                       </a>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              );
+            })()}
 
             {/* ── TEXT ── */}
             {lesson.type === "text" && (

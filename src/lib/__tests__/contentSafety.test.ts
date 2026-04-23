@@ -3,7 +3,7 @@
  * Coverage: sanitizeHtml, safeExternalUrl, safeEmbedUrl
  */
 import { describe, it, expect, beforeAll } from "vitest";
-import { sanitizeHtml, safeExternalUrl, safeEmbedUrl } from "@/lib/contentSafety";
+import { sanitizeHtml, safeExternalUrl, safeEmbedUrl, isStorageVideoUrl } from "@/lib/contentSafety";
 
 describe("sanitizeHtml", () => {
   it("returns empty string for empty input", () => {
@@ -166,5 +166,60 @@ describe("safeEmbedUrl", () => {
 
   it("blocks invalid URLs", () => {
     expect(safeEmbedUrl("not-a-url")).toBeNull();
+  });
+});
+
+describe("isStorageVideoUrl", () => {
+  it("returns false for null / undefined / empty", () => {
+    expect(isStorageVideoUrl(null)).toBe(false);
+    expect(isStorageVideoUrl(undefined)).toBe(false);
+    expect(isStorageVideoUrl("")).toBe(false);
+  });
+
+  it("returns true for Supabase Storage public URL containing 'video-content'", () => {
+    const url = "https://ejbdpbkyirqmlgtiejbd.backend.onspace.ai/storage/v1/object/public/video-content/products/prod-001/1718000000000-aula.mp4";
+    expect(isStorageVideoUrl(url)).toBe(true);
+  });
+
+  it("returns true for any https URL ending with .mp4", () => {
+    expect(isStorageVideoUrl("https://cdn.example.com/course/intro.mp4")).toBe(true);
+  });
+
+  it("returns true for .webm extension", () => {
+    expect(isStorageVideoUrl("https://cdn.example.com/video.webm")).toBe(true);
+  });
+
+  it("returns true for .ogg extension", () => {
+    expect(isStorageVideoUrl("https://storage.example.com/video.ogg")).toBe(true);
+  });
+
+  it("returns true for .mov extension", () => {
+    expect(isStorageVideoUrl("https://storage.example.com/video.mov")).toBe(true);
+  });
+
+  it("returns false for YouTube embed URL (not a Storage URL)", () => {
+    expect(isStorageVideoUrl("https://www.youtube.com/embed/dQw4w9WgXcQ")).toBe(false);
+  });
+
+  it("returns false for Vimeo embed URL", () => {
+    expect(isStorageVideoUrl("https://player.vimeo.com/video/123456")).toBe(false);
+  });
+
+  it("returns false for a generic https URL without video extension", () => {
+    expect(isStorageVideoUrl("https://example.com/page")).toBe(false);
+  });
+
+  it("returns false for http (non-https) Storage URL", () => {
+    expect(isStorageVideoUrl("http://storage.example.com/video-content/aula.mp4")).toBe(false);
+  });
+
+  it("returns false for non-string values", () => {
+    expect(isStorageVideoUrl(42)).toBe(false);
+    expect(isStorageVideoUrl({})).toBe(false);
+  });
+
+  it("returns false for plain text / relative paths", () => {
+    expect(isStorageVideoUrl("/videos/aula.mp4")).toBe(false);
+    expect(isStorageVideoUrl("aula.mp4")).toBe(false);
   });
 });

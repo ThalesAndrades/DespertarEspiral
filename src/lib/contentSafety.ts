@@ -80,6 +80,28 @@ export function safeExternalUrl(input: string): string | null {
   }
 }
 
+const STORAGE_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
+
+/**
+ * Returns true when the URL points to a direct video file in Supabase Storage
+ * (contains the bucket path segment OR ends with a video extension).
+ * These URLs must be rendered with a native <video> element, not an iframe.
+ */
+export function isStorageVideoUrl(input: unknown): boolean {
+  if (!input || typeof input !== 'string') return false;
+  try {
+    const u = new URL(input);
+    if (u.protocol !== 'https:') return false;
+    // Supabase Storage public URL pattern: /storage/v1/object/public/video-content/...
+    if (u.pathname.includes('video-content')) return true;
+    // Fallback: direct video file extension
+    const lower = u.pathname.toLowerCase();
+    return STORAGE_VIDEO_EXTENSIONS.some((ext) => lower.endsWith(ext));
+  } catch {
+    return false;
+  }
+}
+
 export function safeEmbedUrl(input: string): string | null {
   if (!input) return null;
   try {
