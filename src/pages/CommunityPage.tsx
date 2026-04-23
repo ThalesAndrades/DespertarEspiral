@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import type { CommunityPost } from "@/types";
 import { Flame, MessageSquare, Heart, Plus, X, ChevronRight, ArrowRight, Loader2 } from "lucide-react";
+import { timeAgo } from "@/lib/dateUtils";
 import { toast } from "sonner";
 
 type Category = "all" | CommunityPost["category"];
@@ -22,18 +23,6 @@ const catColor = (cat: CommunityPost["category"]) =>
   CATEGORIES.find((c) => c.value === cat)?.color ?? "var(--lavender)";
 const catLabel = (cat: CommunityPost["category"]) =>
   CATEGORIES.find((c) => c.value === cat)?.label ?? cat;
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins  = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days  = Math.floor(diff / 86400000);
-  if (mins < 1)   return "agora";
-  if (mins < 60)  return `${mins}min`;
-  if (hours < 24) return `${hours}h`;
-  if (days === 1) return "ontem";
-  return `${days}d`;
-}
 
 /* ── Skeleton helpers ── */
 function Sk({ w = "100%", h = "14px", r = "8px", style }: { w?: string; h?: string; r?: string; style?: React.CSSProperties }) {

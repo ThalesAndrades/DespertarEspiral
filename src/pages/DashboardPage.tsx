@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import mulherEspiralProduct from "@/assets/mulher-espiral-hero-new.jpg";
 import { ArrowRight, Play, MessageSquare, BookOpen, TrendingUp, Flame, Clock, CheckCircle2 } from "lucide-react";
+import { timeAgo, greeting, progressPct } from "@/lib/dateUtils";
 
 interface ProductWithProgress {
   id: string;
@@ -31,21 +32,6 @@ interface CommunityPost {
   is_pinned: boolean;
   created_at: string;
   user_profiles: { anonymous_name: string | null } | null;
-}
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Bom dia";
-  if (h < 18) return "Boa tarde";
-  return "Boa noite";
-}
-
-function timeAgo(iso: string) {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60)    return "agora";
-  if (diff < 3600)  return `${Math.floor(diff / 60)}min`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  return `${Math.floor(diff / 86400)}d`;
 }
 
 const CAT_COLOR: Record<string, string> = {
@@ -178,7 +164,7 @@ export default function DashboardPage() {
   }, [user]);
 
   const totalLessons = products.reduce((s, p) => s + p.total_lessons, 0);
-  const overallPct   = totalLessons > 0 ? Math.round((totalDone / totalLessons) * 100) : 0;
+  const overallPct   = progressPct(totalDone, totalLessons);
   const mainProduct  = products[0];
 
   return (
