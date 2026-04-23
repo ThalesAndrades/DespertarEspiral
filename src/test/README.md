@@ -126,6 +126,36 @@
  *                              Certificate: 'Salvar configuração' → supabase.update products + toast
  *                              Certificate: botão 'Visualizar certificado' visível quando aberto
  *
+ *   CommunityPage.test.tsx → Skeleton screens (.skeleton divs) durante loading
+ *                              Category tabs: Todas, Geral, Desabafo, Dúvidas, Conquistas, Dicas
+ *                              Filtro por categoria (geral, desabafo, conquistas, dúvidas, dicas)
+ *                              'Todas' restaura todos os posts
+ *                              Post card: title, body, anonymous_name, timeAgo (mocked '2h')
+ *                              Post card: category badge, Flame icon em pinned, avatar inicial
+ *                              Post card: 'Ver post' link → /community/topic/:id correto
+ *                              Likes count renderizado (5, 12, 24…)
+ *                              Like button: incremento otimista (5 → 6)
+ *                              Like button: supabase.insert({ user_id, post_id })
+ *                              Unlike: supabase.delete + decrement (5 → 4)
+ *                              Like insert error: revert + toast.error
+ *                              Empty state: 'Nenhum post nessa categoria.' + CTA 'Ser a primeira'
+ *                              Anonymous pill: user.anonymous_name + '· identidade anônima'
+ *                              'Novo post' button abre compose sheet
+ *                              Compose: 'Novo post' heading + anonymous notice
+ *                              Compose: category selector buttons, title input, body textarea
+ *                              Compose: X fecha sheet
+ *                              FAB (aria-label 'Novo post') abre compose sheet
+ *                              Validation: título vazio → toast.error sem insert
+ *                              Validation: body vazio → toast.error sem insert
+ *                              Validation: ambos vazios → toast.error, postInsert não chamado
+ *                              Submit: supabase.insert payload correto (user_id, category, title, body)
+ *                              Submit: toast.success 'Post publicado. ✦'
+ *                              Submit: fecha sheet após sucesso
+ *                              Submit: novo post aparece no topo da lista sem reload
+ *                              Submit: categoria selecionada no form enviada corretamente
+ *                              Supabase: is_visible=true filter verificado
+ *                              Supabase: community_likes.eq(user_id, 'user-001')
+ *
  *   ProductsPage.test.tsx → Loading skeleton (.skeleton divs) durante fetch
  *                              Empty state ('Nenhum curso disponível') quando products=[]
  *                              Empty state: link '← Voltar ao dashboard'

@@ -68,6 +68,10 @@ export default function AdminProductContentPage() {
   const [editingLesson, setEditingLesson] = useState<EditLessonState | null>(null);
   const [savingLesson,  setSavingLesson]  = useState(false);
 
+  // Drag-and-drop state
+  const dragSrcRef = useRef<{ modId: string; lessonId: string } | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null); // lessonId currently hovered
+
   // Video upload state for inline edit form
   const [editVideoUploading,  setEditVideoUploading]  = useState(false);
   const [editVideoProgress,   setEditVideoProgress]   = useState(0);
@@ -178,6 +182,63 @@ export default function AdminProductContentPage() {
       toast.success("Aula criada.");
     }
     setAddingLesson(false);
+  };
+
+  /* ── Drag-and-drop handlers ── */
+  const handleDragStart = (modId: string, lessonId: string) => {
+    dragSrcRef.current = { modId, lessonId };
+  };
+
+  const handleDragOver = (e: React.DragEvent, lessonId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOver(lessonId);
+  };
+
+  const handleDragLeave = () => setDragOver(null);
+
+  const handleDrop = async (e: React.DragEvent, targetModId: string, targetLessonId: string) => {
+    e.preventDefault();
+    setDragOver(null);
+    const src = dragSrcRef.current;
+    dragSrcRef.current = null;
+    if (!src || src.modId !== targetModId || src.lessonId === targetLessonId) return;
+
+    setModules((prevModules) => {
+      const updated = prevModules.map((m) => {
+        if (m.id !== targetModId) return m;
+        const lessons = [...m.lessons];
+        const srcIdx    = lessons.findIndex((l) => l.id === src.lessonId);
+        const targetIdx = lessons.findIndex((l) => l.id === targetLessonId);
+        if (srcIdx === -1 || targetIdx === -1) return m;
+        const [moved] = lessons.splice(srcIdx, 1);
+        lessons.splice(targetIdx, 0, moved);
+        const reordered = lessons.map((l, i) => ({ ...l, sort_order: i + 1 }));
+        // Persist batch update in background
+        void persistLessonOrder(reordered);
+        return { ...m, lessons: reordered };
+      });
+      return updated;
+    });
+  };
+
+  const handleDragEnd = () => {
+    dragSrcRef.current = null;
+    setDragOver(null);
+  };
+
+  /* Batch-update sort_order for all lessons after reordering */
+  const persistLessonOrder = async (lessons: LessonRow[]) => {
+    try {
+      await Promise.all(
+        lessons.map((l) =>
+          supabase.from("lessons").update({ sort_order: l.sort_order }).eq("id", l.id)
+        )
+      );
+    } catch (err) {
+      console.error("[persistLessonOrder] batch update failed:", err);
+      toast.error("Erro ao salvar nova ordem das aulas.");
+    }
   };
 
   /* Delete lesson */
@@ -759,8 +820,28 @@ export default function AdminProductContentPage() {
                       );
 
                       /* ── Default lesson row ── */
+                      const isDragTarget = dragOver === lesson.id;
                       return (
-                        <div key={lesson.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px 10px 18px", borderBottom: "1px solid var(--border-subtle)", minHeight: "48px" }}>
+                        <div
+                          key={lesson.id}
+                          draggable={!editingLesson}
+                          onDragStart={() => handleDragStart(mod.id, lesson.id)}
+                          onDragOver={(e) => handleDragOver(e, lesson.id)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, mod.id, lesson.id)}
+                          onDragEnd={handleDragEnd}
+                          data-testid={`lesson-row-${lesson.id}`}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "10px",
+                            padding: "10px 14px 10px 18px",
+                            borderBottom: "1px solid var(--border-subtle)",
+                            minHeight: "48px",
+                            cursor: editingLesson ? "default" : "grab",
+                            transition: "background 0.15s, border-top 0.15s",
+                            background: isDragTarget ? "rgba(198,168,112,0.08)" : "transparent",
+                            borderTop: isDragTarget ? "2px solid var(--gold)" : "2px solid transparent",
+                          }}
+                        >
                           <GripVertical size={12} style={{ color: "var(--border-subtle)", flexShrink: 0 }} />
                           <span style={{ fontSize: "8px", fontFamily: "Montserrat", letterSpacing: "0.14em", textTransform: "uppercase", padding: "3px 10px", borderRadius: "100px", background: "rgba(198,168,112,0.10)", color: "var(--gold)", flexShrink: 0 }}>
                             {lesson.type}
