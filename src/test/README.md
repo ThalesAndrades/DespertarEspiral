@@ -33,6 +33,20 @@
  * ─────────────────────────────────────────────────────────────
  *
  * src/pages/__tests__/
+ *   CheckoutPage.test.tsx → Loading spinner enquanto produto carrega
+ *                           Produto não encontrado → toast + navigate /products
+ *                           Renderização: título, preço BRL, métodos de pagamento, trust badges
+ *                           Usuário logado: campos auto-preenchidos e desabilitados
+ *                           Seleção de método: PIX (padrão), Cartão, Boleto → dica contextual
+ *                           Validação: nome obrigatório, email obrigatório, email inválido, ambos em simultâneo
+ *                           Erro clearance: campo resets ao digitar
+ *                           Checkout PIX sucesso: invoke com payload correto, toast, step "success", chave PIX
+ *                           Checkout Crédito sucesso: navigate /obrigado com invoiceUrl + slug + method=credit
+ *                           Checkout Boleto sucesso: step "success" com barCode
+ *                           Payload com usuário logado: userId enviado corretamente
+ *                           Erro edge function: toast de erro, sem navigate, botão re-habilitado, permanece no form
+ *                           BRL formatting: 997,00 / 1.997,00, preço como string do DB, NaN → toast + redirect
+ *
  *   LoginPage.test.tsx    → Rendering (inputs, botões, links)
  *                           Validação: campos vazios → toast, sem chamada de API
  *                           Login com sucesso: credenciais corretas, toast, navigate /dashboard
@@ -61,6 +75,7 @@
  * COBERTURA (vitest.config.ts)
  * ─────────────────────────────────────────────────────────────
  *
+ *   Include:  src/lib/**, src/hooks/**, src/pages/**
  *   Include:  src/lib/**, src/hooks/**, src/pages/**
  *   Exclude:  src/lib/supabase.ts, src/test/**, src/pages/admin/**,
  *             CertificatePage.tsx (canvas), LandingPage.tsx (e2e scope)
