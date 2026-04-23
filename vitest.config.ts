@@ -19,8 +19,24 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "html"],
-      include: ["src/lib/**", "src/hooks/**"],
-      exclude: ["src/lib/supabase.ts", "src/test/**"],
+      include: [
+        "src/lib/**",
+        "src/hooks/**",
+        "src/pages/**",
+      ],
+      exclude: [
+        "src/lib/supabase.ts",
+        "src/test/**",
+        "src/pages/admin/**",           // admin pages — excluded for brevity
+        "src/pages/CertificatePage.tsx", // canvas-heavy, tested separately
+        "src/pages/LandingPage.tsx",     // marketing page, e2e scope
+      ],
+      thresholds: {
+        lines:      60,
+        functions:  60,
+        branches:   50,
+        statements: 60,
+      },
     },
   },
 });

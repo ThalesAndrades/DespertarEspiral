@@ -1,14 +1,16 @@
 /**
- * README — Testes unitários
+ * README — Testes unitários & integração
  *
- * Stack: Vitest + @testing-library/react + jsdom
+ * Stack: Vitest + @testing-library/react + @testing-library/user-event + jsdom
  *
  * Comandos:
- *   npx vitest                  → watch mode
+ *   npx vitest                  → watch mode (re-executa ao salvar)
  *   npx vitest run              → single run (CI)
- *   npx vitest run --coverage   → coverage report
+ *   npx vitest run --coverage   → coverage report (lcov + html em coverage/)
  *
- * Cobertura dos módulos testados:
+ * ─────────────────────────────────────────────────────────────
+ * TESTES UNITÁRIOS (lib + hooks + ui + types)
+ * ─────────────────────────────────────────────────────────────
  *
  * src/lib/__tests__/
  *   authErrors.test.ts    → mapAuthError: 30+ casos pt-BR, fallback, edge cases
@@ -26,12 +28,52 @@
  * src/types/__tests__/
  *   types.test.ts         → CommunityPost, Lesson, Order — union type guards
  *
- * Refatorações aplicadas neste sprint:
+ * ─────────────────────────────────────────────────────────────
+ * TESTES DE INTEGRAÇÃO (pages)
+ * ─────────────────────────────────────────────────────────────
+ *
+ * src/pages/__tests__/
+ *   LoginPage.test.tsx    → Rendering (inputs, botões, links)
+ *                           Validação: campos vazios → toast, sem chamada de API
+ *                           Login com sucesso: credenciais corretas, toast, navigate /dashboard
+ *                           ?next= redirect: path válido vs open-redirect guard (//evil.com → /dashboard)
+ *                           Login com erro: toast de erro, sem navigate, loading reset
+ *                           Password toggle: eye icon alterna type password↔text
+ *                           Google OAuth: loginWithGoogle chamado, erro exibido em toast
+ *
+ *   RegisterPage.test.tsx → Step 1 (form):
+ *                             Rendering: 4 campos, botão OTP, botão Google, link /login
+ *                             Validação: name/email/password vazios, mismatch, senha < 6 chars
+ *                             sendOtp chamado com email correto → transição para step 2
+ *                             Email exibido no step 2
+ *                             sendOtp falha: toast de erro, permanece no step 1
+ *                             Google OAuth: loginWithGoogle('/dashboard') chamado
+ *                           Step 2 (OTP):
+ *                             Rendering: input OTP, botão confirmar, botão reenviar
+ *                             Voltar: retorna ao step 1
+ *                             Auto-submit ao digitar 4º dígito
+ *                             verifyOtpAndRegister: args corretos (email, otp, password, name)
+ *                             Sucesso: toast + navigate /dashboard
+ *                             Erro: toast de erro, sem navigate, loading reset
+ *                             Reenvio: estado de cooldown exibido
+ *
+ * ─────────────────────────────────────────────────────────────
+ * COBERTURA (vitest.config.ts)
+ * ─────────────────────────────────────────────────────────────
+ *
+ *   Include:  src/lib/**, src/hooks/**, src/pages/**
+ *   Exclude:  src/lib/supabase.ts, src/test/**, src/pages/admin/**,
+ *             CertificatePage.tsx (canvas), LandingPage.tsx (e2e scope)
+ *   Thresholds: lines 60%, functions 60%, branches 50%, statements 60%
+ *
+ * ─────────────────────────────────────────────────────────────
+ * REFATORAÇÕES
+ * ─────────────────────────────────────────────────────────────
  *   - src/lib/dateUtils.ts       NOVO — timeAgo, greeting, formatBRL, progressPct, clamp, truncate, capitalize, initials
  *   - DashboardPage.tsx          timeAgo + greeting → import de @/lib/dateUtils
  *   - CommunityPage.tsx          timeAgo → import de @/lib/dateUtils
  *   - SkeletonShimmer.tsx        suporte a width/height numérico, cleanup de SKELETON_STYLES obsoleto
- *   - vitest.config.ts           NOVO — config Vitest com jsdom + alias @/
- *   - src/test/setup.ts          NOVO — jest-dom, cleanup, stubs browser APIs
- *   - src/test/mocks/supabase.ts NOVO — mock reutilizável do cliente Supabase
+ *   - vitest.config.ts           config Vitest jsdom + alias @/ + coverage thresholds
+ *   - src/test/setup.ts          jest-dom, cleanup, stubs browser APIs
+ *   - src/test/mocks/supabase.ts mock reutilizável do cliente Supabase
  */
