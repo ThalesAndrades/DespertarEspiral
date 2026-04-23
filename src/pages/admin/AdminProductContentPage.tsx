@@ -7,10 +7,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save, Download, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GripVertical, X, Check, Loader2, ChevronDown, ChevronRight, Award, Save, Download, Eye, EyeOff, Upload, Video, FileVideo, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface LessonRow { id: string; title: string; type: string; content: string; duration_min: number; sort_order: number; is_free: boolean; }
+
+const VIDEO_BUCKET = "video-content";
+const MAX_VIDEO_MB  = 500;
+const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-msvideo"];
 interface ModuleRow { id: string; title: string; sort_order: number; lessons: LessonRow[]; }
 
 interface CertConfig {
@@ -56,6 +61,13 @@ export default function AdminProductContentPage() {
   const [certOpen,      setCertOpen]      = useState(false);
   const [showPreview,   setShowPreview]   = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // ── Video Upload State ──
+  const [videoUploading,  setVideoUploading]  = useState(false);
+  const [videoProgress,   setVideoProgress]   = useState(0);  // 0-100
+  const [videoError,      setVideoError]      = useState<string | null>(null);
+  const [pendingVideoUrl, setPendingVideoUrl] = useState<string>(""); // URL after upload
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   /* Load product + modules + lessons */
   useEffect(() => {
@@ -162,6 +174,64 @@ export default function AdminProductContentPage() {
       toast.success("Aula removida.");
     }
     setDeleting(null);
+  };
+
+  /* ── Upload video to Storage ── */
+  const uploadVideo = async (file: File, onProgress?: (pct: number) => void): Promise<string | null> => {
+    if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+      toast.error(`Tipo não suportado: ${file.type}. Use MP4, WebM ou OGG.`);
+      return null;
+    }
+    if (file.size > MAX_VIDEO_BYTES) {
+      toast.error(`Arquivo muito grande (máx. ${MAX_VIDEO_MB}MB). Tamanho: ${(file.size / 1024 / 1024).toFixed(1)}MB.`);
+      return null;
+    }
+
+    // Build deterministic path: products/{productId}/{timestamp}-{slug}.mp4
+    const ext  = file.name.split(".").pop() ?? "mp4";
+    const ts   = Date.now();
+    const path = `products/${id}/${ts}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+
+    // Upload via fetch+blob for reliable progress tracking
+    onProgress?.(5);
+
+    const { data, error } = await supabase.storage
+      .from(VIDEO_BUCKET)
+      .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+
+    if (error) {
+      console.error("[uploadVideo] storage error:", error);
+      toast.error(`Erro no upload: ${error.message}`);
+      return null;
+    }
+
+    onProgress?.(100);
+
+    const { data: { publicUrl } } = supabase.storage.from(VIDEO_BUCKET).getPublicUrl(data.path);
+    return publicUrl;
+  };
+
+  const handleVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setVideoError(null);
+    setVideoProgress(0);
+    setVideoUploading(true);
+    setPendingVideoUrl("");
+
+    const url = await uploadVideo(file, setVideoProgress);
+
+    if (url) {
+      setPendingVideoUrl(url);
+      setNewLesson((l) => ({ ...l, content: url, type: "video" }));
+      toast.success("Vídeo enviado com sucesso! ✦ Cole a URL ou salve a aula.");
+    } else {
+      setVideoError("Falha no upload. Tente novamente.");
+    }
+    setVideoUploading(false);
+    // Reset file input so same file can be re-selected
+    if (videoInputRef.current) videoInputRef.current.value = "";
   };
 
   /* ── Draw certificate preview on canvas ── */
@@ -484,12 +554,94 @@ export default function AdminProductContentPage() {
                             className="input-dark" style={{ flex: 1, borderRadius: "10px", minWidth: "160px" }}
                           />
                         </div>
-                        <input
-                          type="text" value={newLesson.content}
-                          onChange={(e) => setNewLesson((l) => ({ ...l, content: e.target.value }))}
-                          placeholder="URL do conteúdo (vídeo embed, PDF, áudio...)"
-                          className="input-dark" style={{ marginBottom: "10px", borderRadius: "10px" }}
-                        />
+                        {/* Content URL or Video Upload */}
+                        {newLesson.type === "video" ? (
+                          <div style={{ marginBottom: "10px" }}>
+                            {/* URL input */}
+                            <input
+                              type="text" value={newLesson.content}
+                              onChange={(e) => { setNewLesson((l) => ({ ...l, content: e.target.value })); setPendingVideoUrl(""); }}
+                              placeholder="URL de embed (YouTube, Vimeo) ou faça upload abaixo"
+                              className="input-dark" style={{ borderRadius: "10px", marginBottom: "8px" }}
+                            />
+
+                            {/* Upload zone */}
+                            <div
+                              style={{
+                                border: `2px dashed ${videoUploading ? "var(--gold)" : pendingVideoUrl ? "rgba(140,170,150,0.5)" : "var(--border-soft)"}`,
+                                borderRadius: "12px",
+                                padding: "14px 16px",
+                                background: pendingVideoUrl ? "rgba(140,170,150,0.04)" : "rgba(198,168,112,0.03)",
+                                transition: "border-color 0.2s, background 0.2s",
+                              }}
+                            >
+                              {pendingVideoUrl ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                  <Video size={16} style={{ color: "var(--sage)", flexShrink: 0 }} strokeWidth={1.5} />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ fontSize: "12px", color: "var(--sage)", fontWeight: 500, marginBottom: "2px" }}>Upload concluído ✓</p>
+                                    <p style={{ fontSize: "10px", color: "var(--text-faint)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pendingVideoUrl}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setPendingVideoUrl(""); setNewLesson((l) => ({ ...l, content: "" })); }}
+                                    style={{ width: "26px", height: "26px", borderRadius: "6px", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-faint)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                                    aria-label="Remover vídeo"
+                                  >
+                                    <X size={12} strokeWidth={1.5} />
+                                  </button>
+                                </div>
+                              ) : videoUploading ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <Loader2 size={13} style={{ color: "var(--gold)", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+                                    <span style={{ fontSize: "12px", color: "var(--gold)" }}>Enviando vídeo…</span>
+                                    <span style={{ marginLeft: "auto", fontSize: "11px", color: "var(--text-faint)", fontFamily: "Montserrat" }}>{videoProgress}%</span>
+                                  </div>
+                                  <div style={{ height: "3px", borderRadius: "100px", background: "var(--border-subtle)", overflow: "hidden" }}>
+                                    <div style={{ height: "100%", width: `${videoProgress}%`, borderRadius: "100px", background: "var(--gold)", transition: "width 0.3s" }} />
+                                  </div>
+                                </div>
+                              ) : (
+                                <label
+                                  htmlFor="video-upload-input"
+                                  style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}
+                                >
+                                  <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(198,168,112,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <Upload size={14} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                                  </div>
+                                  <div>
+                                    <p style={{ fontSize: "12px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "2px" }}>Upload de vídeo</p>
+                                    <p style={{ fontSize: "10px", color: "var(--text-faint)" }}>MP4, WebM, OGG · máx. {MAX_VIDEO_MB}MB</p>
+                                  </div>
+                                  <input
+                                    id="video-upload-input"
+                                    ref={videoInputRef}
+                                    type="file"
+                                    accept={ALLOWED_VIDEO_TYPES.join(",")}
+                                    onChange={handleVideoFileChange}
+                                    style={{ display: "none" }}
+                                    data-testid="video-file-input"
+                                  />
+                                </label>
+                              )}
+
+                              {videoError && (
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
+                                  <AlertCircle size={11} style={{ color: "rgba(201,80,80,0.8)", flexShrink: 0 }} />
+                                  <span style={{ fontSize: "11px", color: "rgba(201,80,80,0.8)" }}>{videoError}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <input
+                            type="text" value={newLesson.content}
+                            onChange={(e) => setNewLesson((l) => ({ ...l, content: e.target.value }))}
+                            placeholder={newLesson.type === "pdf" ? "URL do PDF" : newLesson.type === "audio" ? "URL do áudio" : "URL do conteúdo"}
+                            className="input-dark" style={{ marginBottom: "10px", borderRadius: "10px" }}
+                          />
+                        )}
                         <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                             <label style={{ ...LABEL_STYLE, marginBottom: 0 }}>Min:</label>

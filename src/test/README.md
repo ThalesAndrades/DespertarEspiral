@@ -72,6 +72,31 @@
  *                            Navegação: "Ver todos" → /products, "Ver tudo" → /community
  *                            Helmet: document.title contém "Início"
  *
+ *   LessonPage.test.tsx   → Loading spinner (product pending)
+ *                           Produto não encontrado → 'Ver meus cursos'
+ *                           Paywall: user without product access → 'Conteúdo exclusivo'
+ *                           Free lesson renders without paywall
+ *                           Video: iframe com embed URL correto
+ *                           Video: URL inválida → fallback 'Link de vídeo inválido'
+ *                           Text: HTML via dangerouslySetInnerHTML
+ *                           PDF: 'Abrir PDF' link + 'Arquivo PDF disponível'
+ *                           Audio: <audio src=...> renderizado
+ *                           markComplete: supabase.upsert com {user_id, lesson_id, completed: true}
+ *                           markComplete: toast.success 'Aula concluída. ✦'
+ *                           markComplete: badge 'Concluída' aparece
+ *                           markComplete: já concluída → badge sem botão
+ *                           markComplete: erro upsert → toast.error + reverted state
+ *                           markComplete: fireEventAsync('lesson.completed') disparado
+ *                           100% progress: setTimeout → modal 'Parabéns'
+ *                           Modal: nome da aluna no heading
+ *                           Modal: canvas para certificado
+ *                           Modal: botão 'Baixar PNG'
+ *                           Modal: link 'Certificado completo'
+ *                           Modal: fireEventAsync('course.completed')
+ *                           Modal: fechar via ✕
+ *                           Navegação: breadcrumb /products/:slug, módulo título
+ *                           Navegação: barra de progresso do módulo
+ *
  *   RegisterPage.test.tsx → Step 1 (form):
  *                             Rendering: 4 campos, botão OTP, botão Google, link /login
  *                             Validação: name/email/password vazios, mismatch, senha < 6 chars
