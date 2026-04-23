@@ -1,19 +1,27 @@
+
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/lib/ErrorBoundary";
-import LandingPage from "@/pages/LandingPage"; // static — first page users see, no lazy delay
+import LandingPage from "@/pages/LandingPage"; // static — first page, no lazy delay
 
-/* Lazy-loaded pages for optimal bundle splitting */
-const LoginPage             = React.lazy(() => import("@/pages/LoginPage"));
-const RegisterPage          = React.lazy(() => import("@/pages/RegisterPage"));
+/* ── Prefetch helpers ── */
+const prefetchLogin    = () => import("@/pages/LoginPage");
+const prefetchRegister = () => import("@/pages/RegisterPage");
+const prefetchDashboard = () => import("@/pages/DashboardPage");
+const prefetchProducts  = () => import("@/pages/ProductsPage");
+const prefetchCommunity = () => import("@/pages/CommunityPage");
+
+/* ── Lazy-loaded pages (route-based code splitting) ── */
+const LoginPage             = React.lazy(prefetchLogin);
+const RegisterPage          = React.lazy(prefetchRegister);
 const ForgotPasswordPage    = React.lazy(() => import("@/pages/ForgotPasswordPage"));
 const ResetPasswordPage     = React.lazy(() => import("@/pages/ResetPasswordPage"));
-const DashboardPage         = React.lazy(() => import("@/pages/DashboardPage"));
-const ProductsPage          = React.lazy(() => import("@/pages/ProductsPage"));
+const DashboardPage         = React.lazy(prefetchDashboard);
+const ProductsPage          = React.lazy(prefetchProducts);
 const CourseViewPage        = React.lazy(() => import("@/pages/CourseViewPage"));
 const LessonPage            = React.lazy(() => import("@/pages/LessonPage"));
-const CommunityPage         = React.lazy(() => import("@/pages/CommunityPage"));
+const CommunityPage         = React.lazy(prefetchCommunity);
 const TopicPage             = React.lazy(() => import("@/pages/TopicPage"));
 const CheckoutPage          = React.lazy(() => import("@/pages/CheckoutPage"));
 const ThankYouPage          = React.lazy(() => import("@/pages/ThankYouPage"));
@@ -33,7 +41,7 @@ const AdminTrafficPage      = React.lazy(() => import("@/pages/admin/AdminTraffi
 const CertificatePage       = React.lazy(() => import("@/pages/CertificatePage"));
 const ProfilePage           = React.lazy(() => import("@/pages/ProfilePage"));
 
-/* ── Global loader ── */
+/* ── Global loader — branded spiral spinner ── */
 function GlobalLoader() {
   return (
     <div style={{
@@ -80,6 +88,21 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     const full = `${location.pathname}${location.search}${location.hash}`;
     return <Navigate to={`/login?next=${encodeURIComponent(full)}`} replace />;
   }
+
+  /* Prefetch member pages on first authenticated render */
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      prefetchDashboard();
+      prefetchProducts();
+      prefetchCommunity();
+    }, 1200);
+    return () => clearTimeout(timer);
+  // The error message "Definition for rule 'react-hooks/exhaustive-deps' was not found"
+  // indicates an issue with ESLint configuration, not a TypeScript syntax error.
+  // Removing the ESLint comment will stop ESLint from trying to apply a rule it can't find.
+  // If the intent was to disable the rule, it should be done in the ESLint config or with a valid comment.
+  }, []); // Empty dependency array means this effect runs once on mount
+
   return <>{children}</>;
 }
 
@@ -91,14 +114,19 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/* Redirect authenticated users away from login/register pages.
- * IMPORTANT: We do NOT show GlobalLoader here — the form renders immediately
- * and navigation to /dashboard only happens once auth resolves (if user is set).
- * This eliminates the blank-screen delay on /login while getSession() is pending.
+/**
+ * PublicOnlyRoute — renders immediately; redirects only once auth resolves.
+ * This prevents blank-screen on /login while getSession() is pending.
  */
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  // Only redirect once we KNOW the user is logged in — never block render
+
+  /* Prefetch auth pages eagerly on mount */
+  React.useEffect(() => {
+    prefetchLogin();
+    prefetchRegister();
+  }, []);
+
   if (!loading && user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
@@ -118,7 +146,7 @@ export default function App() {
   return (
     <Suspense>
       <Routes>
-        {/* Public — LandingPage is static import for instant load */}
+        {/* Public — LandingPage is static for instant load */}
         <Route path="/"                element={<LandingPage />} />
         <Route path="/login"           element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
         <Route path="/register"        element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
@@ -126,8 +154,9 @@ export default function App() {
         <Route path="/reset-password"  element={<ResetPasswordPage />} />
         <Route path="/checkout/:slug"  element={<CheckoutPage />} />
         <Route path="/obrigado"        element={<ThankYouPage />} />
-        <Route path="/privacidade" element={<PrivacyPolicyPage />} />
-        <Route path="/termos"      element={<TermsOfUsePage />} />
+        <Route path="/privacidade"     element={<PrivacyPolicyPage />} />
+        <Route path="/termos"          element={<TermsOfUsePage />} />
+        {/* Redirects */}
         <Route path="/politica-de-privacidade" element={<Navigate to="/privacidade" replace />} />
         <Route path="/termos-de-uso"           element={<Navigate to="/termos" replace />} />
         <Route path="/privacy"                element={<Navigate to="/privacidade" replace />} />
@@ -138,7 +167,7 @@ export default function App() {
         <Route path="/products"                            element={<PrivateRoute><ProductsPage /></PrivateRoute>} />
         <Route path="/products/:slug"                      element={<PrivateRoute><CourseViewPage /></PrivateRoute>} />
         <Route path="/products/:slug/lesson/:lessonId"     element={<PrivateRoute><LessonPage /></PrivateRoute>} />
-        <Route path="/products/:slug/certificado"           element={<PrivateRoute><CertificatePage /></PrivateRoute>} />
+        <Route path="/products/:slug/certificado"          element={<PrivateRoute><CertificatePage /></PrivateRoute>} />
         <Route path="/community"                           element={<PrivateRoute><CommunityPage /></PrivateRoute>} />
         <Route path="/community/topic/:id"                 element={<PrivateRoute><TopicPage /></PrivateRoute>} />
         <Route path="/perfil"                              element={<PrivateRoute><ProfilePage /></PrivateRoute>} />

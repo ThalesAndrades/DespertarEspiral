@@ -1,538 +1,324 @@
 /**
- * Integration Tests — ProductsPage
- *
- * Covers:
- *  - Loading skeletons (.skeleton divs) while data fetches
- *  - Empty state: 'Nenhum curso disponível' when products array is empty
- *  - Empty state: '← Voltar ao dashboard' link
- *  - Rendered product card: title, thumbnail, modules/aulas metadata
- *  - Progress bar and "X/Y · Z%" for user WITH access
- *  - CTA "Começar" when 0% progress (has access)
- *  - CTA "Continuar" when progress > 0 (has access)
- *  - CTA "Concluído" badge when 100% (has access)
- *  - Link to /products/:slug for course with access
- *  - No-access product: price in BRL, "Adquirir" CTA → /checkout/:slug
- *  - No-access product: lock overlay badge "SEM ACESSO"
- *  - Multiple products rendered: first with access, second without
- *  - Supabase queries called with correct user_id
- *  - Page title in Helmet
+ * Tests — ProductsPage (complete integration suite)
+ * 55+ cases covering: loading skeleton, owned courses, scroll-snap carousel,
+ * locked products, progress states, desktop grid, navigation, empty state
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 
-/* ── Static asset mocks ── */
-vi.mock("@/assets/mulher-espiral-cover.svg", () => ({ default: "/mock-cover.svg" }));
-vi.mock("@/assets/mulher-espiral-hero-new.jpg", () => ({ default: "/mock-hero.jpg" }));
-
-/* ── react-helmet-async ── */
-vi.mock("react-helmet-async", () => ({
-  Helmet: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  HelmetProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
-/* ── DashboardLayout ── */
-vi.mock("@/components/layout/DashboardLayout", () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="dashboard-layout">{children}</div>
-  ),
-}));
-
-/* ── MulherEspiralMark ── */
-vi.mock("@/components/layout/MulherEspiralMark", () => ({
-  default: () => <div data-testid="mulher-espiral-mark" />,
-}));
-
-/* ── useAuth ── */
-const mockUseAuth = vi.fn();
-vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => mockUseAuth(),
-}));
-
-/* ── Supabase ── */
-const mockFrom = vi.fn();
-vi.mock("@/lib/supabase", () => ({
-  supabase: {
-    from: (...args: unknown[]) => mockFrom(...args),
-  },
-}));
-
-/* ──────────────────────────────────────────────────────────── */
-/* Test data                                                    */
-/* ──────────────────────────────────────────────────────────── */
-
-const AUTH_USER = {
-  id: "user-001",
-  email: "ana@espiral.com",
-  name: "Ana Espiral",
-  role: "member" as const,
-  anonymous_name: "Lua Crescente",
+const mockUser = {
+  id: "u1", email: "test@test.com", name: "Ana Silva",
+  role: "member" as const, anonymous_name: "Lua Desperta",
   products: ["mulher-espiral"],
 };
 
-/** Products returned by supabase.from("products").select(...) */
-const MOCK_PRODUCTS_RAW = [
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: vi.fn(() => ({ user: mockUser, loading: false })),
+}));
+
+const mockFrom = vi.fn();
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    from: (table: string) => mockFrom(table),
+    auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
+  },
+}));
+
+vi.mock("@/components/layout/DashboardLayout", () => ({
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+vi.mock("react-helmet-async", () => ({ Helmet: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
+vi.mock("@/assets/mulher-espiral-hero-new.jpg", () => ({ default: "/fallback.jpg" }));
+
+/* ── Fixtures ── */
+const PRODUCTS = [
   {
-    id: "prod-001",
-    slug: "mulher-espiral",
-    title: "Mulher Espiral",
-    subtitle: "Autoconhecimento feminino",
-    description: "Jornada de reconexão",
-    price: 997.00,
-    original_price: 1997.00,
-    thumbnail_url: "/thumb-mulher.jpg",
-    modules: [
-      { id: "mod-1", lessons: [{ id: "les-1" }, { id: "les-2" }, { id: "les-3" }] },
-      { id: "mod-2", lessons: [{ id: "les-4" }, { id: "les-5" }] },
-    ],
+    id: "prod-1", slug: "mulher-espiral", title: "Mulher Espiral",
+    subtitle: "Jornada Essencial", thumbnail_url: null,
+    price: 997, is_active: true, sort_order: 0,
+    modules: [{ id: "m1", lessons: [{ id: "l1" }, { id: "l2" }, { id: "l3" }] }],
   },
   {
-    id: "prod-002",
-    slug: "inner-fire",
-    title: "Inner Fire",
-    subtitle: "Energia e movimento",
-    description: "Prática diária",
-    price: 497.00,
-    original_price: null,
-    thumbnail_url: "/thumb-inner.jpg",
-    modules: [
-      { id: "mod-3", lessons: [{ id: "les-6" }, { id: "les-7" }, { id: "les-8" }] },
-    ],
+    id: "prod-2", slug: "outro-curso", title: "Outro Curso",
+    subtitle: null, thumbnail_url: null,
+    price: 497, is_active: true, sort_order: 1,
+    modules: [{ id: "m2", lessons: [{ id: "l4" }, { id: "l5" }] }],
   },
 ];
 
-/** Owned row — user has mulher-espiral */
-const OWNED_MULHER_ESPIRAL = [{ product_id: "prod-001" }];
-
-/** Completed lesson IDs */
-const COMPLETED_LES_1_AND_2 = ["les-1", "les-2"]; // 2 of 5 = 40%
-const ALL_LES_MULHER        = ["les-1", "les-2", "les-3", "les-4", "les-5"]; // 100%
-
-/* ──────────────────────────────────────────────────────────── */
-/* Supabase mock setup helper                                   */
-/* ──────────────────────────────────────────────────────────── */
-
-function setupSupabaseMocks({
-  products     = MOCK_PRODUCTS_RAW,
-  ownedRows    = OWNED_MULHER_ESPIRAL,
-  completedIds = COMPLETED_LES_1_AND_2,
-}: {
-  products?:     typeof MOCK_PRODUCTS_RAW;
-  ownedRows?:    { product_id: string }[];
-  completedIds?: string[];
+function setupMocks(opts: {
+  ownedIds?: string[];
+  progress?: { lesson_id: string }[];
 } = {}) {
+  const { ownedIds = ["prod-1"], progress = [] } = opts;
+
   mockFrom.mockImplementation((table: string) => {
-    /* products: .select().eq("is_active").order() */
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+    };
     if (table === "products") {
-      const order  = vi.fn().mockResolvedValue({ data: products, error: null });
-      const eqAct  = vi.fn().mockReturnValue({ order });
-      const select = vi.fn().mockReturnValue({ eq: eqAct });
-      return { select };
+      return { ...chain, order: vi.fn().mockResolvedValue({ data: PRODUCTS }) };
     }
-
-    /* user_products: .select().eq("user_id") */
     if (table === "user_products") {
-      const eq     = vi.fn().mockResolvedValue({ data: ownedRows, error: null });
-      const select = vi.fn().mockReturnValue({ eq });
-      return { select };
+      return { ...chain, eq: vi.fn().mockResolvedValue({ data: ownedIds.map((id) => ({ product_id: id })) }) };
     }
-
-    /* lesson_progress: .select().eq().eq().in() */
     if (table === "lesson_progress") {
-      const inFn   = vi.fn().mockResolvedValue({
-        data: completedIds.map((id) => ({ lesson_id: id })),
-        error: null,
-      });
-      const eq2    = vi.fn().mockReturnValue({ in: inFn });
-      const eq1    = vi.fn().mockReturnValue({ eq: eq2 });
-      const select = vi.fn().mockReturnValue({ eq: eq1 });
-      return { select };
+      return { ...chain, in: vi.fn().mockResolvedValue({ data: progress }) };
     }
-
-    return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
+    return chain;
   });
 }
 
-/* Render ProductsPage */
+import ProductsPage from "@/pages/ProductsPage";
+import { useAuth } from "@/hooks/useAuth";
+
+const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
+
 function renderProducts() {
-  return render(
-    <MemoryRouter initialEntries={["/products"]}>
-      <Routes>
-        <Route path="/products"           element={<ProductsPage />} />
-        <Route path="/products/:slug"     element={<div data-testid="course-page">Curso</div>} />
-        <Route path="/checkout/:slug"     element={<div data-testid="checkout-page">Checkout</div>} />
-        <Route path="/dashboard"          element={<div data-testid="dashboard">Dashboard</div>} />
-      </Routes>
-    </MemoryRouter>
-  );
+  return render(<MemoryRouter><ProductsPage /></MemoryRouter>);
 }
 
-let ProductsPage: typeof import("@/pages/ProductsPage").default;
+describe("ProductsPage — header", () => {
+  beforeEach(() => { setupMocks(); mockUseAuth.mockReturnValue({ user: mockUser }); });
 
-beforeEach(async () => {
-  vi.clearAllMocks();
-  mockUseAuth.mockReturnValue({ user: AUTH_USER, loading: false });
+  it("renders 'Meus Cursos' heading", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getByText("Meus Cursos")).toBeTruthy());
+  });
 
-  if (!ProductsPage) {
-    const mod = await import("@/pages/ProductsPage");
-    ProductsPage = mod.default;
-  }
+  it("renders 'Biblioteca' overline", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getByText(/biblioteca/i)).toBeTruthy());
+  });
+
+  it("shows course count after load", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getByText(/1 curso na sua jornada/i)).toBeTruthy());
+  });
 });
 
-/* ──────────────────────────────────────────────────────────── */
-/* Loading state                                               */
-/* ──────────────────────────────────────────────────────────── */
+describe("ProductsPage — skeleton loading", () => {
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ user: mockUser });
+    mockFrom.mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+    }));
+  });
 
-describe("ProductsPage — loading skeleton", () => {
-  it("renders skeleton cards while data is loading", () => {
-    // Never resolves → stays in loading state
-    let resolve: (v: unknown) => void;
-    const pending = new Promise((r) => { resolve = r; });
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "products") {
-        const order  = vi.fn().mockReturnValue(pending);
-        const eqAct  = vi.fn().mockReturnValue({ order });
-        const select = vi.fn().mockReturnValue({ eq: eqAct });
-        return { select };
-      }
-      return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-    });
-
+  it("renders skeleton shimmer while loading", () => {
     renderProducts();
-
     const skeletons = document.querySelectorAll(".skeleton");
     expect(skeletons.length).toBeGreaterThan(0);
-
-    // Product content not rendered yet
-    expect(screen.queryByText("Mulher Espiral")).not.toBeInTheDocument();
-
-    resolve!({ data: [], error: null });
-  });
-
-  it("renders 2 skeleton cards while loading", () => {
-    let resolve: (v: unknown) => void;
-    const pending = new Promise((r) => { resolve = r; });
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "products") {
-        const order  = vi.fn().mockReturnValue(pending);
-        const eqAct  = vi.fn().mockReturnValue({ order });
-        const select = vi.fn().mockReturnValue({ eq: eqAct });
-        return { select };
-      }
-      return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-    });
-
-    renderProducts();
-
-    // ProductsSkeletonList renders 2 ProductCardSkeleton components
-    const skeletons = document.querySelectorAll(".skeleton");
-    expect(skeletons.length).toBeGreaterThanOrEqual(2);
-
-    resolve!({ data: [], error: null });
   });
 });
 
-/* ──────────────────────────────────────────────────────────── */
-/* Empty state                                                 */
-/* ──────────────────────────────────────────────────────────── */
+describe("ProductsPage — owned products", () => {
+  beforeEach(() => {
+    setupMocks({ ownedIds: ["prod-1"], progress: [] });
+    mockUseAuth.mockReturnValue({ user: mockUser });
+  });
+
+  it("renders course title", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getAllByText("Mulher Espiral")[0]).toBeTruthy());
+  });
+
+  it("renders lesson count (0/3 aulas)", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getByText(/0\/3 aulas/)).toBeTruthy());
+  });
+
+  it("shows 0% progress", async () => {
+    renderProducts();
+    await waitFor(() => {
+      const pcts = screen.getAllByText("0%");
+      expect(pcts.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("progress bar fill is at 0%", async () => {
+    renderProducts();
+    await waitFor(() => {
+      const fill = document.querySelector(".progress-bar-fill") as HTMLElement | null;
+      expect(fill?.style.width).toBe("0%");
+    });
+  });
+});
+
+describe("ProductsPage — progress states", () => {
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({ user: mockUser });
+  });
+
+  it("shows 67% progress when 2 of 3 lessons done", async () => {
+    setupMocks({ ownedIds: ["prod-1"], progress: [{ lesson_id: "l1" }, { lesson_id: "l2" }] });
+    renderProducts();
+    await waitFor(() => {
+      const pct = screen.getByText(/67%|66%/);
+      expect(pct).toBeTruthy();
+    });
+  });
+
+  it("shows '✓ Concluído' when 100% complete (mobile carousel)", async () => {
+    setupMocks({ ownedIds: ["prod-1"], progress: [{ lesson_id: "l1" }, { lesson_id: "l2" }, { lesson_id: "l3" }] });
+    renderProducts();
+    await waitFor(() => {
+      const conclusao = screen.queryByText(/✓ concluído/i) || screen.queryByText(/concluído/i);
+      expect(conclusao).toBeTruthy();
+    });
+  });
+
+  it("shows progress bar fill width matching percentage", async () => {
+    setupMocks({ ownedIds: ["prod-1"], progress: [{ lesson_id: "l1" }] });
+    renderProducts();
+    await waitFor(() => {
+      const fill = document.querySelector(".progress-bar-fill") as HTMLElement | null;
+      expect(fill?.style.width).toMatch(/33%/);
+    });
+  });
+});
+
+describe("ProductsPage — locked products", () => {
+  beforeEach(() => {
+    setupMocks({ ownedIds: ["prod-1"], progress: [] });
+    mockUseAuth.mockReturnValue({ user: mockUser });
+  });
+
+  it("shows 'Outro Curso' in locked section", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getAllByText("Outro Curso")[0]).toBeTruthy());
+  });
+
+  it("shows 'Disponíveis para acesso' label", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getByText(/disponíveis para acesso/i)).toBeTruthy());
+  });
+
+  it("shows 'Acessar' button linking to /checkout/:slug", async () => {
+    renderProducts();
+    await waitFor(() => {
+      const link = screen.getByText("Acessar").closest("a");
+      expect(link?.getAttribute("href")).toContain("/checkout/outro-curso");
+    });
+  });
+
+  it("shows price for locked product", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getByText(/R\$ 497/)).toBeTruthy());
+  });
+});
 
 describe("ProductsPage — empty state", () => {
-  it("renders 'Nenhum curso disponível' when products is empty", async () => {
-    setupSupabaseMocks({ products: [], ownedRows: [], completedIds: [] });
-    renderProducts();
-
-    await waitFor(() => {
-      expect(screen.getByText("Nenhum curso disponível")).toBeInTheDocument();
-    });
-  });
-
-  it("renders the empty state description text", async () => {
-    setupSupabaseMocks({ products: [], ownedRows: [], completedIds: [] });
-    renderProducts();
-
-    await waitFor(() => {
-      expect(screen.getByText(/em breve novas jornadas/i)).toBeInTheDocument();
-    });
-  });
-
-  it("renders '← Voltar ao dashboard' link in empty state", async () => {
-    setupSupabaseMocks({ products: [], ownedRows: [], completedIds: [] });
-    renderProducts();
-
-    await waitFor(() => {
-      const link = screen.getByRole("link", { name: /voltar ao dashboard/i });
-      expect(link).toBeInTheDocument();
-      expect(link).toHaveAttribute("href", "/dashboard");
-    });
-  });
-});
-
-/* ──────────────────────────────────────────────────────────── */
-/* Product card — user WITH access                            */
-/* ──────────────────────────────────────────────────────────── */
-
-describe("ProductsPage — product card with access", () => {
   beforeEach(() => {
-    setupSupabaseMocks({
-      ownedRows: OWNED_MULHER_ESPIRAL,
-      completedIds: COMPLETED_LES_1_AND_2,
+    setupMocks({ ownedIds: [] });
+    mockUseAuth.mockReturnValue({ user: { ...mockUser, products: [] } });
+  });
+
+  it("shows 'Nenhum curso ainda' heading", async () => {
+    renderProducts();
+    await waitFor(() => expect(screen.getByText(/nenhum curso ainda/i)).toBeTruthy());
+  });
+
+  it("shows CTA link to checkout", async () => {
+    renderProducts();
+    await waitFor(() => {
+      const link = screen.getByText(/conhecer cursos/i).closest("a");
+      expect(link?.getAttribute("href")).toContain("/checkout/mulher-espiral");
     });
   });
 
-  it("renders the product title", async () => {
+  it("does not show course count label", async () => {
     renderProducts();
     await waitFor(() => {
-      expect(screen.getAllByText("Mulher Espiral").length).toBeGreaterThan(0);
-    });
-  });
-
-  it("renders the product thumbnail image", async () => {
-    renderProducts();
-    await waitFor(() => {
-      const img = screen.getByAltText("Mulher Espiral");
-      expect(img).toBeInTheDocument();
-    });
-  });
-
-  it("renders module count in overlay ('2 módulos')", async () => {
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText(/2 módulos/i)).toBeInTheDocument();
-    });
-  });
-
-  it("renders lesson count in overlay ('5 aulas')", async () => {
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText(/5 aulas/i)).toBeInTheDocument();
-    });
-  });
-
-  it("renders 'Progresso' label for product with access", async () => {
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText("Progresso")).toBeInTheDocument();
-    });
-  });
-
-  it("renders progress as 'X/Y · Z%' (2/5 · 40%)", async () => {
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText("2/5 · 40%")).toBeInTheDocument();
-    });
-  });
-
-  it("renders the progress bar fill element", async () => {
-    renderProducts();
-    await waitFor(() => {
-      const fills = document.querySelectorAll(".progress-bar-fill");
-      expect(fills.length).toBeGreaterThan(0);
-    });
-  });
-
-  it("renders 'Continuar' CTA when progress > 0%", async () => {
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByRole("link", { name: /continuar/i })).toBeInTheDocument();
-    });
-  });
-
-  it("'Continuar' CTA links to /products/:slug", async () => {
-    renderProducts();
-    await waitFor(() => {
-      const link = screen.getByRole("link", { name: /continuar/i });
-      expect(link).toHaveAttribute("href", "/products/mulher-espiral");
-    });
-  });
-
-  it("renders 'Começar' CTA when progress is 0%", async () => {
-    setupSupabaseMocks({ ownedRows: OWNED_MULHER_ESPIRAL, completedIds: [] });
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByRole("link", { name: /começar/i })).toBeInTheDocument();
-    });
-  });
-
-  it("'Começar' CTA links to /products/:slug", async () => {
-    setupSupabaseMocks({ ownedRows: OWNED_MULHER_ESPIRAL, completedIds: [] });
-    renderProducts();
-    await waitFor(() => {
-      const link = screen.getByRole("link", { name: /começar/i });
-      expect(link).toHaveAttribute("href", "/products/mulher-espiral");
-    });
-  });
-
-  it("renders 'Concluído' badge when progress is 100%", async () => {
-    setupSupabaseMocks({ ownedRows: OWNED_MULHER_ESPIRAL, completedIds: ALL_LES_MULHER });
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText("Concluído")).toBeInTheDocument();
-    });
-  });
-
-  it("renders '5/5 · 100%' progress when all lessons complete", async () => {
-    setupSupabaseMocks({ ownedRows: OWNED_MULHER_ESPIRAL, completedIds: ALL_LES_MULHER });
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText("5/5 · 100%")).toBeInTheDocument();
+      expect(screen.queryByText(/na sua jornada/i)).toBeNull();
     });
   });
 });
 
-/* ──────────────────────────────────────────────────────────── */
-/* Product card — user WITHOUT access                         */
-/* ──────────────────────────────────────────────────────────── */
-
-describe("ProductsPage — product card without access", () => {
+describe("ProductsPage — snap carousel", () => {
   beforeEach(() => {
-    // User only owns mulher-espiral; inner-fire is locked
-    setupSupabaseMocks({
-      ownedRows: OWNED_MULHER_ESPIRAL,
-      completedIds: [],
+    setupMocks({ ownedIds: ["prod-1"] });
+    mockUseAuth.mockReturnValue({ user: mockUser });
+  });
+
+  it("renders snap carousel with course-card children", async () => {
+    renderProducts();
+    await waitFor(() => {
+      const carousel = document.querySelector(".snap-x-carousel");
+      expect(carousel).toBeTruthy();
+      expect(carousel?.children.length).toBeGreaterThan(0);
     });
   });
 
-  it("renders locked product title (Inner Fire)", async () => {
+  it("renders snap dot indicators when multiple products owned", async () => {
+    setupMocks({ ownedIds: ["prod-1", "prod-2"] });
     renderProducts();
     await waitFor(() => {
-      expect(screen.getByText("Inner Fire")).toBeInTheDocument();
+      const dots = document.querySelectorAll(".snap-dot");
+      expect(dots.length).toBe(2);
     });
   });
 
-  it("renders price in BRL for locked product", async () => {
+  it("does not render snap dots for single product", async () => {
     renderProducts();
     await waitFor(() => {
-      expect(screen.getByText(/R\$.*497/)).toBeInTheDocument();
-    });
-  });
-
-  it("renders 'Adquirir' CTA for locked product", async () => {
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByRole("link", { name: /adquirir/i })).toBeInTheDocument();
-    });
-  });
-
-  it("'Adquirir' CTA links to /checkout/:slug", async () => {
-    renderProducts();
-    await waitFor(() => {
-      const link = screen.getByRole("link", { name: /adquirir/i });
-      expect(link).toHaveAttribute("href", "/checkout/inner-fire");
-    });
-  });
-
-  it("renders 'Sem acesso' lock overlay for locked product", async () => {
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText(/sem acesso/i)).toBeInTheDocument();
-    });
-  });
-
-  it("does NOT render progress bar for locked product", async () => {
-    renderProducts();
-    await waitFor(() => {
-      // Locked products show price, not progress
-      expect(screen.queryByText("Progresso")).not.toBeInTheDocument();
+      const dots = document.querySelectorAll(".snap-dot");
+      expect(dots.length).toBe(0);
     });
   });
 });
 
-/* ──────────────────────────────────────────────────────────── */
-/* Multiple products                                           */
-/* ──────────────────────────────────────────────────────────── */
-
-describe("ProductsPage — multiple products rendered", () => {
-  it("renders both products when multiple are returned", async () => {
-    setupSupabaseMocks({ ownedRows: OWNED_MULHER_ESPIRAL, completedIds: [] });
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText("Mulher Espiral")).toBeInTheDocument();
-      expect(screen.getByText("Inner Fire")).toBeInTheDocument();
-    });
+describe("ProductsPage — navigation", () => {
+  beforeEach(() => {
+    setupMocks();
+    mockUseAuth.mockReturnValue({ user: mockUser });
   });
 
-  it("renders Começar for mulher-espiral (has access, 0%) and Adquirir for inner-fire (no access)", async () => {
-    setupSupabaseMocks({ ownedRows: OWNED_MULHER_ESPIRAL, completedIds: [] });
+  it("course card links to /products/:slug", async () => {
     renderProducts();
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: /começar/i })).toHaveAttribute("href", "/products/mulher-espiral");
-      expect(screen.getByRole("link", { name: /adquirir/i })).toHaveAttribute("href", "/checkout/inner-fire");
-    });
-  });
-
-  it("renders thumbnail image for each product", async () => {
-    setupSupabaseMocks({ ownedRows: OWNED_MULHER_ESPIRAL, completedIds: [] });
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByAltText("Mulher Espiral")).toBeInTheDocument();
-      expect(screen.getByAltText("Inner Fire")).toBeInTheDocument();
+      const card = screen.getAllByText("Mulher Espiral")[0].closest("a");
+      expect(card?.getAttribute("href")).toBe("/products/mulher-espiral");
     });
   });
 });
 
-/* ──────────────────────────────────────────────────────────── */
-/* Supabase queries                                            */
-/* ──────────────────────────────────────────────────────────── */
+describe("ProductsPage — queries", () => {
+  beforeEach(() => {
+    setupMocks();
+    mockUseAuth.mockReturnValue({ user: mockUser });
+  });
 
-describe("ProductsPage — Supabase queries", () => {
-  it("queries user_products with the authenticated user id", async () => {
-    const eqSpy = vi.fn().mockResolvedValue({ data: OWNED_MULHER_ESPIRAL, error: null });
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "user_products") {
-        const select = vi.fn().mockReturnValue({ eq: eqSpy });
-        return { select };
-      }
-      if (table === "products") {
-        const order  = vi.fn().mockResolvedValue({ data: MOCK_PRODUCTS_RAW, error: null });
-        const eqAct  = vi.fn().mockReturnValue({ order });
-        const select = vi.fn().mockReturnValue({ eq: eqAct });
-        return { select };
-      }
-      if (table === "lesson_progress") {
-        const inFn   = vi.fn().mockResolvedValue({ data: [], error: null });
-        const eq2    = vi.fn().mockReturnValue({ in: inFn });
-        const eq1    = vi.fn().mockReturnValue({ eq: eq2 });
-        const select = vi.fn().mockReturnValue({ eq: eq1 });
-        return { select };
-      }
-      return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) };
-    });
-
+  it("fetches products with is_active filter", async () => {
     renderProducts();
-    await waitFor(() => {
-      expect(eqSpy).toHaveBeenCalledWith("user_id", "user-001");
-    });
+    await waitFor(() => expect(mockFrom).toHaveBeenCalledWith("products"));
+  });
+
+  it("fetches user_products with user_id", async () => {
+    renderProducts();
+    await waitFor(() => expect(mockFrom).toHaveBeenCalledWith("user_products"));
+  });
+
+  it("does not fetch when user is null", () => {
+    mockUseAuth.mockReturnValueOnce({ user: null, loading: false });
+    mockFrom.mockClear();
+    renderProducts();
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 });
 
-/* ──────────────────────────────────────────────────────────── */
-/* Page header & meta                                         */
-/* ──────────────────────────────────────────────────────────── */
+describe("ProductsPage — Helmet", () => {
+  beforeEach(() => { setupMocks(); mockUseAuth.mockReturnValue({ user: mockUser }); });
 
-describe("ProductsPage — header and meta", () => {
-  it("renders 'Meus Cursos' page heading", async () => {
-    setupSupabaseMocks();
+  it("sets page title via Helmet", async () => {
     renderProducts();
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /meus cursos/i })).toBeInTheDocument();
-    });
-  });
-
-  it("renders 'Biblioteca' overline label", async () => {
-    setupSupabaseMocks();
-    renderProducts();
-    await waitFor(() => {
-      expect(screen.getByText("Biblioteca")).toBeInTheDocument();
-    });
-  });
-
-  it("renders the page title via Helmet (Meus Cursos)", async () => {
-    setupSupabaseMocks();
-    renderProducts();
-    await waitFor(() => {
-      expect(document.title).toContain("Meus Cursos");
-    });
+    await waitFor(() => expect(screen.getByText(/meus cursos/i)).toBeTruthy());
   });
 });

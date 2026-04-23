@@ -1,74 +1,93 @@
 /**
- * ProductsPage — My Courses library
- * Mobile-first: course cards with thumbnail, progress bar, clear CTAs
- * Performance: batch queries with Promise.all
+ * ProductsPage — Mobile-first course library
+ * Mobile: scroll-snap horizontal featured + vertical list
+ * Desktop: 2-col grid with hover animations
+ * Polish: lock overlay, progress gradients, snap dots
  */
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import MulherEspiralMark from "@/components/layout/MulherEspiralMark";
-import { Lock, Play, ArrowRight, BookOpen, Clock, CheckCircle } from "lucide-react";
-import mulherEspiralCover from "@/assets/mulher-espiral-cover.svg";
+import mulherEspiralProduct from "@/assets/mulher-espiral-hero-new.jpg";
+import {
+  BookOpen, Play, CheckCircle, Lock, ArrowRight,
+  Award, ChevronRight,
+} from "lucide-react";
 
-interface Product {
+const FALLBACK = mulherEspiralProduct;
+
+interface ProductCard {
   id: string; slug: string; title: string; subtitle: string | null;
-  description: string | null; price: number; original_price: number | null;
-  thumbnail_url: string | null; total_modules: number; total_lessons: number;
-  completed_lessons: number; progress_pct: number; has_access: boolean;
+  thumbnail_url: string | null; price: number;
+  total_lessons: number; completed_lessons: number; progress_pct: number;
+  has_access: boolean;
 }
 
-const FALLBACK = mulherEspiralCover;
-
-/* ── Skeleton ── */
 function Sk({ w = "100%", h = "14px", r = "8px", style }: {
   w?: string; h?: string; r?: string; style?: React.CSSProperties;
 }) {
-  return <div className="skeleton" style={{ width: w, height: h, borderRadius: r, ...style }} />;
+  return <div className="skeleton" style={{ width: w, height: h, borderRadius: r, flexShrink: 0, ...style }} />;
 }
 
-const ProductCardSkeleton = memo(function ProductCardSkeleton() {
+function CardSkeleton() {
   return (
-    <div className="course-card" style={{ pointerEvents: "none" }}>
-      <Sk h="clamp(180px,30vw,240px)" r="var(--r-xl) var(--r-xl) 0 0" />
-      <div style={{ padding: "clamp(14px,3vw,20px)", display: "flex", flexDirection: "column", gap: "12px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <Sk w="100px" h="10px" /><Sk w="70px" h="10px" />
-          </div>
-          <Sk w="36px" h="10px" />
+    <div className="card-dark" style={{ overflow: "hidden" }}>
+      <Sk h="clamp(140px,28vw,200px)" r="var(--r-xl) var(--r-xl) 0 0" />
+      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <Sk w="120px" h="12px" /><Sk w="36px" h="12px" />
         </div>
         <Sk h="4px" r="100px" />
-        <Sk w="58%" h="38px" r="100px" />
+        <Sk w="66%" h="12px" />
+        <Sk w="120px" h="36px" r="100px" style={{ alignSelf: "flex-start" }} />
       </div>
     </div>
   );
-});
+}
+
+function SnapDots({ count, activeIndex }: { count: number; activeIndex: number }) {
+  if (count <= 1) return null;
+  return (
+    <div className="snap-dots" style={{ marginTop: "12px" }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className={`snap-dot${i === activeIndex ? " active" : ""}`} />
+      ))}
+    </div>
+  );
+}
 
 export default function ProductsPage() {
   const { user } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading,  setLoading]  = useState(true);
+  const [myProducts,    setMyProducts]    = useState<ProductCard[]>([]);
+  const [otherProducts, setOtherProducts] = useState<ProductCard[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [activeSnap,    setActiveSnap]    = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
+
     (async () => {
-      setLoading(true);
+      // Fetch all active products
+      const { data: allProds } = await supabase
+        .from("products")
+        .select("id, slug, title, subtitle, thumbnail_url, price, modules(id, lessons(id))")
+        .eq("is_active", true)
+        .order("sort_order");
 
-      const [allProductsRes, ownedRes] = await Promise.all([
-        supabase.from("products")
-          .select("id, slug, title, subtitle, description, price, original_price, thumbnail_url, modules(id, lessons(id))")
-          .eq("is_active", true)
-          .order("sort_order", { ascending: true }),
-        supabase.from("user_products").select("product_id").eq("user_id", user.id),
-      ]);
+      // Fetch user's owned products
+      const { data: owned } = await supabase
+        .from("user_products")
+        .select("product_id")
+        .eq("user_id", user.id);
 
-      const allProducts = allProductsRes.data ?? [];
-      const ownedIds = new Set((ownedRes.data ?? []).map((r: { product_id: string }) => r.product_id));
+      const ownedIds = new Set((owned ?? []).map((r: { product_id: string }) => r.product_id));
 
-      const allLessonIds = allProducts.flatMap((p: Record<string, unknown>) =>
+      // Fetch lesson progress
+      const allLessonIds = (allProds ?? []).flatMap((p: Record<string, unknown>) =>
         ((p.modules as { lessons: { id: string }[] }[]) ?? []).flatMap((m) => m.lessons.map((l) => l.id))
       );
 
@@ -80,31 +99,42 @@ export default function ProductsPage() {
         completedSet = new Set((progress ?? []).map((r: { lesson_id: string }) => r.lesson_id));
       }
 
-      const results: Product[] = allProducts.map((p: Record<string, unknown>) => {
-        const mods = (p.modules as { id: string; lessons: { id: string }[] }[]) ?? [];
-        const lessonIds = mods.flatMap((m) => m.lessons.map((l) => l.id));
-        const totalLessons = lessonIds.length;
-        const hasAccess = ownedIds.has(p.id as string);
-        const completed = hasAccess ? lessonIds.filter((id) => completedSet.has(id)).length : 0;
+      const mapped = (allProds ?? []).map((p: Record<string, unknown>) => {
+        const lessonIds = ((p.modules as { lessons: { id: string }[] }[]) ?? [])
+          .flatMap((m) => m.lessons.map((l) => l.id));
+        const total = lessonIds.length;
+        const done = lessonIds.filter((id) => completedSet.has(id)).length;
         return {
-          id: p.id as string, slug: p.slug as string, title: p.title as string,
-          subtitle: p.subtitle as string | null, description: p.description as string | null,
-          price: p.price as number, original_price: p.original_price as number | null,
+          id: p.id as string,
+          slug: p.slug as string,
+          title: p.title as string,
+          subtitle: p.subtitle as string | null,
           thumbnail_url: p.thumbnail_url as string | null,
-          total_modules: mods.length, total_lessons: totalLessons, completed_lessons: completed,
-          progress_pct: totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0,
-          has_access: hasAccess,
+          price: typeof p.price === "number" ? p.price : parseFloat(String(p.price) || "0"),
+          total_lessons: total,
+          completed_lessons: done,
+          progress_pct: total > 0 ? Math.round((done / total) * 100) : 0,
+          has_access: ownedIds.has(p.id as string),
         };
       });
 
-      setProducts(results);
+      setMyProducts(mapped.filter((p) => p.has_access));
+      setOtherProducts(mapped.filter((p) => !p.has_access));
       setLoading(false);
     })();
   }, [user]);
 
-  /* Separate owned from not-owned for better visual hierarchy */
-  const ownedProducts  = products.filter((p) => p.has_access);
-  const lockedProducts = products.filter((p) => !p.has_access);
+  /* ── Track snap position ── */
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const cardWidth = el.firstElementChild ? (el.firstElementChild as HTMLElement).offsetWidth + 12 : 260;
+      setActiveSnap(Math.round(el.scrollLeft / cardWidth));
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [myProducts]);
 
   return (
     <DashboardLayout>
@@ -113,213 +143,203 @@ export default function ProductsPage() {
         <meta name="robots" content="noindex" />
       </Helmet>
 
-      <div style={{ maxWidth: "820px", margin: "0 auto", padding: "clamp(20px,4vw,32px) clamp(14px,4vw,24px)" }}>
+      <div style={{ maxWidth: "780px", margin: "0 auto" }}>
 
-        {/* Header */}
-        <div style={{ marginBottom: "clamp(20px,3vw,28px)" }}>
-          <p className="overline" style={{ color: "var(--gold)", marginBottom: "6px" }}>Biblioteca</p>
-          <h1 className="font-display" style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 300, color: "var(--text-primary)" }}>
+        {/* ── Header ── */}
+        <div style={{ padding: "clamp(22px,4vw,30px) clamp(16px,4vw,24px) 0" }}>
+          <p className="overline" style={{ color: "var(--gold)", marginBottom: "5px", fontSize: "8px" }}>Biblioteca</p>
+          <h1 className="font-display" style={{ fontSize: "clamp(28px,5vw,42px)", fontWeight: 300, color: "var(--text-primary)", lineHeight: 1.08, marginBottom: "4px" }}>
             Meus Cursos
           </h1>
-          {!loading && ownedProducts.length > 0 && (
-            <div className="flow-card" style={{ padding: "13px 15px", marginTop: "14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "5px" }}>
-                <span className="step-chip">02</span>
-                <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--gold)" }}>
-                  Escolha com clareza
-                </p>
-              </div>
-              <p className="reading-note" style={{ margin: 0, fontSize: "13px" }}>
-                Os cursos com acesso liberado mostram seu progresso. Continue de onde parou com leveza e constância.
-              </p>
-            </div>
+          {!loading && myProducts.length > 0 && (
+            <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+              {myProducts.length} {myProducts.length === 1 ? "curso" : "cursos"} na sua jornada
+            </p>
           )}
         </div>
 
-        {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(12px,2vw,16px)" }}>
-            <ProductCardSkeleton /><ProductCardSkeleton />
-          </div>
-        ) : products.length === 0 ? (
-          <div className="card-dark" style={{ padding: "clamp(40px,8vw,72px) clamp(20px,4vw,32px)", textAlign: "center" }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "rgba(198,168,112,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto clamp(16px,3vw,24px)" }}>
-              <BookOpen size={24} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+        {/* ── My Products ── */}
+        <div style={{ marginTop: "clamp(16px,3vw,22px)" }}>
+          {loading ? (
+            <div style={{ padding: "0 clamp(16px,4vw,24px)", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "14px" }}>
+              <CardSkeleton /><CardSkeleton />
             </div>
-            <p className="font-display" style={{ fontSize: "clamp(20px,3vw,28px)", fontWeight: 300, color: "var(--text-primary)", marginBottom: "10px" }}>
-              Nenhum curso disponível
-            </p>
-            <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.78, marginBottom: "24px" }}>
-              Em breve novas jornadas estarão disponíveis.
-            </p>
-            <Link to="/dashboard" className="btn-ghost" style={{ fontSize: "9px" }}>
-              ← Voltar ao dashboard
-            </Link>
-          </div>
-        ) : (
-          <>
-            {/* Owned courses */}
-            {ownedProducts.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "clamp(12px,2vw,16px)", marginBottom: lockedProducts.length > 0 ? "clamp(24px,4vw,36px)" : 0 }}>
-                {ownedProducts.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/products/${product.slug}`}
-                    className="course-card"
-                    style={{ textDecoration: "none" }}
-                  >
-                    {/* Thumbnail */}
-                    <div style={{ position: "relative", height: "clamp(180px,30vw,240px)", overflow: "hidden" }}>
-                      <img
-                        className="thumb-img"
-                        src={product.slug === "mulher-espiral" ? mulherEspiralCover : (product.thumbnail_url || FALLBACK)}
-                        alt={product.title}
-                        loading="lazy" decoding="async"
-                        width="820" height="240"
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                      />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.12) 58%, transparent 100%)" }} />
-
-                      {/* Watermark badge */}
-                      {product.slug === "mulher-espiral" && (
-                        <div style={{
-                          position: "absolute", right: "14px", top: "14px",
-                          padding: "9px 12px", borderRadius: "14px",
-                          background: "rgba(11,13,28,0.55)",
-                          border: "1px solid rgba(198,168,112,0.22)",
-                          backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-                        }}>
-                          <MulherEspiralMark size="sm" align="left" showSubtitle={false} />
-                        </div>
-                      )}
-
-                      {/* Badges */}
-                      <div style={{ position: "absolute", top: "12px", left: "14px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                        {product.subtitle && <span className="badge-rose" style={{ fontSize: "8px" }}>{product.subtitle}</span>}
-                        {product.progress_pct === 100 && <span className="badge-sage" style={{ fontSize: "8px" }}>✓ Concluído</span>}
-                      </div>
-
-                      {/* Title overlay */}
-                      <div style={{ position: "absolute", bottom: "14px", left: "14px", right: "14px" }}>
-                        <h2 className="font-display" style={{ fontSize: "clamp(20px,3.5vw,28px)", fontWeight: 300, lineHeight: 1.1, color: "#f8f5ee" }}>
-                          {product.title}
-                        </h2>
-                        <div style={{ display: "flex", gap: "14px", marginTop: "5px" }}>
-                          <span style={{ fontSize: "9px", fontFamily: "Montserrat", color: "rgba(248,245,238,0.40)", letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <BookOpen size={9} /> {product.total_modules} módulos
-                          </span>
-                          <span style={{ fontSize: "9px", fontFamily: "Montserrat", color: "rgba(248,245,238,0.40)", letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <Clock size={9} /> {product.total_lessons} aulas
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ padding: "clamp(13px,2.5vw,18px) clamp(14px,3vw,20px)" }}>
-                      {/* Progress */}
-                      <div style={{ marginBottom: "clamp(12px,2vw,16px)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <CheckCircle
-                              size={11}
-                              style={{ color: product.progress_pct === 100 ? "var(--sage)" : "var(--text-faint)" }}
-                              strokeWidth={2}
-                            />
-                            <span className="font-label" style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase" }}>Progresso</span>
-                          </div>
-                          <span className="font-label" style={{
-                            fontSize: "10px",
-                            color: product.progress_pct === 100 ? "var(--sage)" : "var(--gold)",
-                          }}>
-                            {product.completed_lessons}/{product.total_lessons} · {product.progress_pct}%
-                          </span>
-                        </div>
-                        <div className="progress-bar thick">
-                          <div
-                            className={`progress-bar-fill${product.progress_pct === 100 ? " sage" : ""}`}
-                            style={{ width: `${product.progress_pct}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="btn-gold" style={{ width: "100%", justifyContent: "center", fontSize: "9px", borderRadius: "14px", display: "flex", alignItems: "center", gap: "7px" }}>
-                        <Play size={13} fill="#0b0d1c" style={{ color: "#0b0d1c" }} />
-                        {product.progress_pct === 100 ? "Ver certificado" : product.progress_pct > 0 ? "Continuar" : "Começar"}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+          ) : myProducts.length === 0 ? (
+            /* Empty state — no courses */
+            <div style={{ padding: "0 clamp(16px,4vw,24px)" }}>
+              <div className="card-dark" style={{ padding: "clamp(32px,6vw,56px) clamp(24px,5vw,36px)", textAlign: "center" }}>
+                <div style={{ width: "62px", height: "62px", borderRadius: "50%", background: "rgba(198,168,112,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+                  <BookOpen size={26} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                </div>
+                <p className="font-display" style={{ fontSize: "24px", fontWeight: 300, color: "var(--text-primary)", marginBottom: "8px" }}>
+                  Nenhum curso ainda
+                </p>
+                <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.82, marginBottom: "24px", maxWidth: "340px", margin: "0 auto 24px" }}>
+                  Explore nossos cursos e inicie sua jornada de autoconhecimento.
+                </p>
+                <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ fontSize: "10px" }}>
+                  Conhecer cursos <ArrowRight size={14} />
+                </Link>
               </div>
-            )}
-
-            {/* Locked courses */}
-            {lockedProducts.length > 0 && (
-              <div>
-                {ownedProducts.length > 0 && (
-                  <div style={{ marginBottom: "16px" }}>
-                    <p className="overline" style={{ color: "var(--text-faint)", fontSize: "8px" }}>Disponíveis para adquirir</p>
-                  </div>
-                )}
-                <div style={{ display: "flex", flexDirection: "column", gap: "clamp(12px,2vw,16px)" }}>
-                  {lockedProducts.map((product) => (
-                    <div key={product.id} className="course-card" style={{ opacity: 0.88 }}>
+            </div>
+          ) : (
+            <>
+              {/* Mobile scroll-snap carousel */}
+              <div className="md:hidden">
+                <div ref={carouselRef} className="snap-x-carousel">
+                  {myProducts.map((p) => (
+                    <Link
+                      key={p.id}
+                      to={`/products/${p.slug}`}
+                      className="course-card"
+                      style={{ width: "clamp(240px, 78vw, 310px)", textDecoration: "none", display: "block" }}
+                    >
                       {/* Thumbnail */}
-                      <div style={{ position: "relative", height: "clamp(160px,26vw,210px)", overflow: "hidden" }}>
+                      <div style={{ position: "relative", height: "clamp(150px,34vw,200px)", overflow: "hidden" }}>
                         <img
                           className="thumb-img"
-                          src={product.slug === "mulher-espiral" ? mulherEspiralCover : (product.thumbnail_url || FALLBACK)}
-                          alt={product.title}
+                          src={p.thumbnail_url || FALLBACK}
+                          alt={p.title}
                           loading="lazy" decoding="async"
                           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                         />
-                        <div style={{ position: "absolute", inset: 0, background: "rgba(11,13,28,0.60)", backdropFilter: "blur(2px)" }} />
+                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.12) 55%, transparent 100%)" }} />
 
-                        {/* Lock indicator */}
-                        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                          <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(198,168,112,0.15)", border: "1px solid rgba(198,168,112,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <Lock size={18} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
-                          </div>
-                          <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "rgba(198,168,112,0.75)" }}>
-                            Acesso necessário
-                          </p>
+                        {/* Status badge */}
+                        <div style={{ position: "absolute", top: "10px", right: "10px" }}>
+                          {p.progress_pct === 100 ? (
+                            <span className="badge-sage" style={{ fontSize: "7.5px" }}><CheckCircle size={8} /> Concluído</span>
+                          ) : p.progress_pct > 0 ? (
+                            <span className="badge-gold" style={{ fontSize: "7.5px" }}>{p.progress_pct}%</span>
+                          ) : null}
                         </div>
 
-                        {/* Title */}
-                        <div style={{ position: "absolute", bottom: "12px", left: "14px", right: "14px" }}>
-                          <h2 className="font-display" style={{ fontSize: "clamp(18px,3vw,24px)", fontWeight: 300, color: "rgba(248,245,232,0.75)", lineHeight: 1.15 }}>
-                            {product.title}
+                        {/* Play button */}
+                        <div style={{
+                          position: "absolute", bottom: "10px", right: "10px",
+                          width: "40px", height: "40px", borderRadius: "50%",
+                          background: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center",
+                          boxShadow: "0 4px 16px rgba(198,168,112,0.50)",
+                        }}>
+                          <Play size={14} fill="#0b0d1c" style={{ color: "#0b0d1c", marginLeft: "2px" }} />
+                        </div>
+
+                        {/* Title overlay */}
+                        <div style={{ position: "absolute", bottom: "10px", left: "10px", right: "58px" }}>
+                          <h2 className="font-display" style={{ fontSize: "clamp(15px,3.5vw,20px)", fontWeight: 300, color: "#f8f5ee", lineHeight: 1.15 }}>
+                            {p.title}
                           </h2>
                         </div>
                       </div>
 
-                      {/* Content */}
-                      <div style={{ padding: "clamp(13px,2.5vw,18px) clamp(14px,3vw,20px)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-                        <div>
-                          <p className="font-label" style={{ fontSize: "8px", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "4px" }}>
-                            Investimento
-                          </p>
-                          <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-                            <p className="font-display" style={{ fontSize: "clamp(22px,3vw,30px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>
-                              R$ {Number(product.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                            </p>
-                            {product.original_price && (
-                              <p style={{ fontSize: "12px", color: "var(--text-faint)", textDecoration: "line-through" }}>
-                                R$ {Number(product.original_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                              </p>
-                            )}
-                          </div>
+                      {/* Footer */}
+                      <div style={{ padding: "10px 12px 13px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                          <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                            {p.completed_lessons}/{p.total_lessons} aulas
+                          </span>
+                          {p.progress_pct === 100 && (
+                            <Link to={`/products/${p.slug}/certificado`} onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "var(--sage)", textDecoration: "none" }}>
+                              <Award size={11} /> Certificado
+                            </Link>
+                          )}
                         </div>
-                        <Link to={`/checkout/${product.slug}`} className="btn-gold" style={{ fontSize: "9px", padding: "11px 22px", borderRadius: "14px" }}>
-                          Adquirir <ArrowRight size={13} />
-                        </Link>
+                        <div className="progress-bar">
+                          <div className={`progress-bar-fill${p.progress_pct === 100 ? " sage" : ""}`} style={{ width: `${p.progress_pct}%` }} />
+                        </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
+                <SnapDots count={myProducts.length} activeIndex={activeSnap} />
               </div>
-            )}
-          </>
+
+              {/* Desktop grid */}
+              <div
+                className="hidden md:grid"
+                style={{
+                  padding: "0 clamp(16px,4vw,24px)",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                  gap: "14px",
+                }}
+              >
+                {myProducts.map((p) => (
+                  <Link key={p.id} to={`/products/${p.slug}`} className="course-card" style={{ textDecoration: "none" }}>
+                    <div style={{ position: "relative", height: "190px", overflow: "hidden" }}>
+                      <img
+                        className="thumb-img"
+                        src={p.thumbnail_url || FALLBACK}
+                        alt={p.title}
+                        loading="lazy" decoding="async"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.12) 55%, transparent 100%)" }} />
+                      <div style={{ position: "absolute", bottom: "12px", left: "14px", right: "14px" }}>
+                        {p.subtitle && <span className="badge-rose" style={{ marginBottom: "7px", fontSize: "7.5px" }}>{p.subtitle}</span>}
+                        <h2 className="font-display" style={{ fontSize: "22px", fontWeight: 300, color: "#f8f5ee", lineHeight: 1.12 }}>{p.title}</h2>
+                      </div>
+                      {p.progress_pct === 100 && (
+                        <span style={{ position: "absolute", top: "12px", right: "12px" }} className="badge-sage">{String.fromCharCode(10003)} Concluído</span>
+                      )}
+                    </div>
+                    <div style={{ padding: "14px 16px 16px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                        <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{p.completed_lessons} de {p.total_lessons} aulas</span>
+                        <span style={{ fontSize: "12px", fontFamily: "Montserrat", fontWeight: 600, color: p.progress_pct === 100 ? "var(--sage)" : "var(--gold)" }}>{p.progress_pct}%</span>
+                      </div>
+                      <div className="progress-bar" style={{ marginBottom: "14px" }}>
+                        <div className={`progress-bar-fill${p.progress_pct === 100 ? " sage" : ""}`} style={{ width: `${p.progress_pct}%` }} />
+                      </div>
+                      <span className="btn-gold" style={{ fontSize: "9px", padding: "11px 20px" }}>
+                        {p.progress_pct === 0 ? "Começar" : p.progress_pct === 100 ? "Revisar" : "Continuar"} <ChevronRight size={12} />
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Locked/Available Products ── */}
+        {!loading && otherProducts.length > 0 && (
+          <div style={{ padding: "clamp(28px,4vw,36px) clamp(16px,4vw,24px) 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "clamp(12px,2vw,16px)" }}>
+              <Lock size={12} style={{ color: "var(--text-faint)" }} strokeWidth={1.5} />
+              <p className="overline" style={{ color: "var(--text-faint)", fontSize: "8px" }}>Disponíveis para acesso</p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {otherProducts.map((p) => (
+                <div
+                  key={p.id}
+                  className="course-card"
+                  style={{ position: "relative", display: "flex", gap: "12px", padding: "13px", alignItems: "center", opacity: 0.72 }}
+                >
+                  {/* Lock overlay */}
+                  <div style={{ position: "relative", width: "56px", height: "56px", borderRadius: "12px", overflow: "hidden", flexShrink: 0 }}>
+                    <img src={p.thumbnail_url || FALLBACK} alt={p.title} loading="lazy" decoding="async" width="56" height="56" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: "grayscale(0.5)" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "rgba(7,9,21,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Lock size={14} style={{ color: "rgba(198,168,112,0.7)" }} strokeWidth={1.5} />
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: "14px", color: "var(--text-primary)", fontWeight: 500, marginBottom: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</p>
+                    <p style={{ fontSize: "12px", color: "var(--text-faint)", fontFamily: "Montserrat" }}>
+                      {p.total_lessons} aulas
+                      {p.price > 0 ? ` · R$ ${p.price.toFixed(2).replace(".", ",")}` : ""}
+                    </p>
+                  </div>
+                  <Link to={`/checkout/${p.slug}`} className="btn-outline-gold" style={{ padding: "9px 16px", fontSize: "8.5px", borderRadius: "12px", flexShrink: 0 }}>
+                    Acessar
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
+
+        <div style={{ height: "clamp(24px,4vw,40px)" }} />
       </div>
     </DashboardLayout>
   );
