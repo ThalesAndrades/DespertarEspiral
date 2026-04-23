@@ -97,6 +97,31 @@
  *                           Navegação: breadcrumb /products/:slug, módulo título
  *                           Navegação: barra de progresso do módulo
  *
+ *   CourseViewPage.test.tsx → Loading state: layout rendered while product loads
+ *                              Produto não encontrado → navigate('/products')
+ *                              Acesso negado: 'Acesso necessário' + CTA /checkout/:slug
+ *                              Acesso negado: free preview lessons com badge GRÁTIS
+ *                              Acesso negado: sem seção preview quando não há aulas gratuitas
+ *                              Acesso negado: sem accordion de módulos
+ *                              Com acesso: título, subtítulo, X módulos, Y aulas no hero
+ *                              Com acesso: '0 de 6 aulas' + barra de progresso
+ *                              Com acesso: progresso parcial (40%) → '2 de 5 aulas'
+ *                              Com acesso: CTA 'Começar' → /lesson/les-001 (0 concluídas)
+ *                              Com acesso: CTA 'Continuar' → primeira aula não concluída
+ *                              Com acesso: CTA 'Ver certificado' → /certificado (100%)
+ *                              Com acesso: banner 'Parabéns! Curso concluído.' a 100%
+ *                              Accordion: módulos renderizados, primeiro aberto por padrão
+ *                              Accordion: segundo módulo colapsado, expande ao clicar
+ *                              Accordion: clicar módulo aberto o colapsa
+ *                              Accordion: contagem 'X/Y aulas concluídas' por módulo
+ *                              Lesson links: href = /products/:slug/lesson/:lessonId
+ *                              Labels: Vídeo, Leitura, PDF, Áudio
+ *                              Duration: '12min', '20min', sem '0min'
+ *                              Completed: CheckCircle + progresso atualizado
+ *                              Stats strip: módulos, aulas, concluídas, progresso, M1/M2
+ *                              Navegação: 'Meus Cursos' → navigate('/products')
+ *                              Supabase: slug e user_id passados corretamente
+ *
  *   RegisterPage.test.tsx → Step 1 (form):
  *                             Rendering: 4 campos, botão OTP, botão Google, link /login
  *                             Validação: name/email/password vazios, mismatch, senha < 6 chars
