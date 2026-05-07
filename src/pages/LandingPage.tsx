@@ -17,6 +17,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { ArrowRight, ArrowUpRight, Star, ChevronDown } from "lucide-react";
 import { testimonials, steps, guarantees, faqs, LANDING_STATS, COMMUNITY_STATS } from "@/constants/landingContent";
 import QuizSection from "@/components/features/QuizSection";
+import WaitlistCard from "@/components/features/WaitlistCard";
 
 /* ─────────────────────────────────────────────────────────────────
    Prefetch helpers — fire-and-forget dynamic imports on hover/focus
@@ -1183,6 +1184,44 @@ export default function LandingPage() {
               >
                 Quero aprender com Sunyan <ArrowRight size={14} />
               </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════
+               7.5 — WAITLIST PRÉ-LANÇAMENTO
+            ══════════════════════════════════════ */}
+        <section style={{
+          position: "relative", zIndex: 1, overflow: "hidden",
+          padding: "clamp(72px,10vw,120px) clamp(16px,5vw,24px)",
+          background: isLight ? "var(--bg-surface)" : "#06080f",
+        }}>
+          {/* Ambient orbs */}
+          <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(198,168,112,0.06) 0%, transparent 65%)", pointerEvents: "none" }} />
+          <div aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg, transparent, rgba(198,168,112,0.22), transparent)", pointerEvents: "none" }} />
+          <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg, transparent, rgba(198,168,112,0.14), transparent)", pointerEvents: "none" }} />
+
+          <div style={{ position: "relative", maxWidth: "960px", margin: "0 auto" }}>
+            {/* Section label */}
+            <div className="reveal" style={{ textAlign: "center", marginBottom: "clamp(28px,4vw,44px)" }}>
+              <p className="overline" style={{ color: "var(--gold)", marginBottom: "12px", fontSize: "9px" }}>Pré-lançamento</p>
+              <h2 className="font-display text-balance" style={{
+                fontSize: "clamp(28px,5vw,60px)", fontWeight: 300, fontStyle: "italic",
+                color: "var(--text-primary)", lineHeight: 1.08, marginBottom: "14px",
+              }}>
+                Uma novidade está chegando.
+              </h2>
+              <p style={{
+                fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-muted)",
+                lineHeight: 1.82, maxWidth: "440px", margin: "0 auto",
+              }}>
+                Entre na lista de espera e seja a primeira a saber — com condições que não estarão disponíveis depois.
+              </p>
+            </div>
+
+            {/* Card */}
+            <div className="reveal reveal-delay-1">
+              <WaitlistCard />
             </div>
           </div>
         </section>

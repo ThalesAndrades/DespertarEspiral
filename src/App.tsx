@@ -38,6 +38,7 @@ const AdminSocialPage       = React.lazy(() => import("@/pages/admin/AdminSocial
 const AdminCRMPage          = React.lazy(() => import("@/pages/admin/AdminCRMPage"));
 const AdminMediaPage        = React.lazy(() => import("@/pages/admin/AdminMediaPage"));
 const AdminTrafficPage      = React.lazy(() => import("@/pages/admin/AdminTrafficPage"));
+const AdminWaitlistPage     = React.lazy(() => import("@/pages/admin/AdminWaitlistPage"));
 const CertificatePage       = React.lazy(() => import("@/pages/CertificatePage"));
 const ProfilePage           = React.lazy(() => import("@/pages/ProfilePage"));
 
@@ -183,6 +184,7 @@ export default function App() {
         <Route path="/admin/crm"                  element={<AdminRoute><AdminCRMPage /></AdminRoute>} />
         <Route path="/admin/media"                element={<AdminRoute><AdminMediaPage /></AdminRoute>} />
         <Route path="/admin/traffic"              element={<AdminRoute><AdminTrafficPage /></AdminRoute>} />
+        <Route path="/admin/waitlist"             element={<AdminRoute><AdminWaitlistPage /></AdminRoute>} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
