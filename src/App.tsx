@@ -4,7 +4,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/lib/ErrorBoundary";
 import LandingPage from "@/pages/LandingPage"; // static — first page, no lazy delay
-import LaunchGate from "@/components/features/LaunchGate";
 
 /* ── Prefetch helpers ── */
 const prefetchLogin    = () => import("@/pages/LoginPage");
@@ -147,7 +146,6 @@ function Suspense({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Suspense>
-      <LaunchGate />
       <Routes>
         {/* Public — LandingPage is static for instant load */}
         <Route path="/"                element={<LandingPage />} />
