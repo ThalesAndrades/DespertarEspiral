@@ -12,7 +12,7 @@ import {
   LayoutDashboard, BookOpen, Users, ShoppingBag,
   MessageSquare, LogOut, X, ChevronRight,
   ArrowLeft, Shield, Menu, Instagram, BarChart2,
-  Trello, Megaphone, Bell,
+  Trello, Megaphone,
 } from "lucide-react";
 
 interface NavItem { label: string; icon: React.ElementType; href: string; }
@@ -30,10 +30,6 @@ const marketingNav: NavItem[] = [
   { label: "CRM & Automação", icon: Megaphone, href: "/admin/crm" },
   { label: "Projetos",      icon: Trello,      href: "/admin/media" },
   { label: "Anúncios",      icon: BarChart2,   href: "/admin/traffic" },
-];
-
-const waitlistNav: NavItem[] = [
-  { label: "Lista de Espera", icon: Bell, href: "/admin/waitlist" },
 ];
 
 function isActive(href: string, pathname: string) {
@@ -125,26 +121,6 @@ function AdminSidebar({ onClose }: { onClose?: () => void }) {
           <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
         </div>
         {marketingNav.map(({ label, icon: Icon, href }) => {
-          const active = isActive(href, location.pathname);
-          return (
-            <Link
-              key={href} to={href} onClick={onClose}
-              className={`sidebar-link ${active ? "active" : ""}`}
-              style={{ textDecoration: "none" }}
-            >
-              <Icon size={15} strokeWidth={active ? 2 : 1.5} />
-              <span style={{ fontSize: "14px" }}>{label}</span>
-              {active && <ChevronRight size={11} style={{ marginLeft: "auto", color: "var(--gold)", opacity: 0.5 }} />}
-            </Link>
-          );
-        })}
-        {/* ─── Lançamento ─── */}
-        <div style={{ margin: "10px 4px 4px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
-          <span className="font-label" style={{ fontSize: "7px", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--text-faint)", whiteSpace: "nowrap" }}>Lançamento</span>
-          <div style={{ flex: 1, height: "1px", background: "var(--border-subtle)" }} />
-        </div>
-        {waitlistNav.map(({ label, icon: Icon, href }) => {
           const active = isActive(href, location.pathname);
           return (
             <Link
@@ -268,7 +244,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     "/admin/crm":       "CRM & Automação",
     "/admin/media":     "Projetos",
     "/admin/traffic":   "Anúncios",
-    "/admin/waitlist":  "Lista de Espera",
   };
   const currentTitle = Object.entries(titles).find(([p]) => isActive(p, location.pathname))?.[1] ?? "Admin";
 
