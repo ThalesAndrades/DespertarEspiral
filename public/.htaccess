@@ -1,0 +1,107 @@
+# =============================================================================
+# Despertar Espiral - Apache/LiteSpeed config para Hostinger
+# Frontend SPA (Vite/React) servido como arçuivos estáticos.
+# =============================================================================
+
+Options -MultiViews -Indexes
+
+# -----------------------------------------------------------------------------
+# 1. Forçar HTTPS (Hostinger emite Let's Encrypt automaticamente).
+# -----------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # 2. Normalizar para apex sem www (ajuste se preferir o contrário).
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+  # 3. SPA fallback - qualquer URL que não seja arquivo/dir real cai em index.html.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !^/api/
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 4. Headers de segurança (paralelos aos meta tags do index.html).
+#    Se a CSP bloquear algum serviço legítimo, ajustar AQUI - nunca remover.
+# -----------------------------------------------------------------------------
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self), usb=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Cross-Origin-Resource-Policy "same-site"
+
+  # CSP permissiva para OnSpace + Supabase + Google Fonts + OAuth Google +
+  # players de vídeo (YouTube/Vimeo) + Asaas. Reaperte conforme necessário.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://*.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.onspace.ai https://accounts.google.com https://api.asaas.com https://www.google-analytics.com; frame-src 'self' https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://sandbox.asaas.com https://www.asaas.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 5. Cache - assets com hash (Vite) podem ser imutáveis; index.html nunca.
+# -----------------------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault "access plus 1 hour"
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType application/json "access plus 0 seconds"
+  ExpiresByType image/svg+xml "access plus 7 days"
+  ExpiresByType image/x-icon "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/avif "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(?:css|js|mjs|woff2?|ttf|otf|eot)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(?:png|jpe?g|webp|avif|svg|ico|gif)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  <FilesMatch "^(index\.html|sw\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 6. Compressão (Hostinger habilita Brotli quando disponível; gzip como fallback).
+# -----------------------------------------------------------------------------
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css application/javascript application/json application/xml image/svg+xml font/woff2
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json application/xml image/svg+xml font/woff2
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 7. MIME types defensivos (alguns hosts esquecem).
+# -----------------------------------------------------------------------------
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+  AddType application/json .json
+  AddType image/svg+xml .svg
+  AddType image/webp .webp
+  AddType image/avif .avif
+  AddType font/woff2 .woff2
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 8. Bloquear arquivos sensíveis caso vá parar acidentalmente no upload.
+# -----------------------------------------------------------------------------
+<FilesMatch "^(\.env.*|.*\.map|composer\.json|package(-lock)?\.json|bun\.lock|.*\.config\.(js|ts)|tsconfig.*\.json)$">
+  Require all denied
+</FilesMatch>
+
+ErrorDocument 404 /index.html
