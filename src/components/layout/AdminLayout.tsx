@@ -12,7 +12,7 @@ import {
   LayoutDashboard, BookOpen, Users, ShoppingBag,
   MessageSquare, LogOut, X, ChevronRight,
   ArrowLeft, Shield, Menu, Instagram, BarChart2,
-  Trello, Megaphone,
+  Trello, Megaphone, TrendingUp,
 } from "lucide-react";
 
 interface NavItem { label: string; icon: React.ElementType; href: string; }
@@ -28,6 +28,7 @@ const adminNav: NavItem[] = [
 const marketingNav: NavItem[] = [
   { label: "Redes Sociais", icon: Instagram,   href: "/admin/social" },
   { label: "CRM & Automação", icon: Megaphone, href: "/admin/crm" },
+  { label: "Funil Eventos",  icon: TrendingUp, href: "/admin/events" },
   { label: "Projetos",      icon: Trello,      href: "/admin/media" },
   { label: "Anúncios",      icon: BarChart2,   href: "/admin/traffic" },
 ];
@@ -244,6 +245,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     "/admin/crm":       "CRM & Automação",
     "/admin/media":     "Projetos",
     "/admin/traffic":   "Anúncios",
+    "/admin/events":    "Funil Eventos",
   };
   const currentTitle = Object.entries(titles).find(([p]) => isActive(p, location.pathname))?.[1] ?? "Admin";
 

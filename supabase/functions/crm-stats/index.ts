@@ -138,5 +138,86 @@ Deno.serve(async (req: Request) => {
     return json(200, data ?? { error: "Falha ao buscar eventos" }, cors);
   }
 
+  /**
+   * view=funnel — Mapa do Poder conversion funnel
+   * Aggregates counts for: mapa.started, mapa.step_completed (by step),
+   * mapa.lead_captured, mapa.finished from the Sequenzy events endpoint
+   * plus internal launch_waitlist rows for lead count verification.
+   */
+  if (view === "funnel") {
+    // Fetch recent events with a high limit to aggregate across all users
+    const [eventsData, waitlistData] = await Promise.all([
+      seqFetch(apiKey, "/subscribers/events/recent", { limit: "100" }),
+      supabaseAdmin
+        .from("launch_waitlist")
+        .select("id, source, created_at", { count: "exact" })
+        .eq("source", "mapa_do_poder")
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]);
+
+    const events: Record<string, unknown>[] = eventsData?.data ?? eventsData ?? [];
+
+    // Aggregate counts per event type
+    const counts: Record<string, number> = {};
+    const stepCounts: Record<number, number> = {};
+    const sourceCounts: Record<string, number> = {};
+
+    for (const ev of events) {
+      const name = String(ev.event ?? ev.name ?? "");
+      counts[name] = (counts[name] ?? 0) + 1;
+
+      // Aggregate step_completed by step number
+      if (name === "mapa.step_completed") {
+        const props = (ev.properties ?? ev.metadata ?? {}) as Record<string, unknown>;
+        const stepNum = Number(props.step_number ?? 0);
+        if (stepNum > 0) stepCounts[stepNum] = (stepCounts[stepNum] ?? 0) + 1;
+      }
+
+      // Aggregate QR source
+      if (name === "mapa.started") {
+        const props = (ev.properties ?? ev.metadata ?? {}) as Record<string, unknown>;
+        const src = String(props.source ?? "qr");
+        sourceCounts[src] = (sourceCounts[src] ?? 0) + 1;
+      }
+    }
+
+    const started       = counts["mapa.started"]       ?? 0;
+    const stepCompleted = counts["mapa.step_completed"] ?? 0;
+    const leadCaptured  = counts["mapa.lead_captured"]  ?? 0;
+    const finished      = counts["mapa.finished"]       ?? 0;
+
+    // Internal: leads saved to launch_waitlist
+    const dbLeadCount = waitlistData.count ?? 0;
+    const recentLeads = (waitlistData.data ?? []) as { id: string; created_at: string }[];
+
+    // Conversion rates (guard division by zero)
+    const cvStarted  = started > 0 ? +((finished      / started)      * 100).toFixed(1) : 0;
+    const cvLead     = started > 0 ? +((leadCaptured  / started)      * 100).toFixed(1) : 0;
+    const cvFinished = started > 0 ? +((finished      / started)      * 100).toFixed(1) : 0;
+
+    // Steps array for the bar chart (steps 1-8)
+    const steps = Array.from({ length: 8 }, (_, i) => ({
+      step: i + 1,
+      count: stepCounts[i + 1] ?? 0,
+      pct: started > 0 ? +((( stepCounts[i + 1] ?? 0) / started) * 100).toFixed(1) : 0,
+    }));
+
+    return json(200, {
+      funnel: [
+        { id: "mapa.started",       label: "Iniciaram",       count: started,       pct: 100,       color: "gold" },
+        { id: "mapa.step_completed", label: "Etapas concluídas", count: stepCompleted, pct: started > 0 ? +((stepCompleted / (started * 8)) * 100).toFixed(1) : 0, color: "lavender" },
+        { id: "mapa.lead_captured", label: "Leads capturados", count: leadCaptured,  pct: cvLead,   color: "sage" },
+        { id: "mapa.finished",      label: "Finalizaram",      count: finished,      pct: cvFinished, color: "rose" },
+      ],
+      steps,
+      sources: sourceCounts,
+      dbLeadCount,
+      recentLeads: recentLeads.slice(0, 10),
+      conversionRate: cvStarted,
+      totalStarted: started,
+    }, cors);
+  }
+
   return json(400, { error: "Invalid view parameter" }, cors);
 });

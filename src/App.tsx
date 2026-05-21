@@ -38,6 +38,7 @@ const AdminSocialPage       = React.lazy(() => import("@/pages/admin/AdminSocial
 const AdminCRMPage          = React.lazy(() => import("@/pages/admin/AdminCRMPage"));
 const AdminMediaPage        = React.lazy(() => import("@/pages/admin/AdminMediaPage"));
 const AdminTrafficPage      = React.lazy(() => import("@/pages/admin/AdminTrafficPage"));
+const AdminEventsPage       = React.lazy(() => import("@/pages/admin/AdminEventsPage"));
 const CertificatePage       = React.lazy(() => import("@/pages/CertificatePage"));
 const ProfilePage           = React.lazy(() => import("@/pages/ProfilePage"));
 const MapaDoPoder           = React.lazy(() => import("@/pages/MapaDoPoder"));
@@ -184,6 +185,7 @@ export default function App() {
         <Route path="/admin/crm"                  element={<AdminRoute><AdminCRMPage /></AdminRoute>} />
         <Route path="/admin/media"                element={<AdminRoute><AdminMediaPage /></AdminRoute>} />
         <Route path="/admin/traffic"              element={<AdminRoute><AdminTrafficPage /></AdminRoute>} />
+        <Route path="/admin/events"               element={<AdminRoute><AdminEventsPage /></AdminRoute>} />
 
         {/* QR-gated event page — access control handled inside component */}
         <Route path="/mapadopoder" element={<MapaDoPoder />} />
