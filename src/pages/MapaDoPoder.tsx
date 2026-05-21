@@ -9,6 +9,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { fireEventAsync } from "@/lib/sequenzy";
 import { toast } from "sonner";
 import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, Star, Heart, Volume2, Send, CheckCircle2, Loader2 } from "lucide-react";
 import heroImg from "@/assets/mapa-poder-hero.jpg";
@@ -201,7 +202,9 @@ export default function MapaDoPoder() {
   const [affirmRead, setAffirmRead] = useState(false);
   const [medDone,    setMedDone]    = useState(false);
   const [animIn,     setAnimIn]     = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef  = useRef<HTMLDivElement>(null);
+  /* Placeholder email used for anonymous tracking before lead capture */
+  const trackEmail    = useRef(`anon_mapa_${Date.now()}@despertarespiral.com`);
 
   /* ── Access check on mount ── */
   useEffect(() => {
@@ -212,6 +215,20 @@ export default function MapaDoPoder() {
     }
   }, [params, navigate]);
 
+  /* ── Fire mapa.finished once when complete phase is entered ── */
+  const finishedFired = useRef(false);
+  useEffect(() => {
+    if (phase !== "complete" || finishedFired.current) return;
+    finishedFired.current = true;
+    fireEventAsync("mapa.finished", {
+      email: trackEmail.current,
+      properties: {
+        total_steps_completed: STEPS.length,
+        source: params.get("src") ?? params.get("r") ?? params.get("ref") ?? "qr",
+      },
+    });
+  }, [phase, params]);
+
   /* ── Scroll to top on step change ── */
   useEffect(() => {
     containerRef.current?.scrollTo({ top: 0 });
@@ -220,6 +237,17 @@ export default function MapaDoPoder() {
 
   /* ── Step transition helper ── */
   const goNext = useCallback(() => {
+    /* Track step completion before transitioning */
+    fireEventAsync("mapa.step_completed", {
+      email: trackEmail.current,
+      properties: {
+        step_number: step + 1,
+        step_label: STEPS[step].label,
+        total_steps: STEPS.length,
+        is_last_step: step === STEPS.length - 1,
+      },
+    });
+
     setAnimIn(false);
     setTimeout(() => {
       if (step < STEPS.length - 1) { setStep((s) => s + 1); }
@@ -255,12 +283,26 @@ export default function MapaDoPoder() {
       return;
     }
     setSubmitting(true);
+    const finalEmail = email.trim() || `evento_${Date.now()}@despertarespiral.com`;
+    /* Update tracking email to real email if provided */
+    if (email.trim()) trackEmail.current = email.trim();
+
     await supabase.from("launch_waitlist").insert({
       name: "Mapa do Poder",
-      email: email.trim() || `evento_${Date.now()}@despertarespiral.com`,
+      email: finalEmail,
       phone: phone.trim() || null,
       source: "mapa_do_poder",
     });
+
+    fireEventAsync("mapa.lead_captured", {
+      email: finalEmail,
+      properties: {
+        has_email: Boolean(email.trim()),
+        has_phone: Boolean(phone.trim()),
+        source: params.get("src") ?? params.get("r") ?? params.get("ref") ?? "qr",
+      },
+    });
+
     setSubmitting(false);
     setPhase("complete");
   };
@@ -377,7 +419,13 @@ export default function MapaDoPoder() {
 
             {/* CTA */}
             <button
-              onClick={() => { setPhase("steps"); setStep(0); }}
+              onClick={() => {
+                setPhase("steps"); setStep(0);
+                fireEventAsync("mapa.started", {
+                  email: trackEmail.current,
+                  properties: { source: params.get("src") ?? params.get("r") ?? params.get("ref") ?? "qr" },
+                });
+              }}
               style={{
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "12px",
                 padding: "18px clamp(32px,6vw,56px)",
@@ -1049,7 +1097,16 @@ export default function MapaDoPoder() {
           </a>
 
           <button
-            onClick={() => { setPhase("intro"); setStep(0); setAnswers(STEPS.map((s) => s.type === "multi-textarea" ? Array(s.inputs ?? 1).fill("") : [""])); setAffirmRead(false); setMedDone(false); }}
+            onClick={() => {
+                setPhase("intro");
+                setStep(0);
+                setAnswers(STEPS.map((s) => s.type === "multi-textarea" ? Array(s.inputs ?? 1).fill("") : [""]));
+                setAffirmRead(false);
+                setMedDone(false);
+                /* Reset flags so events fire again on next completion */
+                finishedFired.current = false;
+                trackEmail.current = `anon_mapa_${Date.now()}@despertarespiral.com`;
+              }}
             style={{
               padding: "14px 24px", background: "transparent",
               border: "1px solid rgba(198,168,112,0.20)",
