@@ -40,6 +40,7 @@ const AdminMediaPage        = React.lazy(() => import("@/pages/admin/AdminMediaP
 const AdminTrafficPage      = React.lazy(() => import("@/pages/admin/AdminTrafficPage"));
 const CertificatePage       = React.lazy(() => import("@/pages/CertificatePage"));
 const ProfilePage           = React.lazy(() => import("@/pages/ProfilePage"));
+const MapaDoPoder           = React.lazy(() => import("@/pages/MapaDoPoder"));
 
 /* ── Global loader — branded spiral spinner ── */
 function GlobalLoader() {
@@ -183,6 +184,10 @@ export default function App() {
         <Route path="/admin/crm"                  element={<AdminRoute><AdminCRMPage /></AdminRoute>} />
         <Route path="/admin/media"                element={<AdminRoute><AdminMediaPage /></AdminRoute>} />
         <Route path="/admin/traffic"              element={<AdminRoute><AdminTrafficPage /></AdminRoute>} />
+
+        {/* QR-gated event page — access control handled inside component */}
+        <Route path="/mapadopoder" element={<MapaDoPoder />} />
+        <Route path="/mapa"        element={<MapaDoPoder />} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
