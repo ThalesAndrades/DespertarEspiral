@@ -8,10 +8,14 @@ import App from "./App";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/lib/ErrorBoundary";
 import { captureAttribution } from "@/lib/analytics";
+import { initMotionControl } from "@/lib/motionControl";
 import "./index.css";
 
 /* ── UTM attribution capture — on first load ── */
 captureAttribution();
+
+/* ── Pause decorative animations when tab is hidden / off-screen ── */
+initMotionControl();
 
 /* ── React Query — optimized defaults ── */
 const queryClient = new QueryClient({
