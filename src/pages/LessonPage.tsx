@@ -731,7 +731,7 @@ export default function LessonPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "clamp(12px,2vw,18px)", padding: "10px 14px", borderRadius: "12px", background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
                 <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "Montserrat, sans-serif", whiteSpace: "nowrap", letterSpacing: "0.06em" }}>Módulo atual</span>
                 <div style={{ flex: 1, height: "3px", borderRadius: "100px", background: "var(--border-subtle)", overflow: "hidden" }}>
-                  <div style={{ width: `${modulePct}%`, height: "100%", borderRadius: "100px", background: modulePct === 100 ? "var(--sage)" : "var(--gold)", transition: "width 0.6s cubic-bezier(.16,1,.3,1)" }} />
+                  <div style={{ width: `${modulePct}%`, height: "100%", borderRadius: "100px", background: modulePct === 100 ? "var(--sage)" : "var(--gold)", transition: "width 0.6s var(--ease-out)" }} />
                 </div>
                 <span style={{ fontSize: "11px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, color: modulePct === 100 ? "var(--sage)" : "var(--gold)", whiteSpace: "nowrap" }}>
                   {moduleDoneCount}/{moduleTotalCount}
