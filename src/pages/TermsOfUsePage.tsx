@@ -5,18 +5,22 @@ import { Link } from "react-router-dom";
 const CONTACT_EMAIL = "contato@despertarespiral.com";
 const SITE_NAME = "Despertar Espiral";
 
+const READING_WIDTH = "68ch";
+
 function SectionTitle({ children }: { children: string }) {
   return (
     <h2
       className="font-label"
       style={{
-        marginTop: "28px",
-        marginBottom: "10px",
+        maxWidth: READING_WIDTH,
+        marginTop: "40px",
+        marginBottom: "12px",
         fontSize: "11px",
         letterSpacing: "0.22em",
         textTransform: "uppercase",
         color: "var(--gold)",
         fontWeight: 600,
+        scrollMarginTop: "84px",
       }}
     >
       {children}
@@ -27,11 +31,13 @@ function SectionTitle({ children }: { children: string }) {
 function P({ children }: { children: ReactNode }) {
   return (
     <p
+      className="text-pretty"
       style={{
-        fontSize: "15px",
+        maxWidth: READING_WIDTH,
+        fontSize: "15.5px",
         lineHeight: 1.9,
         color: "var(--text-secondary)",
-        marginBottom: "12px",
+        marginBottom: "14px",
       }}
     >
       {children}
@@ -39,9 +45,20 @@ function P({ children }: { children: ReactNode }) {
   );
 }
 
+function List({ children }: { children: ReactNode }) {
+  return (
+    <ul style={{ maxWidth: READING_WIDTH, margin: "0 0 14px", paddingLeft: "20px" }}>
+      {children}
+    </ul>
+  );
+}
+
 function Li({ children }: { children: ReactNode }) {
   return (
-    <li style={{ marginBottom: "10px", lineHeight: 1.85, color: "var(--text-secondary)", fontSize: "15px" }}>
+    <li
+      className="text-pretty"
+      style={{ marginBottom: "10px", lineHeight: 1.85, color: "var(--text-secondary)", fontSize: "15.5px", paddingLeft: "4px" }}
+    >
       {children}
     </li>
   );
@@ -113,23 +130,24 @@ export default function TermsOfUsePage() {
           Clareza e responsabilidade
         </p>
         <h1
-          className="font-display"
+          className="font-display text-balance"
           style={{
             fontSize: "clamp(30px,5vw,52px)",
             fontWeight: 300,
             lineHeight: 1.1,
-            marginBottom: "14px",
+            marginBottom: "18px",
           }}
         >
           Termos de Uso
         </h1>
+        <hr className="divider-gold" style={{ maxWidth: READING_WIDTH, marginBottom: "24px" }} />
         <P>
           Estes Termos de Uso regem o acesso e uso do site e da plataforma {SITE_NAME} (o “Serviço”). Ao acessar ou usar o Serviço, você concorda com
           estes Termos.
         </P>
 
-        <div className="card-dark" style={{ padding: "18px 18px", marginTop: "18px" }}>
-          <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "8px" }}>
+        <div className="card-dark" style={{ maxWidth: READING_WIDTH, padding: "22px 24px", marginTop: "8px", marginBottom: "8px", borderRadius: "var(--r-lg)" }}>
+          <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "12px" }}>
             Resumo
           </p>
           <ul style={{ margin: 0, paddingLeft: "18px" }}>
@@ -148,12 +166,12 @@ export default function TermsOfUsePage() {
 
         <SectionTitle>2. Uso permitido</SectionTitle>
         <P>Você concorda em usar o Serviço apenas para finalidades legítimas e de acordo com estes Termos. É proibido:</P>
-        <ul style={{ margin: 0, paddingLeft: "18px" }}>
+        <List>
           <Li>Violar leis, regulamentos ou direitos de terceiros.</Li>
           <Li>Tentar obter acesso não autorizado, explorar vulnerabilidades ou interferir no funcionamento do Serviço.</Li>
           <Li>Automatizar acessos abusivos, coletar dados de forma não autorizada ou realizar engenharia reversa indevida.</Li>
           <Li>Publicar conteúdo ofensivo, discriminatório, ilegal ou que viole direitos autorais em áreas de comunidade.</Li>
-        </ul>
+        </List>
 
         <SectionTitle>3. Conteúdo, propriedade intelectual e licenças</SectionTitle>
         <P>
