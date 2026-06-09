@@ -7,11 +7,16 @@ import { safeEmbedUrl, safeExternalUrl, sanitizeHtml, isStorageVideoUrl } from "
 import {
   CheckCircle, ArrowLeft, ArrowRight, Play, FileText,
   File, Volume2, ChevronRight, ChevronDown, List, X,
-  Award, Download, Sparkles,
+  Award, Download, Sparkles, Gauge, StickyNote, PlayCircle, PauseCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { fireEventAsync } from "@/lib/sequenzy";
 import { sendEmailAsync } from "@/lib/email";
+import {
+  getResumePosition, setResumePosition, clearResumePosition,
+  getPlaybackRate, setPlaybackRate, getAutoplayNext, setAutoplayNext,
+  getLessonNotes, setLessonNotes, formatTime, PLAYBACK_RATES,
+} from "@/lib/lessonPrefs";
 
 const typeIcons: Record<string, React.ElementType> = {
   video: Play, text: FileText, pdf: File, audio: Volume2,
@@ -43,6 +48,102 @@ export default function LessonPage() {
   const [showCertModal, setShowCertModal] = useState(false);
   const certCanvasRef = useRef<HTMLCanvasElement>(null);
   const [certConfig, setCertConfig] = useState<CertConfig | null>(null);
+
+  /* ── Premium player state (device-local, no backend) ── */
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const lastPosSaveRef = useRef(0);
+  const notesTimerRef = useRef<number | null>(null);
+  const [playbackRate, setPlaybackRateState] = useState<number>(() => getPlaybackRate());
+  const [autoplayNext, setAutoplayNextState] = useState<boolean>(() => getAutoplayNext());
+  const [notes, setNotes] = useState("");
+  const [notesSaved, setNotesSaved] = useState(true);
+  const [notesOpen, setNotesOpen] = useState(false);
+
+  /* Load this lesson's saved notes whenever the lesson changes */
+  useEffect(() => {
+    if (!lessonId) return;
+    const saved = getLessonNotes(lessonId);
+    setNotes(saved);
+    setNotesSaved(true);
+    setNotesOpen(saved.trim().length > 0);
+    return () => {
+      if (notesTimerRef.current) window.clearTimeout(notesTimerRef.current);
+    };
+  }, [lessonId]);
+
+  /* Keyboard navigation: ← / → move between lessons (ignored while typing) */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (showCertModal) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      const p = product as { modules?: { lessons?: { id: string }[] }[] } | null;
+      if (!p?.modules) return;
+      const all = p.modules.flatMap((m) => m.lessons ?? []);
+      const idx = all.findIndex((l) => l.id === lessonId);
+      if (idx < 0) return;
+      if (e.key === "ArrowRight" && idx < all.length - 1) {
+        e.preventDefault();
+        navigate(`/products/${slug}/lesson/${all[idx + 1].id}`);
+      } else if (e.key === "ArrowLeft" && idx > 0) {
+        e.preventDefault();
+        navigate(`/products/${slug}/lesson/${all[idx - 1].id}`);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [product, lessonId, slug, navigate, showCertModal]);
+
+  /* ── Player handlers ── */
+  const changeSpeed = (rate: number) => {
+    setPlaybackRateState(rate);
+    setPlaybackRate(rate);
+    if (videoRef.current) videoRef.current.playbackRate = rate;
+  };
+
+  const handleVideoLoaded = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.playbackRate = playbackRate;
+    const saved = lessonId ? getResumePosition(lessonId) : 0;
+    if (saved > 5 && v.duration && saved < v.duration - 10) {
+      v.currentTime = saved;
+      toast(`▶ Retomando de ${formatTime(saved)}`);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    const v = videoRef.current;
+    if (!v || !lessonId) return;
+    const now = Date.now();
+    if (now - lastPosSaveRef.current > 5000 && v.currentTime > 3) {
+      lastPosSaveRef.current = now;
+      setResumePosition(lessonId, v.currentTime);
+    }
+  };
+
+  const handleVideoEnded = () => {
+    if (lessonId) clearResumePosition(lessonId);
+  };
+
+  const toggleAutoplay = () => {
+    setAutoplayNextState((prev) => {
+      const next = !prev;
+      setAutoplayNext(next);
+      return next;
+    });
+  };
+
+  const handleNotesChange = (value: string) => {
+    setNotes(value);
+    setNotesSaved(false);
+    if (notesTimerRef.current) window.clearTimeout(notesTimerRef.current);
+    notesTimerRef.current = window.setTimeout(() => {
+      if (lessonId) setLessonNotes(lessonId, value);
+      setNotesSaved(true);
+    }, 600);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -301,6 +402,14 @@ export default function LessonPage() {
       }
     }
     toast.success("Aula concluída. ✦");
+    clearResumePosition(id);
+
+    // Module completion celebration
+    const modLessons = (moduleOfLesson?.lessons as Record<string, unknown>[]) ?? [];
+    const modDoneAfter = modLessons.filter((l) => completed.has(l.id as string) || (l.id as string) === id).length;
+    if (modLessons.length > 1 && modDoneAfter === modLessons.length) {
+      setTimeout(() => toast(`Módulo concluído — ${moduleOfLesson?.title ?? ""} ✦`), 450);
+    }
 
     // Sequenzy: lesson.completed
     if (user?.email) {
@@ -358,8 +467,8 @@ export default function LessonPage() {
       }
     }
 
-    // Auto-advance after short delay
-    if (nextLesson?.id) setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id as string}`), 800);
+    // Auto-advance after short delay (respects the student's autoplay preference)
+    if (autoplayNext && nextLesson?.id) setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id as string}`), 800);
   };
 
   /* ── Module progress bar for current lesson ── */
@@ -622,7 +731,7 @@ export default function LessonPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "clamp(12px,2vw,18px)", padding: "10px 14px", borderRadius: "12px", background: "var(--bg-surface-2)", border: "1px solid var(--border-subtle)" }}>
                 <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "Montserrat, sans-serif", whiteSpace: "nowrap", letterSpacing: "0.06em" }}>Módulo atual</span>
                 <div style={{ flex: 1, height: "3px", borderRadius: "100px", background: "var(--border-subtle)", overflow: "hidden" }}>
-                  <div style={{ width: `${modulePct}%`, height: "100%", borderRadius: "100px", background: modulePct === 100 ? "var(--sage)" : "var(--gold)", transition: "width 0.6s cubic-bezier(.16,1,.3,1)" }} />
+                  <div style={{ width: `${modulePct}%`, height: "100%", borderRadius: "100px", background: modulePct === 100 ? "var(--sage)" : "var(--gold)", transition: "width 0.6s var(--ease-out)" }} />
                 </div>
                 <span style={{ fontSize: "11px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, color: modulePct === 100 ? "var(--sage)" : "var(--gold)", whiteSpace: "nowrap" }}>
                   {moduleDoneCount}/{moduleTotalCount}
@@ -687,25 +796,59 @@ export default function LessonPage() {
 
               /* ── Storage video: native <video> element ── */
               if (storageUrl) return (
-                <div style={{
-                  borderRadius: "clamp(12px,2vw,18px)",
-                  overflow: "hidden",
-                  background: "#000",
-                  marginBottom: "clamp(20px,3vw,32px)",
-                  boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
-                  lineHeight: 0,
-                }}>
-                  <video
-                    src={storageUrl}
-                    controls
-                    controlsList="nodownload"
-                    preload="metadata"
-                    style={{ width: "100%", display: "block", maxHeight: "72vh", outline: "none" }}
-                    onContextMenu={(e) => e.preventDefault()}
-                  >
-                    Seu navegador não suporta a reprodução de vídeo.
-                  </video>
-                </div>
+                <>
+                  <div style={{
+                    borderRadius: "clamp(12px,2vw,18px)",
+                    overflow: "hidden",
+                    background: "#000",
+                    boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
+                    lineHeight: 0,
+                  }}>
+                    <video
+                      ref={videoRef}
+                      src={storageUrl}
+                      controls
+                      controlsList="nodownload"
+                      preload="metadata"
+                      playsInline
+                      onLoadedMetadata={handleVideoLoaded}
+                      onTimeUpdate={handleTimeUpdate}
+                      onEnded={handleVideoEnded}
+                      style={{ width: "100%", display: "block", maxHeight: "72vh", outline: "none" }}
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
+                      Seu navegador não suporta a reprodução de vídeo.
+                    </video>
+                  </div>
+                  {/* Playback speed — native video only (resumes from last position automatically) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", margin: "10px 0 clamp(20px,3vw,32px)" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-faint)" }}>
+                      <Gauge size={12} strokeWidth={1.5} style={{ color: "var(--gold)" }} /> Velocidade
+                    </span>
+                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                      {PLAYBACK_RATES.map((r) => {
+                        const active = playbackRate === r;
+                        return (
+                          <button
+                            key={r}
+                            onClick={() => changeSpeed(r)}
+                            aria-pressed={active}
+                            style={{
+                              padding: "5px 11px", borderRadius: "100px", cursor: "pointer",
+                              fontSize: "11px", fontFamily: "Montserrat, sans-serif", fontWeight: active ? 600 : 400,
+                              background: active ? "var(--gold-glow)" : "transparent",
+                              border: `1px solid ${active ? "var(--gold)" : "var(--border-subtle)"}`,
+                              color: active ? "var(--gold)" : "var(--text-muted)",
+                              transition: "all 0.15s", minHeight: "32px",
+                            }}
+                          >
+                            {r}×
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
               );
 
               /* ── External embed: YouTube / Vimeo iframe ── */
@@ -806,6 +949,55 @@ export default function LessonPage() {
                 </audio>
               </div>
             )}
+
+            {/* ── Personal notes (saved on this device) ── */}
+            <div style={{ marginBottom: "clamp(16px,2.5vw,24px)", borderRadius: "clamp(12px,2vw,16px)", border: "1px solid var(--border-subtle)", background: "var(--bg-surface-2)", overflow: "hidden" }}>
+              <button
+                onClick={() => setNotesOpen((o) => !o)}
+                aria-expanded={notesOpen}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "14px 16px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", minHeight: "52px" }}
+              >
+                <StickyNote size={15} strokeWidth={1.5} style={{ color: "var(--gold)", flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: "13px", color: "var(--text-primary)", fontWeight: 500 }}>Minhas anotações</span>
+                {!notesSaved
+                  ? <span style={{ fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-faint)" }}>Salvando…</span>
+                  : notes.trim() ? <span style={{ fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--sage)" }}>Salvo</span> : null}
+                {notesOpen
+                  ? <ChevronDown size={14} style={{ color: "var(--border-mid)", flexShrink: 0 }} />
+                  : <ChevronRight size={14} style={{ color: "var(--border-mid)", flexShrink: 0 }} />}
+              </button>
+              {notesOpen && (
+                <div style={{ padding: "0 16px 16px" }}>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => handleNotesChange(e.target.value)}
+                    placeholder="Anote os insights desta aula. Suas anotações ficam salvas neste dispositivo."
+                    rows={5}
+                    style={{
+                      width: "100%", resize: "vertical", minHeight: "110px",
+                      padding: "12px 14px", borderRadius: "12px",
+                      background: "var(--input-bg)", border: "1px solid var(--border-subtle)",
+                      color: "var(--text-secondary)", fontSize: "14px", lineHeight: 1.7,
+                      fontFamily: "'DM Sans', sans-serif", outline: "none",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ── Autoplay preference ── */}
+            <button
+              onClick={toggleAutoplay}
+              aria-pressed={autoplayNext}
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginBottom: "clamp(18px,3vw,28px)", padding: "8px 14px", borderRadius: "100px", background: "transparent", border: "1px solid var(--border-subtle)", cursor: "pointer", minHeight: "40px" }}
+            >
+              {autoplayNext
+                ? <PlayCircle size={15} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+                : <PauseCircle size={15} strokeWidth={1.5} style={{ color: "var(--text-faint)" }} />}
+              <span style={{ fontSize: "11px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.06em", color: autoplayNext ? "var(--text-secondary)" : "var(--text-faint)" }}>
+                Avançar automaticamente {autoplayNext ? "ativado" : "desativado"}
+              </span>
+            </button>
 
             {/* ── Desktop navigation ── */}
             <div

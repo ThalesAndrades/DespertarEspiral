@@ -254,7 +254,7 @@ export default function QuizSection() {
                 height: "3px", borderRadius: "100px",
                 width: i === step ? "32px" : i < step ? "16px" : "10px",
                 background: i <= step ? "var(--gold)" : "rgba(198,168,112,0.18)",
-                transition: "all 0.4s cubic-bezier(.16,1,.3,1)",
+                transition: "all 0.4s var(--ease-out)",
               }} />
             ))}
           </div>
@@ -294,7 +294,7 @@ export default function QuizSection() {
                       border: "1.5px solid rgba(198,168,112,0.16)",
                       background: "rgba(255,255,255,0.026)",
                       cursor: "pointer", textAlign: "left",
-                      transition: "all 0.22s cubic-bezier(.16,1,.3,1)",
+                      transition: "all 0.22s var(--ease-out)",
                       minHeight: "76px",
                     }}
                     onMouseEnter={(e) => {

@@ -463,7 +463,7 @@ export default function CourseViewPage() {
                                 border: "1px solid rgba(164,158,208,0.18)",
                                 cursor: "pointer", width: "100%", textAlign: "left",
                                 minHeight: "52px",
-                                transition: "background 0.15s, border-color 0.15s, transform 0.15s cubic-bezier(.34,1.56,.64,1)",
+                                transition: "background 0.15s, border-color 0.15s, transform 0.15s var(--ease-spring)",
                               }}
                               onMouseEnter={(e) => {
                                 (e.currentTarget as HTMLElement).style.background = "rgba(164,158,208,0.11)";

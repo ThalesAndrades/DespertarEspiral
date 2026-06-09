@@ -38,7 +38,7 @@ export default function ThemeToggle({ className = "", size = "md" }: ThemeToggle
         background: "var(--gold-glow)",
         color: "var(--gold)",
         cursor: "pointer", flexShrink: 0,
-        transition: "background 0.2s ease, border-color 0.2s ease, transform 0.15s cubic-bezier(.34,1.56,.64,1)",
+        transition: "background 0.2s ease, border-color 0.2s ease, transform 0.15s var(--ease-spring)",
         overflow: "hidden",
         position: "relative",
       }}
@@ -55,7 +55,7 @@ export default function ThemeToggle({ className = "", size = "md" }: ThemeToggle
           display: "flex", alignItems: "center", justifyContent: "center",
           opacity: isDark ? 1 : 0,
           transform: isDark ? "rotate(0deg) scale(1)" : "rotate(90deg) scale(0.4)",
-          transition: "opacity 0.25s ease, transform 0.3s cubic-bezier(.34,1.56,.64,1)",
+          transition: "opacity 0.25s ease, transform 0.3s var(--ease-spring)",
           pointerEvents: "none",
         }}
       >
@@ -69,7 +69,7 @@ export default function ThemeToggle({ className = "", size = "md" }: ThemeToggle
           display: "flex", alignItems: "center", justifyContent: "center",
           opacity: isDark ? 0 : 1,
           transform: isDark ? "rotate(-90deg) scale(0.4)" : "rotate(0deg) scale(1)",
-          transition: "opacity 0.25s ease, transform 0.3s cubic-bezier(.34,1.56,.64,1)",
+          transition: "opacity 0.25s ease, transform 0.3s var(--ease-spring)",
           pointerEvents: "none",
         }}
       >

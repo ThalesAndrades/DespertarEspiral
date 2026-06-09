@@ -158,7 +158,7 @@ export default function LandingNav() {
         style={{
           maxHeight: open ? "400px" : "0px",
           overflow: "hidden",
-          transition: "max-height 0.32s cubic-bezier(.16,1,.3,1)",
+          transition: "max-height 0.32s var(--ease-out)",
           background: "var(--nav-bg)",
           backdropFilter: "blur(28px) saturate(1.4)",
           WebkitBackdropFilter: "blur(28px) saturate(1.4)",
