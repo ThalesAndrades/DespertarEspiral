@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
               <div style={{ textAlign: "center", marginBottom: "clamp(24px,4vw,36px)" }}>
                 <div style={{
                   width: "60px", height: "60px", borderRadius: "50%",
-                  background: "rgba(198,168,112,0.10)", border: "1px solid var(--border-soft)",
+                  background: "var(--gold-glow)", border: "1px solid var(--border-soft)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   margin: "0 auto clamp(16px,3vw,24px)",
                 }}>
@@ -156,7 +156,7 @@ export default function ForgotPasswordPage() {
                   Não recebeu? Verifique a pasta de spam ou{" "}
                   <button
                     onClick={() => setSent(false)}
-                    style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--gold)", fontFamily: "DM Sans", fontSize: "13px", padding: 0 }}
+                    style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--gold)", fontFamily: "DM Sans, sans-serif", fontSize: "13px", padding: 0 }}
                   >
                     tente novamente
                   </button>.
