@@ -2,7 +2,7 @@
  * LandingPage — Imersive Scroll Edition
  * Parallax multicamada, reveal cinético, transições premium entre seções
  */
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useId } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
@@ -10,9 +10,9 @@ import {
   LazyBackgroundSpiral3D as BackgroundSpiral3D,
   LazySectionSpiral3D   as SectionSpiral3D,
 } from "@/components/layout/LazyDecorative";
-import mulherEspiralHero from "@/assets/mulher-espiral-hero-new.jpg";
-import sunyanPortrait     from "@/assets/sunyan-portrait.jpg";
-import mockupAtualizado   from "@/assets/mockup-atualizado.png";
+import mulherEspiralHero from "@/assets/mulher-espiral-hero-new.jpg?quality=78&format=webp";
+import sunyanPortrait     from "@/assets/sunyan-portrait.jpg?w=720&quality=78&format=webp";
+import mockupAtualizado   from "@/assets/mockup-atualizado.png?quality=80&format=webp";
 import { useTheme } from "@/hooks/useTheme";
 import { ArrowRight, ArrowUpRight, Star, ChevronDown } from "lucide-react";
 import { testimonials, steps, guarantees, faqs, LANDING_STATS, COMMUNITY_STATS } from "@/constants/landingContent";
@@ -137,11 +137,13 @@ function Stat({ value, label, delay = "" }: { value: string; label: string; dela
 ───────────────────────────────────────────────────────────────── */
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const panelId = useId();
   return (
     <div style={{ borderBottom: "1px solid var(--border-subtle)", overflow: "hidden" }}>
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
+        aria-controls={panelId}
         style={{
           width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
           gap: "16px", padding: "clamp(18px,2.6vw,24px) 0",
@@ -165,7 +167,11 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           }} />
         </div>
       </button>
-      <div style={{
+      <div
+        id={panelId}
+        role="region"
+        aria-hidden={!open}
+        style={{
         maxHeight: open ? "320px" : "0",
         overflow: "hidden",
         transition: "max-height 0.42s cubic-bezier(.16,1,.3,1)",
@@ -588,7 +594,6 @@ export default function LandingPage() {
                     width={768} height={454}
                     loading="eager"
                     decoding="async"
-                    // @ts-expect-error fetchPriority is valid HTML5 but not yet in React types
                     fetchPriority="high"
                     style={{
                       width: "100%", height: "auto", display: "block", objectFit: "contain",
