@@ -10,9 +10,9 @@ import {
   LazyBackgroundSpiral3D as BackgroundSpiral3D,
   LazySectionSpiral3D   as SectionSpiral3D,
 } from "@/components/layout/LazyDecorative";
-import mulherEspiralHero from "@/assets/mulher-espiral-hero-new.jpg?quality=78&format=webp";
-import sunyanPortrait     from "@/assets/sunyan-portrait.jpg?w=720&quality=78&format=webp";
-import mockupAtualizado   from "@/assets/mockup-atualizado.png?quality=80&format=webp";
+import mulherEspiralHero from "@/assets/mulher-espiral-hero-new.jpg";
+import sunyanPortrait     from "@/assets/sunyan-portrait.jpg";
+import mockupAtualizado   from "@/assets/mockup-atualizado.png";
 import { useTheme } from "@/hooks/useTheme";
 import { ArrowRight, ArrowUpRight, Star, ChevronDown } from "lucide-react";
 import { testimonials, steps, guarantees, faqs, LANDING_STATS, COMMUNITY_STATS } from "@/constants/landingContent";

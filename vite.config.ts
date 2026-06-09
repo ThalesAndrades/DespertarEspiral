@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
-import { imagetools } from "vite-imagetools";
 import path from "path";
 
 // https://vitejs.dev/config/
@@ -11,9 +10,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    // Build-time image transforms (WebP/AVIF, resizing, srcset) powered by sharp.
-    // Opt-in per import via query params, e.g. `?format=webp&w=800`.
-    imagetools(),
   ],
   resolve: {
     alias: {

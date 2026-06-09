@@ -12,7 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { fireEventAsync } from "@/lib/sequenzy";
 import { toast } from "sonner";
 import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, Star, Heart, Volume2, Send, CheckCircle2, Loader2 } from "lucide-react";
-import heroImg from "@/assets/mapa-poder-hero.jpg?quality=78&format=webp";
+import heroImg from "@/assets/mapa-poder-hero.jpg";
 
 /* ════════════════════════════════════════════════════════
    STEP DEFINITIONS
