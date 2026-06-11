@@ -55,7 +55,7 @@ function NotConfigured({ message }: { message?: string }) {
           Trello não configurado
         </p>
         <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.7, maxWidth: "380px" }}>
-          {message ?? "Configure TRELLO_API_KEY e TRELLO_TOKEN nos Secrets do OnSpace Cloud. Obtenha sua chave em trello.com/app-key."}
+          {message ?? "Configure TRELLO_API_KEY e TRELLO_TOKEN nos Secrets do Supabase. Obtenha sua chave em trello.com/app-key."}
         </p>
         <a
           href="https://trello.com/app-key"

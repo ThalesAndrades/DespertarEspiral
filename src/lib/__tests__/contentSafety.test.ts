@@ -177,7 +177,7 @@ describe("isStorageVideoUrl", () => {
   });
 
   it("returns true for Supabase Storage public URL containing 'video-content'", () => {
-    const url = "https://ejbdpbkyirqmlgtiejbd.backend.onspace.ai/storage/v1/object/public/video-content/products/prod-001/1718000000000-aula.mp4";
+    const url = "https://example-project.supabase.co/storage/v1/object/public/video-content/products/prod-001/1718000000000-aula.mp4";
     expect(isStorageVideoUrl(url)).toBe(true);
   });
 

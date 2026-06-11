@@ -72,7 +72,7 @@ function NotConfigured({ platform, message }: { platform: string; message?: stri
           {platform} não configurado
         </p>
         <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.6, maxWidth: "380px" }}>
-          {message ?? `Configure as credenciais de API do ${platform} nos Secrets do OnSpace Cloud.`}
+          {message ?? `Configure as credenciais de API do ${platform} nos Secrets do Supabase.`}
         </p>
       </div>
     </div>

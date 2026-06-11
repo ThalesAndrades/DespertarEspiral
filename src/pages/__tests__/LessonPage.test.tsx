@@ -175,7 +175,7 @@ const LESSON_STORAGE_VIDEO = {
   module_id: "mod-001",
   title: "Aula em Vídeo Storage",
   type: "video",
-  content: "https://ejbdpbkyirqmlgtiejbd.backend.onspace.ai/storage/v1/object/public/video-content/products/prod-001/1718000000000-aula.mp4",
+  content: "https://example-project.supabase.co/storage/v1/object/public/video-content/products/prod-001/1718000000000-aula.mp4",
   sort_order: 7,
   is_free: false,
 };
