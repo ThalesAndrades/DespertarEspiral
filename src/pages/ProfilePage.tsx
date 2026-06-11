@@ -130,13 +130,17 @@ export default function ProfilePage() {
 
         {/* Avatar card */}
         <div className="card-dark" style={{ padding: "clamp(18px,3vw,24px)", marginBottom: "clamp(16px,2.5vw,20px)", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{
-            width: "56px", height: "56px", borderRadius: "50%", flexShrink: 0,
-            background: "rgba(198,168,112,0.14)", color: "var(--gold)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "22px", fontFamily: "Montserrat", fontWeight: 500,
-            border: "2px solid rgba(198,168,112,0.22)",
-          }}>
+          <div
+            className="font-label"
+            aria-hidden="true"
+            style={{
+              width: "56px", height: "56px", borderRadius: "50%", flexShrink: 0,
+              background: "rgba(198,168,112,0.14)", color: "var(--gold)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "22px", fontWeight: 500,
+              border: "2px solid rgba(198,168,112,0.22)",
+            }}
+          >
             {user.name?.charAt(0).toUpperCase() ?? "U"}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -147,7 +151,7 @@ export default function ProfilePage() {
               {user.email}
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
-              <span style={{ fontSize: "11px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--lavender)" }}>
+              <span className="font-label" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--lavender)" }}>
                 {user.anonymous_name}
               </span>
               <span style={{ fontSize: "10px", color: "var(--text-faint)" }}>na comunidade</span>
@@ -155,8 +159,8 @@ export default function ProfilePage() {
           </div>
           {user.role === "admin" && (
             <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "4px 10px", borderRadius: "100px", background: "rgba(198,168,112,0.08)", border: "1px solid rgba(198,168,112,0.20)", flexShrink: 0 }}>
-              <Shield size={10} style={{ color: "var(--gold)" }} />
-              <span style={{ fontSize: "9px", fontFamily: "Montserrat", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--gold)" }}>Admin</span>
+              <Shield size={10} style={{ color: "var(--gold)" }} aria-hidden="true" />
+              <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--gold)" }}>Admin</span>
             </div>
           )}
         </div>
@@ -164,7 +168,7 @@ export default function ProfilePage() {
         {/* Profile form */}
         <div className="card-dark" style={{ padding: "clamp(18px,3vw,24px)", marginBottom: "clamp(16px,2.5vw,20px)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "clamp(16px,2.5vw,22px)" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(198,168,112,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div aria-hidden="true" style={{ width: "32px", height: "32px", borderRadius: "8px", background: "var(--gold-glow)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <User size={14} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
             </div>
             <p style={{ fontSize: "15px", fontWeight: 500, color: "var(--text-primary)" }}>Informações pessoais</p>
@@ -172,8 +176,9 @@ export default function ProfilePage() {
 
           <form onSubmit={handleSaveProfile} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
-              <label style={LABEL}>Nome completo</label>
+              <label htmlFor="profile-name" style={LABEL}>Nome completo</label>
               <input
+                id="profile-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -184,30 +189,34 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label style={LABEL}>Nome anônimo na comunidade</label>
+              <label htmlFor="profile-anon" style={LABEL}>Nome anônimo na comunidade</label>
               <input
+                id="profile-anon"
                 type="text"
                 value={anonymousName}
                 onChange={(e) => setAnonymousName(e.target.value)}
                 placeholder={user.anonymous_name}
                 className="input-dark"
                 style={{ borderRadius: "12px" }}
+                aria-describedby="profile-anon-hint"
               />
-              <p style={{ fontSize: "12px", color: "var(--text-faint)", marginTop: "6px", lineHeight: 1.6 }}>
+              <p id="profile-anon-hint" style={{ fontSize: "12px", color: "var(--text-faint)", marginTop: "6px", lineHeight: 1.6 }}>
                 Este nome é exibido na comunidade. Outros membros não veem seu nome real.
               </p>
             </div>
 
             <div>
-              <label style={LABEL}>E-mail</label>
+              <label htmlFor="profile-email" style={LABEL}>E-mail</label>
               <input
+                id="profile-email"
                 type="email"
                 value={user.email}
                 disabled
                 className="input-dark"
                 style={{ borderRadius: "12px", opacity: 0.55, cursor: "not-allowed" }}
+                aria-describedby="profile-email-hint"
               />
-              <p style={{ fontSize: "12px", color: "var(--text-faint)", marginTop: "6px" }}>
+              <p id="profile-email-hint" style={{ fontSize: "12px", color: "var(--text-faint)", marginTop: "6px" }}>
                 Entre em contato para alterar o e-mail.
               </p>
             </div>
@@ -215,12 +224,13 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={savingProfile}
+              aria-busy={savingProfile}
               className="btn-gold"
               style={{ alignSelf: "flex-start", padding: "12px 28px", fontSize: "9px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "7px" }}
             >
               {savingProfile
-                ? <><Loader2 size={13} style={{ animation: "spin 0.8s linear infinite" }} /> Salvando…</>
-                : <><Check size={13} /> Salvar alterações</>
+                ? <><Loader2 size={13} aria-hidden="true" style={{ animation: "spin 0.8s linear infinite" }} /> Salvando…</>
+                : <><Check size={13} aria-hidden="true" /> Salvar alterações</>
               }
             </button>
           </form>
@@ -229,7 +239,7 @@ export default function ProfilePage() {
         {/* Password form */}
         <div className="card-dark" style={{ padding: "clamp(18px,3vw,24px)", marginBottom: "clamp(16px,2.5vw,20px)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "clamp(16px,2.5vw,22px)" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(198,168,112,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div aria-hidden="true" style={{ width: "32px", height: "32px", borderRadius: "8px", background: "var(--gold-glow)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <KeyRound size={14} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
             </div>
             <p style={{ fontSize: "15px", fontWeight: 500, color: "var(--text-primary)" }}>Alterar senha</p>
@@ -237,9 +247,10 @@ export default function ProfilePage() {
 
           <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
-              <label style={LABEL}>Senha atual</label>
+              <label htmlFor="current-pass" style={LABEL}>Senha atual</label>
               <div style={{ position: "relative" }}>
                 <input
+                  id="current-pass"
                   type={showCurrent ? "text" : "password"}
                   value={currentPass}
                   onChange={(e) => setCurrentPass(e.target.value)}
@@ -252,17 +263,20 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => setShowCurrent(!showCurrent)}
                   style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "44px", minHeight: "44px" }}
-                  aria-label={showCurrent ? "Ocultar" : "Mostrar"}
+                  aria-label={showCurrent ? "Ocultar senha atual" : "Mostrar senha atual"}
+                  aria-pressed={showCurrent}
+                  aria-controls="current-pass"
                 >
-                  {showCurrent ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                  {showCurrent ? <EyeOff size={15} strokeWidth={1.5} aria-hidden="true" /> : <Eye size={15} strokeWidth={1.5} aria-hidden="true" />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label style={LABEL}>Nova senha</label>
+              <label htmlFor="new-pass" style={LABEL}>Nova senha</label>
               <div style={{ position: "relative" }}>
                 <input
+                  id="new-pass"
                   type={showNew ? "text" : "password"}
                   value={newPass}
                   onChange={(e) => setNewPass(e.target.value)}
@@ -270,25 +284,29 @@ export default function ProfilePage() {
                   className="input-dark"
                   style={{ paddingRight: "52px", borderRadius: "12px" }}
                   autoComplete="new-password"
+                  aria-describedby={newPass.length > 0 ? "new-pass-rules" : undefined}
                 />
                 <button
                   type="button"
                   onClick={() => setShowNew(!showNew)}
                   style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "44px", minHeight: "44px" }}
-                  aria-label={showNew ? "Ocultar" : "Mostrar"}
+                  aria-label={showNew ? "Ocultar nova senha" : "Mostrar nova senha"}
+                  aria-pressed={showNew}
+                  aria-controls="new-pass"
                 >
-                  {showNew ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                  {showNew ? <EyeOff size={15} strokeWidth={1.5} aria-hidden="true" /> : <Eye size={15} strokeWidth={1.5} aria-hidden="true" />}
                 </button>
               </div>
               {newPass.length > 0 && (
-                <div style={{ display: "flex", gap: "16px", marginTop: "8px", flexWrap: "wrap" }}>
+                <div id="new-pass-rules" aria-live="polite" style={{ display: "flex", gap: "16px", marginTop: "8px", flexWrap: "wrap" }}>
                   {[
-                    { ok: newPass.length >= 8, label: "8+ chars" },
+                    { ok: newPass.length >= 8, label: "8+ caracteres" },
                     { ok: /[A-Z]/.test(newPass), label: "Maiúscula" },
                     { ok: /[0-9]/.test(newPass), label: "Número" },
                   ].map(({ ok, label }) => (
                     <span key={label} style={{ fontSize: "11px", display: "flex", alignItems: "center", gap: "4px", color: ok ? "var(--sage)" : "var(--text-faint)" }}>
-                      <span style={{ fontSize: "13px" }}>{ok ? "✓" : "○"}</span> {label}
+                      <span aria-hidden="true" style={{ fontSize: "13px" }}>{ok ? "✓" : "○"}</span>
+                      <span className="sr-only">{ok ? "Requisito atendido:" : "Requisito pendente:"}</span> {label}
                     </span>
                   ))}
                 </div>
@@ -296,9 +314,10 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label style={LABEL}>Confirmar nova senha</label>
+              <label htmlFor="confirm-pass" style={LABEL}>Confirmar nova senha</label>
               <div style={{ position: "relative" }}>
                 <input
+                  id="confirm-pass"
                   type={showConfirm ? "text" : "password"}
                   value={confirmPass}
                   onChange={(e) => setConfirmPass(e.target.value)}
@@ -311,9 +330,11 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
                   style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "44px", minHeight: "44px" }}
-                  aria-label={showConfirm ? "Ocultar" : "Mostrar"}
+                  aria-label={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+                  aria-pressed={showConfirm}
+                  aria-controls="confirm-pass"
                 >
-                  {showConfirm ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                  {showConfirm ? <EyeOff size={15} strokeWidth={1.5} aria-hidden="true" /> : <Eye size={15} strokeWidth={1.5} aria-hidden="true" />}
                 </button>
               </div>
             </div>
@@ -321,12 +342,13 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={savingPass}
+              aria-busy={savingPass}
               className="btn-outline-gold"
               style={{ alignSelf: "flex-start", padding: "11px 26px", fontSize: "9px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "7px" }}
             >
               {savingPass
-                ? <><Loader2 size={13} style={{ animation: "spin 0.8s linear infinite" }} /> Alterando…</>
-                : <><KeyRound size={13} /> Alterar senha</>
+                ? <><Loader2 size={13} aria-hidden="true" style={{ animation: "spin 0.8s linear infinite" }} /> Alterando…</>
+                : <><KeyRound size={13} aria-hidden="true" /> Alterar senha</>
               }
             </button>
           </form>
@@ -344,13 +366,12 @@ export default function ProfilePage() {
               className="btn-ghost"
               style={{ display: "flex", alignItems: "center", gap: "6px", padding: "10px 20px", fontSize: "9px", color: "var(--rose)", borderColor: "rgba(201,154,170,0.30)", flexShrink: 0 }}
             >
-              <LogOut size={13} /> Sair
+              <LogOut size={13} aria-hidden="true" /> Sair
             </button>
           </div>
         </div>
 
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </DashboardLayout>
   );
 }
