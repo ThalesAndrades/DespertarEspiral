@@ -1,6 +1,6 @@
 # 🏗️ COURSE PLATFORM — COMPLETE ARCHITECTURE BLUEPRINT
 
-> **Purpose:** Complete memory file documenting every architectural decision, pattern, data model, and implementation detail needed to recreate this full-stack course platform from scratch on OnSpace (React + Vite + TypeScript + Tailwind + Supabase/OnSpace Cloud).
+> **Purpose:** Complete memory file documenting every architectural decision, pattern, data model, and implementation detail needed to recreate this full-stack course platform from scratch on Supabase (React + Vite + TypeScript + Tailwind + Supabase/Supabase).
 >
 > **No brand personalization.** All names, colors, copy, and slugs are replaced with generic placeholders.
 
@@ -44,7 +44,7 @@
 | Language | TypeScript 5.5+ |
 | Styling | Tailwind CSS 3.4 + custom CSS variables |
 | Component Library | shadcn/ui (read-only, never modify) |
-| Backend | OnSpace Cloud (Supabase-compatible) |
+| Backend | Supabase (Supabase-compatible) |
 | Auth | Supabase Auth (OTP + Password + Google OAuth) |
 | Database | PostgreSQL (via Supabase) |
 | Storage | Supabase Storage (video bucket) |
@@ -543,7 +543,7 @@ export function handleCors(req: Request): Response | null {
 2. `mapSupabaseUser(user)` → `login(authUser)` → `navigate('/dashboard')`
 
 **Google OAuth:**
-- Only if explicitly enabled in OnSpace Cloud Auth Settings
+- Only if explicitly enabled in Supabase Auth Settings
 - `flowType: 'pkce'` required
 - `redirectTo: window.location.origin`
 - Never set loading state before redirect
@@ -1719,7 +1719,7 @@ create trigger on_community_like_delete after delete on public.community_likes f
 
 ## 25. DEPLOYMENT CHECKLIST
 
-### Environment Variables (OnSpace Cloud Secrets)
+### Environment Variables (Supabase Secrets)
 ```
 ASAAS_API_KEY          → Asaas API key (sandbox: $aact_... / prod: $aact_prod_...)
 ASAAS_WEBHOOK_TOKEN    → Pre-shared token for webhook validation
@@ -1833,4 +1833,4 @@ if (profile?.role !== 'admin') {
 
 ---
 
-*This blueprint covers 100% of the platform's architecture. Use it as the single source of truth when recreating or extending this type of course platform on OnSpace.*
+*This blueprint covers 100% of the platform's architecture. Use it as the single source of truth when recreating or extending this type of course platform on Supabase.*

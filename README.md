@@ -1,61 +1,55 @@
-# Welcome to your OnSpace project
+# Despertar Espiral
 
-## How can I edit this code?
+Plataforma de cursos online (área de membros, painel administrativo, comunidade,
+checkout e CRM) — **Mulher Espiral · Método de Reconexão e Cura**, por Sunyan Nunes.
 
-There are several ways of editing your application.
+## Tech stack
 
-**Use OnSpace**
+- **Vite** + **React 18** + **TypeScript**
+- **Tailwind CSS** + design tokens (ver [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md))
+- **shadcn/ui** (`src/components/ui`, read-only)
+- **Supabase** — Postgres, Auth, Storage e Edge Functions (`supabase/`)
+- **React Router**, **TanStack Query**, **react-helmet-async**, **sonner**
 
-Simply visit the [OnSpace Project]() and start prompting.
+## Desenvolvimento local
 
-Changes made via OnSpace will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in OnSpace.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Requer **Node.js 18+** (ou **Bun**).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# 1. Instalar dependências
+npm install        # ou: bun install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. Configurar variáveis de ambiente
+cp .env.example .env
+#   edite .env e preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
+#   com os dados do seu projeto Supabase
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# 3. Subir o servidor de desenvolvimento
+npm run dev        # ou: bun run dev
 ```
 
-**Edit a file directly in GitHub**
+Outros scripts: `npm run build` (produção), `npm run build:dev`, `npm run preview`, `npm run lint`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Variáveis de ambiente
 
-**Use GitHub Codespaces**
+| Variável | Onde | Descrição |
+|---|---|---|
+| `VITE_SUPABASE_URL` | `.env` | URL do projeto Supabase |
+| `VITE_SUPABASE_ANON_KEY` | `.env` | Chave anônima (pública) do Supabase |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+As Edge Functions (`supabase/functions/`) usam secrets configurados no painel do
+Supabase (`SUPABASE_SERVICE_ROLE_KEY`, `SEQUENZY_API_KEY`, `ALLOWED_ORIGINS`,
+`PUBLIC_SITE_URL`, etc.) — ver `.env.example`.
 
-## What technologies are used for this project?
+## Backend (Supabase)
 
-This project is built with:
+O esquema, as políticas RLS, os buckets de storage e as Edge Functions vivem em
+`supabase/`. Para apontar o app para um projeto Supabase próprio, basta criar o
+projeto, aplicar o esquema, e preencher as variáveis acima — o código não tem
+dependência de nenhuma plataforma específica de hospedagem.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Deploy
 
-## How can I deploy this project?
-
-Simply open [OnSpace]() and click on Share -> Publish.
+Build estático (`npm run build` → `dist/`) servível por qualquer host estático
+(Netlify, Vercel, Cloudflare Pages, etc.). As Edge Functions são publicadas via
+Supabase CLI (`supabase functions deploy`).

@@ -14,9 +14,6 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://www.despertarespiral.com",
 ];
 
-// OnSpace preview & publish domains (*.onspace.app)
-const ONSPACE_ORIGIN_RE = /^https:\/\/[\w-]+\.onspace\.app$/;
-
 function getAllowedOrigins(): string[] {
   const raw = (Deno.env.get("ALLOWED_ORIGINS") ?? "").trim();
   const fromEnv = raw
@@ -38,7 +35,7 @@ export function corsHeadersFor(req: Request): Record<string, string> {
   const allowed = getAllowedOrigins();
   const isAllowed =
     origin &&
-    (allowed.includes(origin) || ONSPACE_ORIGIN_RE.test(origin));
+    allowed.includes(origin);
   const allowOrigin = isAllowed ? origin! : allowed[0];
 
   return {
@@ -51,7 +48,7 @@ export function corsHeadersFor(req: Request): Record<string, string> {
 export function isAllowedOrigin(req: Request): boolean {
   const origin = req.headers.get("origin");
   if (!origin) return true; // non-browser clients (webhooks, server-to-server)
-  return getAllowedOrigins().includes(origin) || ONSPACE_ORIGIN_RE.test(origin);
+  return getAllowedOrigins().includes(origin);
 }
 
 export function handleCors(req: Request): Response | null {
