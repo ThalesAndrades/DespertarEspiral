@@ -256,26 +256,25 @@ export default function CommunityPage() {
         </div>
 
         {/* ── Category pills ── */}
-        <div style={{
-          display: "flex", gap: "8px", overflowX: "auto", padding: "0 16px 16px",
-          scrollbarWidth: "none", msOverflowStyle: "none",
-        }}>
-          <style>{`.cat-scroll::-webkit-scrollbar { display: none; }`}</style>
+        <div
+          className="cat-scroll scroll-x-hidden"
+          role="tablist"
+          aria-label="Filtrar por categoria"
+          style={{ display: "flex", gap: "8px", padding: "0 16px 16px" }}
+        >
           {CATEGORIES.map((c) => {
             const active = category === c.value;
             return (
               <button
                 key={c.value}
+                role="tab"
+                aria-selected={active}
                 onClick={() => setCategory(c.value)}
-                className="font-label"
+                className="cat-pill"
                 style={{
-                  padding: "8px 16px", borderRadius: "100px", border: "1px solid",
-                  fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase",
-                  whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.2s",
                   borderColor: active ? c.color : "var(--border-subtle)",
                   color: active ? c.color : "var(--text-faint)",
                   background: active ? `${c.color}18` : "transparent",
-                  minHeight: "36px", cursor: "pointer",
                 }}
               >
                 {c.label}
@@ -289,8 +288,14 @@ export default function CommunityPage() {
           {postsLoading ? (
             <CommunitySkeletonList />
           ) : filtered.length === 0 ? (
-            <div style={{ padding: "60px 24px", textAlign: "center" }}>
-              <p style={{ fontSize: "16px", color: "var(--text-muted)", marginBottom: "16px" }}>Nenhum post nessa categoria.</p>
+            <div style={{ padding: "clamp(48px,12vw,72px) 24px", textAlign: "center" }}>
+              <div aria-hidden="true" style={{ fontSize: "20px", color: "var(--gold)", opacity: 0.55, marginBottom: "14px", lineHeight: 1 }}>✦</div>
+              <p className="font-display" style={{ fontSize: "clamp(20px,3vw,24px)", fontWeight: 300, color: "var(--text-primary)", lineHeight: 1.25, marginBottom: "8px" }}>
+                Nenhum post nessa categoria.
+              </p>
+              <p style={{ fontSize: "14px", color: "var(--text-muted)", lineHeight: 1.7, marginBottom: "20px", maxWidth: "320px", marginInline: "auto" }}>
+                Esse espaço é seu. Compartilhe o que está sentindo — alguém precisa ler isso hoje.
+              </p>
               <button onClick={() => setShowCompose(true)} className="btn-outline-gold" style={{ fontSize: "9px" }}>
                 Ser a primeira a escrever <ArrowRight size={13} />
               </button>
@@ -298,21 +303,23 @@ export default function CommunityPage() {
           ) : filtered.map((post, i) => (
             <article
               key={post.id}
+              className="post-article"
               style={{
-                background: "var(--card-bg)",
-                borderBottom: "1px solid var(--border-subtle)",
                 borderTop: i === 0 ? "1px solid var(--border-subtle)" : "none",
               }}
             >
               <div style={{ padding: "16px 16px 0" }}>
                 {/* Author row */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                  <div style={{
-                    width: "30px", height: "30px", borderRadius: "50%",
-                    background: "rgba(164,158,208,0.14)", color: "var(--lavender)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "11px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, flexShrink: 0,
-                  }}>
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: "30px", height: "30px", borderRadius: "50%",
+                      background: "rgba(164,158,208,0.14)", color: "var(--lavender)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "11px", fontFamily: "Montserrat, sans-serif", fontWeight: 600, flexShrink: 0,
+                    }}
+                  >
                     {post.author_anonymous.charAt(0)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -320,7 +327,7 @@ export default function CommunityPage() {
                       <span style={{ fontSize: "13px", color: "var(--lavender)", fontWeight: 500 }}>{post.author_anonymous}</span>
                       <span style={{ fontSize: "11px", color: "var(--text-faint)" }}>·</span>
                       <span style={{ fontSize: "11px", color: "var(--text-faint)" }}>{timeAgo(post.created_at)}</span>
-                      {post.is_pinned && <Flame size={10} style={{ color: "var(--gold)" }} />}
+                      {post.is_pinned && <Flame size={10} aria-label="Post fixado" style={{ color: "var(--gold)" }} />}
                     </div>
                   </div>
                   <span style={{
@@ -373,6 +380,7 @@ export default function CommunityPage() {
 
                 <Link
                   to={`/community/topic/${post.id}`}
+                  aria-label={`${post.comments_count} ${post.comments_count === 1 ? "resposta" : "respostas"}`}
                   style={{
                     display: "flex", alignItems: "center", gap: "6px",
                     padding: "10px 12px", textDecoration: "none",
@@ -406,17 +414,13 @@ export default function CommunityPage() {
       {/* ── FAB — mobile compose ── */}
       <button
         onClick={() => setShowCompose(true)}
-        className="md:hidden"
+        className="fab md:hidden"
         style={{
-          position: "fixed",
           bottom: "calc(64px + 20px + env(safe-area-inset-bottom))",
           right: "20px",
-          width: "52px", height: "52px", borderRadius: "50%",
-          background: "var(--gold)", color: "#0b0d1c",
-          border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 8px 28px rgba(198,168,112,0.45)",
-          zIndex: 140, transition: "transform 0.2s, box-shadow 0.2s",
+          width: "52px", height: "52px",
+          background: "var(--gold)", color: "var(--bg-base)",
+          boxShadow: "var(--shadow-gold)",
         }}
         aria-label="Novo post"
       >
@@ -435,11 +439,15 @@ export default function CommunityPage() {
           onClick={() => setShowCompose(false)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Novo post"
             onClick={(e) => e.stopPropagation()}
+            className="sheet-enter scrollbar-thin"
             style={{
               width: "100%", maxWidth: "680px", margin: "0 auto",
               background: "var(--sidebar-bg)",
-              borderRadius: "24px 24px 0 0",
+              borderRadius: "var(--r-xl) var(--r-xl) 0 0",
               borderTop: "1px solid var(--border-soft)",
               padding: "20px 20px calc(24px + env(safe-area-inset-bottom))",
               maxHeight: "90dvh", overflowY: "auto",
@@ -454,7 +462,7 @@ export default function CommunityPage() {
               </div>
               <button
                 onClick={() => setShowCompose(false)}
-                style={{ width: "36px", height: "36px", borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}
+                style={{ width: "44px", height: "44px", borderRadius: "50%", background: "var(--input-bg)", border: "1px solid var(--border-subtle)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", flexShrink: 0, transition: "border-color 0.2s, color 0.2s" }}
                 aria-label="Fechar"
               >
                 <X size={16} strokeWidth={1.5} />
