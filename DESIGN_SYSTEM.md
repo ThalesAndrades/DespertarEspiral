@@ -138,6 +138,10 @@ Shared primitives in `@layer components` of `src/index.css` — reuse, don't rei
 - **Eyebrow** — `.overline` for the small uppercase gold labels above headings.
 - **Skeletons** — `SkeletonShimmer` for all loading states; never a bare spinner
   where content shape is known.
+- **Interactive surfaces** — `.interactive` adds the modern tactile micro-feedback
+  layer (hover lift `-2px` + one shadow step via `--ease-spring`, active press to
+  `0.985`) to any clickable element that isn't already a `.btn-*`/`.card-lift`.
+  Touch devices get a press cue instead of hover. See § Modern interactions.
 
 **Touch:** under `(hover: none) and (pointer: coarse)`, hover transforms are
 neutralized and replaced with `:active` scale feedback — keep new interactive
@@ -153,6 +157,27 @@ elements consistent with this.
 - [ ] Decorative elements `aria-hidden`; informative icons get `aria-label`
 - [ ] Accordions/disclosures: `aria-expanded` + `aria-controls` → panel `id`
 - [ ] Honors `prefers-reduced-motion`
+
+---
+
+## 9b. Modern interactions (2026)
+
+The visual language follows current (2026) trends — and most were already native
+to this system: calm/strategic minimalism, fluid type, dark mode, accessible color
+tokens, spatial depth via the shadow ramp, and motion with rhythm. The pieces we
+formalized on top:
+
+- **Micro-interactions as a usability layer** — `.interactive` gives clickable
+  surfaces consistent, tactile hover/press feedback (not just buttons/cards).
+- **Spatial depth** — hover raises elements exactly one shadow step (`--shadow-md`)
+  with a spring curve, so the UI reads as layered rather than flat.
+- **Calm motion** — `--ease-out` everywhere, `--ease-spring` only for press; all
+  of it disabled under `prefers-reduced-motion` and paused off-screen / on hidden
+  tabs via `src/lib/motionControl.ts`.
+
+Sources: [Figma — Web Design Trends 2026](https://www.figma.com/resource-library/web-design-trends/),
+[UX Collective — Experience design trends 2026](https://uxdesign.cc/the-most-popular-experience-design-trends-of-2026-3ca85c8a3e3d),
+[Envato — UX/UI trends 2026 (calm interfaces)](https://elements.envato.com/learn/ux-ui-design-trends).
 
 ---
 
