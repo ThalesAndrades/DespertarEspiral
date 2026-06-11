@@ -167,8 +167,7 @@ export default function LoginPage() {
               <div>
                 <label style={LABEL}>E-mail</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com" className="input-dark" autoComplete="email"
-                  style={{ borderRadius: "14px" }} />
+                  placeholder="seu@email.com" className="input-dark" autoComplete="email" />
               </div>
 
               <div>
@@ -177,7 +176,7 @@ export default function LoginPage() {
                   <input type={showPass ? "text" : "password"} value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••" className="input-dark" autoComplete="current-password"
-                    style={{ paddingRight: "52px", borderRadius: "14px" }} />
+                    style={{ paddingRight: "52px" }} />
                   <button type="button"
                     style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "6px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}
                     onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}>

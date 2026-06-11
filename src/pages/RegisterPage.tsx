@@ -279,7 +279,7 @@ export default function RegisterPage() {
                 </button>
 
                 <div style={{ textAlign: "center", marginBottom: "clamp(24px,4vw,36px)" }}>
-                  <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "rgba(198,168,112,0.10)", border: "1px solid var(--border-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto clamp(16px,3vw,22px)" }}>
+                  <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "var(--gold-glow)", border: "1px solid var(--border-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto clamp(16px,3vw,22px)" }}>
                     <KeyRound size={24} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
                   </div>
                   <p className="overline" style={{ color: "var(--gold)", marginBottom: "8px" }}>Verificação</p>
