@@ -373,7 +373,7 @@ export default function CheckoutPage() {
 
       {/* Trust strip */}
       <div style={{
-        background: "linear-gradient(135deg, rgba(198,168,112,0.10) 0%, rgba(201,154,170,0.06) 100%)",
+        background: "linear-gradient(135deg, var(--gold-glow) 0%, rgba(201,154,170,0.06) 100%)",
         borderBottom: "1px solid var(--border-subtle)",
         padding: "10px clamp(16px,5vw,32px)",
         display: "flex", alignItems: "center", justifyContent: "center",
