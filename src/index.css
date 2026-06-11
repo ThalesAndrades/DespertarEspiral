@@ -1233,17 +1233,6 @@ html.tab-hidden *::after { animation-play-state: paused !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   MOTION CONTROL — pause decorative animations to save CPU/battery
-   Driven by src/lib/motionControl.ts (tab visibility + off-screen culling)
-═══════════════════════════════════════════════════════════════════ */
-html.tab-hidden *,
-html.tab-hidden *::before,
-html.tab-hidden *::after { animation-play-state: paused !important; }
-
-.anim-paused,
-.anim-paused * { animation-play-state: paused !important; }
-
-/* ═══════════════════════════════════════════════════════════════════
    PRINT
 ═══════════════════════════════════════════════════════════════════ */
 @media print {
