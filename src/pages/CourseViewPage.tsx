@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import QuizPlayer from "@/components/features/QuizPlayer";
 import {
   ChevronDown, ChevronRight, Play, FileText, File, Volume2,
-  CheckCircle, ArrowLeft, BookOpen, Clock, Award, ClipboardList,
+  CheckCircle, ArrowLeft, BookOpen, Clock, Award, ClipboardList, TrendingUp,
 } from "lucide-react";
 
 const lessonIcon: Record<string, React.ElementType> = {
@@ -178,7 +178,7 @@ export default function CourseViewPage() {
   }
 
   /* ── Compute stats ── */
-  const allLessons     = (product.modules as { lessons: { id: string }[] }[] ?? []).flatMap((m) => m.lessons);
+  const allLessons     = (product.modules as { lessons: { id: string; duration_min?: number }[] }[] ?? []).flatMap((m) => m.lessons);
   const totalLessons   = allLessons.length;
   const completedCount = allLessons.filter((l: { id: string }) => completed.has(l.id)).length;
   const progress       = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -186,21 +186,44 @@ export default function CourseViewPage() {
   const toggleModule = (id: string) => setOpenModules((p) => ({ ...p, [id]: !p[id] }));
   const nextLesson = allLessons.find((l) => !completed.has((l as { id: string }).id)) ?? allLessons[0];
 
+  /* Total estimated time across all lessons (data already fetched) */
+  const totalMinutes = allLessons.reduce((sum, l) => sum + (l.duration_min ?? 0), 0);
+  const formatDuration = (mins: number): string => {
+    if (mins < 60) return `${mins}min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}h ${m}min` : `${h}h`;
+  };
+  const totalTimeLabel = totalMinutes > 0 ? formatDuration(totalMinutes) : null;
+
   return (
     <DashboardLayout>
       <div style={{ maxWidth: "760px", margin: "0 auto", padding: "0 0 clamp(40px,6vw,80px)" }}>
 
-        {/* ── Back ── */}
-        <div style={{ padding: "clamp(14px,2.5vw,20px) clamp(14px,4vw,24px) 0" }}>
-          <button
-            onClick={() => navigate("/products")}
-            style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "transparent", border: "none", cursor: "pointer", fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)", padding: "8px 0", minHeight: "44px", transition: "color 0.2s" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-muted)")}
-          >
-            <ArrowLeft size={13} /> Meus Cursos
-          </button>
-        </div>
+        {/* ── Breadcrumb ── */}
+        <nav aria-label="Trilha de navegação" style={{ padding: "clamp(14px,2.5vw,20px) clamp(14px,4vw,24px) 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <button
+              onClick={() => navigate("/products")}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "transparent", border: "none", cursor: "pointer", fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)", padding: "8px 0", minHeight: "44px", transition: "color 0.2s" }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-muted)")}
+            >
+              <ArrowLeft size={13} /> Meus Cursos
+            </button>
+            <ChevronRight size={11} aria-hidden="true" style={{ color: "var(--text-faint)", flexShrink: 0 }} />
+            <span
+              aria-current="page"
+              style={{
+                fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.18em",
+                textTransform: "uppercase", color: "var(--gold)", minWidth: 0,
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55vw",
+              }}
+            >
+              {product.title as string}
+            </span>
+          </div>
+        </nav>
 
         {/* ── Hero card ── */}
         <div style={{ margin: "clamp(8px,1.5vw,12px) clamp(14px,4vw,24px)" }}>
@@ -226,7 +249,7 @@ export default function CourseViewPage() {
                   {product.title as string}
                 </h1>
                 <p style={{ fontSize: "9px", fontFamily: "Montserrat", letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(245,240,232,0.38)" }}>
-                  {(product.modules as unknown[]).length} módulos · {totalLessons} aulas
+                  {(product.modules as unknown[]).length} módulos · {totalLessons} aulas{totalTimeLabel ? ` · ${totalTimeLabel}` : ""}
                 </p>
               </div>
             </div>
@@ -295,8 +318,9 @@ export default function CourseViewPage() {
             {[
               { icon: BookOpen,    val: `${(product.modules as unknown[]).length}`, lbl: "módulos" },
               { icon: Play,        val: `${totalLessons}`,                          lbl: "aulas" },
+              ...(totalTimeLabel ? [{ icon: Clock, val: totalTimeLabel, lbl: "duração" }] : []),
               { icon: CheckCircle, val: `${completedCount}`,                        lbl: "concluídas" },
-              { icon: Clock,       val: progress > 0 ? `${progress}%` : "0%",      lbl: "progresso" },
+              { icon: TrendingUp,  val: progress > 0 ? `${progress}%` : "0%",      lbl: "progresso" },
               ...(isCourseComplete ? [{ icon: Award, val: "✦", lbl: "certificado" }] : []),
             ].map(({ icon: Icon, val, lbl }) => (
               <div key={lbl} className="stat-chip">
@@ -349,6 +373,8 @@ export default function CourseViewPage() {
                   {/* Module header */}
                   <button
                     onClick={() => toggleModule(mod.id)}
+                    aria-expanded={isOpen}
+                    aria-controls={`module-panel-${mod.id}`}
                     style={{
                       width: "100%", display: "flex", alignItems: "center", gap: "clamp(10px,2vw,14px)",
                       padding: "clamp(14px,2vw,18px) clamp(14px,2.5vw,20px)",
@@ -384,7 +410,7 @@ export default function CourseViewPage() {
 
                   {/* Lessons + quiz */}
                   {isOpen && (
-                    <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                    <div id={`module-panel-${mod.id}`} style={{ borderTop: "1px solid var(--border-subtle)" }}>
                       {mod.lessons.map((lesson, lIdx) => {
                         const Icon   = lessonIcon[lesson.type] ?? FileText;
                         const done   = completed.has(lesson.id);

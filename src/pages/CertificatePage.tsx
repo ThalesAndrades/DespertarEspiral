@@ -155,8 +155,8 @@ export default function CertificatePage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100dvh", background: "var(--bg-surface)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 size={28} style={{ color: "var(--gold)", animation: "spin 1s linear infinite" }} />
+      <div role="status" aria-label="Carregando certificado" style={{ minHeight: "100dvh", background: "var(--bg-surface)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 size={28} aria-hidden="true" style={{ color: "var(--gold)", animation: "spin 1s linear infinite" }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -473,7 +473,7 @@ export default function CertificatePage() {
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 clamp(12px,4vw,24px) clamp(40px,6vw,80px)" }}>
         <div className="card-dark" style={{ padding: "clamp(18px,3vw,28px)", display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(198,168,112,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "var(--gold-glow)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Award size={16} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
             </div>
             <div>
