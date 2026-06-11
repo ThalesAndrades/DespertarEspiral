@@ -58,6 +58,43 @@
   --r-xl:  24px;
   --r-2xl: 32px;
 
+  /* ── Motion (theme-independent) ── */
+  --ease-out:    cubic-bezier(.16, 1, .3, 1);     /* decelerate — default for UI & reveals */
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1); /* gentle overshoot — button press/lift */
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --dur-fast: 0.18s;
+  --dur-base: 0.28s;
+  --dur-slow: 0.6s;
+
+  /* ── Spacing scale (4px base) ── */
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 20px;  --space-6: 24px;  --space-8: 32px;  --space-10: 40px;
+  --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 96px;
+
+  /* ── Type scale (fluid, mobile→desktop) ── */
+  --fs-overline: 10px;
+  --fs-xs:      clamp(11px, 1.1vw, 12px);
+  --fs-sm:      clamp(12px, 1.3vw, 13px);
+  --fs-base:    clamp(14px, 1.6vw, 16px);
+  --fs-md:      clamp(16px, 1.9vw, 18px);
+  --fs-lg:      clamp(18px, 2.4vw, 22px);
+  --fs-xl:      clamp(22px, 4vw, 30px);
+  --fs-2xl:     clamp(28px, 5vw, 44px);
+  --fs-display: clamp(38px, 5.8vw, 88px);
+
+  /* ── Letter-spacing ── */
+  --ls-tight:    -0.02em;
+  --ls-label:    0.18em;
+  --ls-overline: 0.24em;
+
+  /* ── Z-index scale ── */
+  --z-base:    1;
+  --z-sticky:  50;
+  --z-nav:     100;
+  --z-drawer:  300;
+  --z-overlay: 500;
+  --z-toast:   9999;
+
   /* shadcn/ui HSL tokens */
   --background:             237 38% 5%;
   --foreground:             38 33% 95%;
@@ -1154,11 +1191,41 @@ input:-webkit-autofill:focus {
 @media (min-width: 641px) and (max-width: 1024px) { .spiral-tracker { display: none; } }
 
 /* ═══════════════════════════════════════════════════════════════════
+   MODERN INTERACTIONS (2026) — tactile micro-feedback + depth
+   Trends followed: micro-interactions as a usability layer, spatial depth,
+   calm motion. Opt-in via class on any clickable surface that isn't already
+   a .btn-* / .card-lift. Always honors prefers-reduced-motion (below).
+═══════════════════════════════════════════════════════════════════ */
+.interactive {
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-base) var(--ease-out),
+              background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out);
+  will-change: transform;
+}
+.interactive:hover:not(:disabled)  { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.interactive:active:not(:disabled) { transform: translateY(0) scale(0.985); transition-duration: var(--dur-fast); }
+
+/* Motion control — pause decorative animations off-screen / when tab hidden
+   (driven by src/lib/motionControl.ts) */
+html.tab-hidden *,
+html.tab-hidden *::before,
+html.tab-hidden *::after { animation-play-state: paused !important; }
+.anim-paused,
+.anim-paused * { animation-play-state: paused !important; }
+
+/* Touch devices: replace hover-lift with a press cue */
+@media (hover: none) and (pointer: coarse) {
+  .interactive:hover              { transform: none; box-shadow: none; }
+  .interactive:active:not(:disabled) { transform: scale(0.97); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    REDUCED MOTION
 ═══════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   .spiral-outer, .spiral-inner, .animate-float, .animate-glow,
-  .btn-gold, .btn-outline-gold, .card-lift { animation: none !important; transition: none !important; }
+  .btn-gold, .btn-outline-gold, .card-lift, .interactive { animation: none !important; transition: none !important; }
   .reveal, .reveal-left, .reveal-right { opacity: 1 !important; transform: none !important; transition: none !important; }
   [data-parallax] { transform: none !important; }
   .skeleton::after { animation: none !important; }
