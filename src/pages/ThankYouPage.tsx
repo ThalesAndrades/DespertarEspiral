@@ -192,7 +192,7 @@ export default function ThankYouPage() {
         {/* Order number card */}
         <div style={{
           width: "100%",
-          background: "linear-gradient(135deg, rgba(198,168,112,0.10) 0%, rgba(198,168,112,0.04) 100%)",
+          background: "linear-gradient(135deg, var(--gold-glow) 0%, rgba(198,168,112,0.04) 100%)",
           border: "1px solid rgba(198,168,112,0.28)", borderRadius: "clamp(16px,2.5vw,22px)",
           padding: "clamp(18px,4vw,28px)", marginBottom: "clamp(16px,3vw,24px)",
           display: "flex", flexDirection: "column", gap: "clamp(12px,2vw,18px)",
