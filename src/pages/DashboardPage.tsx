@@ -249,11 +249,19 @@ export default function DashboardPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Jornada geral</span>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  {overallPct === 100 && <Sparkles size={11} style={{ color: "var(--gold)" }} />}
+                  {overallPct === 100 && <Sparkles size={11} aria-hidden="true" style={{ color: "var(--gold)" }} />}
                   <span style={{ fontSize: "12px", color: "var(--gold)", fontFamily: "Montserrat", fontWeight: 600 }}>{overallPct}%</span>
                 </div>
               </div>
-              <div className="progress-bar thick" style={{ marginBottom: "12px" }}>
+              <div
+                className="progress-bar thick"
+                style={{ marginBottom: "12px" }}
+                role="progressbar"
+                aria-label="Progresso geral da jornada"
+                aria-valuenow={overallPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
                 <div className={`progress-bar-fill${overallPct === 100 ? " sage" : ""}`} style={{ width: `${overallPct}%` }} />
               </div>
               <div style={{ display: "flex", gap: "clamp(14px,3vw,22px)", flexWrap: "wrap" }}>
@@ -263,7 +271,7 @@ export default function DashboardPage() {
                   { icon: TrendingUp,   val: products.length, lbl: products.length === 1 ? "curso" : "cursos" },
                 ].map(({ icon: Icon, val, lbl }) => (
                   <div key={lbl} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <Icon size={12} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                    <Icon size={12} aria-hidden="true" style={{ color: "var(--gold)" }} strokeWidth={1.5} />
                     <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                       <strong style={{ color: "var(--text-primary)", fontWeight: 600 }}>{val}</strong>{" "}{lbl}
                     </span>
@@ -283,7 +291,7 @@ export default function DashboardPage() {
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-muted)")}
             >
-              Ver todos <ArrowRight size={10} />
+              Ver todos <ArrowRight size={10} aria-hidden="true" />
             </Link>
           </div>
 
@@ -316,10 +324,10 @@ export default function DashboardPage() {
                         loading="lazy" decoding="async"
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.10) 55%, transparent 100%)" }} />
+                      <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.10) 55%, transparent 100%)" }} />
 
                       {/* Play chip */}
-                      <div style={{
+                      <div aria-hidden="true" style={{
                         position: "absolute", bottom: "10px", right: "10px",
                         width: "40px", height: "40px", borderRadius: "50%",
                         background: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center",
@@ -349,7 +357,14 @@ export default function DashboardPage() {
                           {p.progress_pct === 100 ? "✓ Concluído" : `${p.progress_pct}%`}
                         </span>
                       </div>
-                      <div className="progress-bar">
+                      <div
+                        className="progress-bar"
+                        role="progressbar"
+                        aria-label={`Progresso do curso ${p.title}`}
+                        aria-valuenow={p.progress_pct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
                         <div className={`progress-bar-fill${p.progress_pct === 100 ? " sage" : ""}`} style={{ width: `${p.progress_pct}%` }} />
                       </div>
                     </div>
@@ -363,14 +378,14 @@ export default function DashboardPage() {
             <div style={{ padding: "0 clamp(16px,4vw,24px)" }}>
               <div className="hero-card-immersive" style={{ cursor: "default", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "clamp(32px,6vw,48px) clamp(20px,4vw,28px)" }}>
                 <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "rgba(198,168,112,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
-                  <BookOpen size={24} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                  <BookOpen size={24} aria-hidden="true" style={{ color: "var(--gold)" }} strokeWidth={1.5} />
                 </div>
                 <p className="font-display" style={{ fontSize: "24px", fontWeight: 300, color: "var(--text-primary)", marginBottom: "8px" }}>Inicie sua jornada</p>
                 <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.75, marginBottom: "22px", maxWidth: "320px" }}>
                   Adquira um curso e desperte o que está dentro de você.
                 </p>
                 <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ fontSize: "9px", padding: "12px 28px" }}>
-                  Conhecer cursos <ArrowRight size={13} />
+                  Conhecer cursos <ArrowRight size={13} aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -382,8 +397,8 @@ export default function DashboardPage() {
           <div style={{ padding: "clamp(16px,3vw,20px) clamp(16px,4vw,24px) 0" }}>
             {products.filter((p) => p.progress_pct === 100).map((p) => (
               <Link key={p.id} to={`/products/${p.slug}/certificado`} className="achievement-banner" style={{ display: "flex", textDecoration: "none", marginBottom: "8px" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(198,168,112,0.10)", border: "1px solid rgba(198,168,112,0.28)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Award size={18} style={{ color: "var(--gold)" }} strokeWidth={1.3} />
+                <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--gold-glow)", border: "1px solid var(--border-mid)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Award size={18} aria-hidden="true" style={{ color: "var(--gold)" }} strokeWidth={1.3} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: "13px", color: "var(--gold)", fontWeight: 600, marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -391,7 +406,7 @@ export default function DashboardPage() {
                   </p>
                   <p style={{ fontSize: "11px", color: "var(--text-muted)" }}>Ver certificado de conclusão</p>
                 </div>
-                <ArrowRight size={14} style={{ color: "var(--gold)", flexShrink: 0 }} />
+                <ArrowRight size={14} aria-hidden="true" style={{ color: "var(--gold)", flexShrink: 0 }} />
               </Link>
             ))}
           </div>
@@ -406,7 +421,7 @@ export default function DashboardPage() {
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--lavender)")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-muted)")}
             >
-              Ver tudo <ArrowRight size={10} />
+              Ver tudo <ArrowRight size={10} aria-hidden="true" />
             </Link>
           </div>
 
@@ -433,14 +448,14 @@ export default function DashboardPage() {
                       }}
                     >
                       {/* Category dot */}
-                      <div style={{
+                      <div aria-hidden="true" style={{
                         width: "7px", height: "7px", borderRadius: "50%",
                         background: CAT_COLOR[post.category] ?? "var(--lavender)",
                         flexShrink: 0, marginTop: "8px",
                       }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px", flexWrap: "wrap" }}>
-                          {post.is_pinned && <Flame size={9} style={{ color: "var(--gold)" }} />}
+                          {post.is_pinned && <Flame size={9} aria-label="Fixado" style={{ color: "var(--gold)" }} />}
                           <span style={{ fontSize: "11px", color: "var(--lavender)", fontWeight: 500 }}>
                             {post.user_profiles?.anonymous_name ?? "Anônima"}
                           </span>
@@ -454,11 +469,11 @@ export default function DashboardPage() {
                           {post.title}
                         </p>
                         <div style={{ display: "flex", gap: "12px" }}>
-                          <span style={{ fontSize: "11px", color: "var(--text-faint)", display: "flex", alignItems: "center", gap: "4px" }}>
-                            ♡ {post.likes_count}
+                          <span aria-label={`${post.likes_count} curtidas`} style={{ fontSize: "11px", color: "var(--text-faint)", display: "flex", alignItems: "center", gap: "4px" }}>
+                            <span aria-hidden="true">♡</span> {post.likes_count}
                           </span>
-                          <span style={{ fontSize: "11px", color: "var(--text-faint)", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <MessageSquare size={9} /> {post.comments_count}
+                          <span aria-label={`${post.comments_count} comentários`} style={{ fontSize: "11px", color: "var(--text-faint)", display: "flex", alignItems: "center", gap: "4px" }}>
+                            <MessageSquare size={9} aria-hidden="true" /> {post.comments_count}
                           </span>
                         </div>
                       </div>
@@ -496,7 +511,7 @@ export default function DashboardPage() {
                 O Mulher Espiral tem 8 módulos de autoconhecimento esperando por você.
               </p>
               <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ width: "100%", justifyContent: "center", fontSize: "10px" }}>
-                Quero começar <ArrowRight size={14} />
+                Quero começar <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </div>
           </div>

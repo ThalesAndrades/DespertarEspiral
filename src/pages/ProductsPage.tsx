@@ -169,7 +169,7 @@ export default function ProductsPage() {
             <div style={{ padding: "0 clamp(16px,4vw,24px)" }}>
               <div className="card-dark" style={{ padding: "clamp(32px,6vw,56px) clamp(24px,5vw,36px)", textAlign: "center" }}>
                 <div style={{ width: "62px", height: "62px", borderRadius: "50%", background: "rgba(198,168,112,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
-                  <BookOpen size={26} style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+                  <BookOpen size={26} aria-hidden="true" style={{ color: "var(--gold)" }} strokeWidth={1.5} />
                 </div>
                 <p className="font-display" style={{ fontSize: "24px", fontWeight: 300, color: "var(--text-primary)", marginBottom: "8px" }}>
                   Nenhum curso ainda
@@ -178,7 +178,7 @@ export default function ProductsPage() {
                   Explore nossos cursos e inicie sua jornada de autoconhecimento.
                 </p>
                 <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ fontSize: "10px" }}>
-                  Conhecer cursos <ArrowRight size={14} />
+                  Conhecer cursos <ArrowRight size={14} aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -203,19 +203,19 @@ export default function ProductsPage() {
                           loading="lazy" decoding="async"
                           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                         />
-                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.12) 55%, transparent 100%)" }} />
+                        <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.12) 55%, transparent 100%)" }} />
 
                         {/* Status badge */}
                         <div style={{ position: "absolute", top: "10px", right: "10px" }}>
                           {p.progress_pct === 100 ? (
-                            <span className="badge-sage" style={{ fontSize: "7.5px" }}><CheckCircle size={8} /> Concluído</span>
+                            <span className="badge-sage" style={{ fontSize: "7.5px" }}><CheckCircle size={8} aria-hidden="true" /> Concluído</span>
                           ) : p.progress_pct > 0 ? (
                             <span className="badge-gold" style={{ fontSize: "7.5px" }}>{p.progress_pct}%</span>
                           ) : null}
                         </div>
 
                         {/* Play button */}
-                        <div style={{
+                        <div aria-hidden="true" style={{
                           position: "absolute", bottom: "10px", right: "10px",
                           width: "40px", height: "40px", borderRadius: "50%",
                           background: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center",
@@ -240,11 +240,18 @@ export default function ProductsPage() {
                           </span>
                           {p.progress_pct === 100 && (
                             <Link to={`/products/${p.slug}/certificado`} onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "var(--sage)", textDecoration: "none" }}>
-                              <Award size={11} /> Certificado
+                              <Award size={11} aria-hidden="true" /> Certificado
                             </Link>
                           )}
                         </div>
-                        <div className="progress-bar">
+                        <div
+                          className="progress-bar"
+                          role="progressbar"
+                          aria-label={`Progresso do curso ${p.title}`}
+                          aria-valuenow={p.progress_pct}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                        >
                           <div className={`progress-bar-fill${p.progress_pct === 100 ? " sage" : ""}`} style={{ width: `${p.progress_pct}%` }} />
                         </div>
                       </div>
@@ -273,7 +280,7 @@ export default function ProductsPage() {
                         loading="lazy" decoding="async"
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.12) 55%, transparent 100%)" }} />
+                      <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,13,28,0.96) 0%, rgba(11,13,28,0.12) 55%, transparent 100%)" }} />
                       <div style={{ position: "absolute", bottom: "12px", left: "14px", right: "14px" }}>
                         {p.subtitle && <span className="badge-rose" style={{ marginBottom: "7px", fontSize: "7.5px" }}>{p.subtitle}</span>}
                         <h2 className="font-display" style={{ fontSize: "22px", fontWeight: 300, color: "#f8f5ee", lineHeight: 1.12 }}>{p.title}</h2>
@@ -287,11 +294,19 @@ export default function ProductsPage() {
                         <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{p.completed_lessons} de {p.total_lessons} aulas</span>
                         <span style={{ fontSize: "12px", fontFamily: "Montserrat", fontWeight: 600, color: p.progress_pct === 100 ? "var(--sage)" : "var(--gold)" }}>{p.progress_pct}%</span>
                       </div>
-                      <div className="progress-bar" style={{ marginBottom: "14px" }}>
+                      <div
+                        className="progress-bar"
+                        style={{ marginBottom: "14px" }}
+                        role="progressbar"
+                        aria-label={`Progresso do curso ${p.title}`}
+                        aria-valuenow={p.progress_pct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
                         <div className={`progress-bar-fill${p.progress_pct === 100 ? " sage" : ""}`} style={{ width: `${p.progress_pct}%` }} />
                       </div>
                       <span className="btn-gold" style={{ fontSize: "9px", padding: "11px 20px" }}>
-                        {p.progress_pct === 0 ? "Começar" : p.progress_pct === 100 ? "Revisar" : "Continuar"} <ChevronRight size={12} />
+                        {p.progress_pct === 0 ? "Começar" : p.progress_pct === 100 ? "Revisar" : "Continuar"} <ChevronRight size={12} aria-hidden="true" />
                       </span>
                     </div>
                   </Link>
@@ -305,7 +320,7 @@ export default function ProductsPage() {
         {!loading && otherProducts.length > 0 && (
           <div style={{ padding: "clamp(28px,4vw,36px) clamp(16px,4vw,24px) 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "clamp(12px,2vw,16px)" }}>
-              <Lock size={12} style={{ color: "var(--text-faint)" }} strokeWidth={1.5} />
+              <Lock size={12} aria-hidden="true" style={{ color: "var(--text-faint)" }} strokeWidth={1.5} />
               <p className="overline" style={{ color: "var(--text-faint)", fontSize: "8px" }}>Disponíveis para acesso</p>
             </div>
 
@@ -319,7 +334,7 @@ export default function ProductsPage() {
                   {/* Lock overlay */}
                   <div style={{ position: "relative", width: "56px", height: "56px", borderRadius: "12px", overflow: "hidden", flexShrink: 0 }}>
                     <img src={p.thumbnail_url || FALLBACK} alt={p.title} loading="lazy" decoding="async" width="56" height="56" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: "grayscale(0.5)" }} />
-                    <div style={{ position: "absolute", inset: 0, background: "rgba(7,9,21,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "rgba(7,9,21,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Lock size={14} style={{ color: "rgba(198,168,112,0.7)" }} strokeWidth={1.5} />
                     </div>
                   </div>
@@ -330,7 +345,7 @@ export default function ProductsPage() {
                       {p.price > 0 ? ` · R$ ${p.price.toFixed(2).replace(".", ",")}` : ""}
                     </p>
                   </div>
-                  <Link to={`/checkout/${p.slug}`} className="btn-outline-gold" style={{ padding: "9px 16px", fontSize: "8.5px", borderRadius: "12px", flexShrink: 0 }}>
+                  <Link to={`/checkout/${p.slug}`} className="btn-outline-gold" aria-label={`Acessar o curso ${p.title}`} style={{ padding: "9px 16px", fontSize: "8.5px", borderRadius: "12px", flexShrink: 0 }}>
                     Acessar
                   </Link>
                 </div>
