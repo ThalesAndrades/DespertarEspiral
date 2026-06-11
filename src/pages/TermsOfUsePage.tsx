@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/lib/helmet";
 import { Link } from "react-router-dom";
 
 const CONTACT_EMAIL = "contato@despertarespiral.com";

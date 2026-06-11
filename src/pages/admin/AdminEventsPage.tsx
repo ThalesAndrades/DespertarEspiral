@@ -224,7 +224,7 @@ function FunnelBar({ step }: { step: FunnelStep; maxCount: number }) {
             style={{
               width: `${Math.min(step.pct, 100)}%`,
               background: `linear-gradient(90deg, ${color}88, ${color})`,
-              transition: "width 1.1s var(--ease-out)",
+              transition: "width 1.1s cubic-bezier(.16,1,.3,1)",
             }}
           />
         </div>
@@ -276,7 +276,7 @@ function StepBarChart({ steps }: { steps: StepBar[] }) {
                   style={{
                     width: `${maxCount > 0 ? (s.count / maxCount) * 100 : 0}%`,
                     background: "linear-gradient(90deg, rgba(164,158,208,0.6), var(--lavender))",
-                    transition: "width 1s var(--ease-out)",
+                    transition: "width 1s cubic-bezier(.16,1,.3,1)",
                   }}
                 />
               </div>
@@ -332,7 +332,7 @@ function StepBarChart({ steps }: { steps: StepBar[] }) {
                     background: isTop
                       ? "linear-gradient(180deg, var(--gold), rgba(198,168,112,0.7))"
                       : "linear-gradient(180deg, var(--lavender), rgba(164,158,208,0.5))",
-                    transition: "height 1s var(--ease-out)",
+                    transition: "height 1s cubic-bezier(.16,1,.3,1)",
                     position: "relative",
                     overflow: "hidden",
                   }}
@@ -476,7 +476,7 @@ function SourcesCard({ sources }: { sources: Record<string, number> }) {
                       style={{
                         width: `${pct}%`,
                         background: "linear-gradient(90deg, rgba(201,154,170,0.5), var(--rose))",
-                        transition: "width 0.9s var(--ease-out)",
+                        transition: "width 0.9s cubic-bezier(.16,1,.3,1)",
                       }}
                     />
                   </div>

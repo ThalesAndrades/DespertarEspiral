@@ -138,7 +138,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
   const pct = Math.round((current / total) * 100);
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 500, height: "2px", background: "rgba(198,168,112,0.12)" }}>
-      <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg, #b8903c, #c6a870, #dac394)", transition: "width 0.6s var(--ease-out)", willChange: "width" }} />
+      <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg, #b8903c, #c6a870, #dac394)", transition: "width 0.6s cubic-bezier(.16,1,.3,1)", willChange: "width" }} />
     </div>
   );
 }
@@ -437,7 +437,7 @@ export default function MapaDoPoder() {
                 letterSpacing: "0.22em", textTransform: "uppercase",
                 cursor: "pointer", alignSelf: "flex-start",
                 boxShadow: "0 8px 40px rgba(198,168,112,0.40), 0 2px 12px rgba(0,0,0,0.4)",
-                transition: "transform 0.22s var(--ease-spring), box-shadow 0.22s",
+                transition: "transform 0.22s cubic-bezier(.34,1.56,.64,1), box-shadow 0.22s",
                 minHeight: "60px",
               }}
               onMouseEnter={(e) => { const el = e.currentTarget; el.style.transform = "translateY(-3px) scale(1.02)"; el.style.boxShadow = "0 16px 60px rgba(198,168,112,0.55), 0 4px 20px rgba(0,0,0,0.5)"; }}
@@ -513,7 +513,7 @@ export default function MapaDoPoder() {
                 width: i === step ? "20px" : "5px",
                 height: "5px", borderRadius: "100px",
                 background: i <= step ? "var(--gold)" : "rgba(198,168,112,0.18)",
-                transition: "all 0.4s var(--ease-out)",
+                transition: "all 0.4s cubic-bezier(.16,1,.3,1)",
               }} />
             ))}
           </div>
@@ -527,7 +527,7 @@ export default function MapaDoPoder() {
         <div style={{
           opacity: animIn ? 1 : 0,
           transform: animIn ? "translateY(0)" : "translateY(12px)",
-          transition: "opacity 0.28s ease, transform 0.28s var(--ease-out)",
+          transition: "opacity 0.28s ease, transform 0.28s cubic-bezier(.16,1,.3,1)",
         }}>
           {/* Step identity row */}
           <div style={{
@@ -807,7 +807,7 @@ export default function MapaDoPoder() {
                   fontWeight: 700, letterSpacing: "0.20em", textTransform: "uppercase",
                   cursor: canAdvance() ? "pointer" : "not-allowed",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-                  transition: "all 0.25s var(--ease-spring)",
+                  transition: "all 0.25s cubic-bezier(.34,1.56,.64,1)",
                   minHeight: "58px",
                   transform: canAdvance() ? "none" : "none",
                 }}
@@ -853,7 +853,7 @@ export default function MapaDoPoder() {
           position: "relative", zIndex: 10,
           width: "100%", maxWidth: "520px",
           margin: "0 auto", padding: "clamp(24px,5vw,48px) clamp(20px,4vw,40px)",
-          animation: "fadeUp 0.7s var(--ease-out) both",
+          animation: "fadeUp 0.7s cubic-bezier(.16,1,.3,1) both",
         }}>
           {/* Completion icon */}
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
@@ -863,7 +863,7 @@ export default function MapaDoPoder() {
               border: "2px solid rgba(198,168,112,0.35)",
               display: "flex", alignItems: "center", justifyContent: "center",
               margin: "0 auto 20px",
-              animation: "bounceScale 0.6s var(--ease-spring) both",
+              animation: "bounceScale 0.6s cubic-bezier(.34,1.56,.64,1) both",
             }}>
               <span style={{ fontSize: "32px" }}>✶</span>
             </div>
@@ -937,7 +937,7 @@ export default function MapaDoPoder() {
                 fontWeight: 700, letterSpacing: "0.20em", textTransform: "uppercase",
                 cursor: submitting ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                transition: "transform 0.22s var(--ease-spring), box-shadow 0.22s",
+                transition: "transform 0.22s cubic-bezier(.34,1.56,.64,1), box-shadow 0.22s",
                 minHeight: "58px", marginTop: "6px",
                 opacity: submitting ? 0.7 : 1,
                 boxShadow: "0 8px 32px rgba(198,168,112,0.30)",
@@ -1005,7 +1005,7 @@ export default function MapaDoPoder() {
         {/* Big gold star */}
         <div style={{
           fontSize: "72px", lineHeight: 1, marginBottom: "28px",
-          animation: "bounceScale 0.8s var(--ease-spring) 0.2s both",
+          animation: "bounceScale 0.8s cubic-bezier(.34,1.56,.64,1) 0.2s both",
           filter: "drop-shadow(0 0 30px rgba(198,168,112,0.50))",
         }}>
           ✶
@@ -1041,7 +1041,7 @@ export default function MapaDoPoder() {
           padding: "clamp(24px,4vw,36px)",
           marginBottom: "clamp(20px,4vw,32px)",
           boxShadow: "0 20px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(198,168,112,0.20)",
-          animation: "popIn 0.7s var(--ease-spring) 0.8s both",
+          animation: "popIn 0.7s cubic-bezier(.34,1.56,.64,1) 0.8s both",
           display: "flex", flexDirection: "column", alignItems: "center", gap: "16px",
           maxWidth: "280px",
         }}>
@@ -1087,7 +1087,7 @@ export default function MapaDoPoder() {
               fontFamily: "Montserrat, sans-serif", fontSize: "10.5px",
               fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase",
               boxShadow: "0 8px 32px rgba(198,168,112,0.30)",
-              transition: "transform 0.22s var(--ease-spring), box-shadow 0.22s",
+              transition: "transform 0.22s cubic-bezier(.34,1.56,.64,1), box-shadow 0.22s",
               minHeight: "56px",
             }}
             onMouseEnter={(e) => { const el = e.currentTarget; el.style.transform = "translateY(-2px)"; el.style.boxShadow = "0 16px 50px rgba(198,168,112,0.40)"; }}

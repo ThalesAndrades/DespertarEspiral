@@ -5,7 +5,7 @@
  * Polish: lock overlay, progress gradients, snap dots
  */
 import { useEffect, useState, useRef } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/lib/helmet";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";

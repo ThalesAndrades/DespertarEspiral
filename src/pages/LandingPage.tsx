@@ -3,7 +3,7 @@
  * Parallax multicamada, reveal cinético, transições premium entre seções
  */
 import { useEffect, useRef, useState, useCallback, useId } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/lib/helmet";
 import { Link } from "react-router-dom";
 import LandingNav from "@/components/layout/LandingNav";
 import {
@@ -163,7 +163,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           <ChevronDown size={13} style={{
             color: open ? "var(--gold)" : "var(--text-faint)",
             transform: open ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform 0.32s var(--ease-out)",
+            transition: "transform 0.32s cubic-bezier(.16,1,.3,1)",
           }} />
         </div>
       </button>
@@ -174,7 +174,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         style={{
         maxHeight: open ? "320px" : "0",
         overflow: "hidden",
-        transition: "max-height 0.42s var(--ease-out)",
+        transition: "max-height 0.42s cubic-bezier(.16,1,.3,1)",
       }}>
         <p style={{
           fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-secondary)",
@@ -318,7 +318,7 @@ export default function LandingPage() {
           .reveal-scale {
             opacity: 0;
             transform: scale(0.96) translateY(16px);
-            transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+            transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1);
           }
           .reveal-scale.visible { opacity: 1; transform: scale(1) translateY(0); }
 
@@ -420,7 +420,7 @@ export default function LandingPage() {
                 borderRadius: "100px",
                 background: i === 0 ? "var(--gold)" : "var(--border-soft)",
                 border: "none", padding: 0, cursor: "pointer",
-                transition: "all 0.35s var(--ease-out)",
+                transition: "all 0.35s cubic-bezier(.16,1,.3,1)",
                 flexShrink: 0, display: "block", opacity: i === 0 ? 1 : 0.5,
               }}
             />

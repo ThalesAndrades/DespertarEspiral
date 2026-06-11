@@ -4,7 +4,7 @@
  * Improved flow: live form validation, Asaas payment link surfaced on success
  */
 import { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/lib/helmet";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
 import { useAuth } from "@/hooks/useAuth";

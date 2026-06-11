@@ -145,7 +145,7 @@ export default function ResetPasswordPage() {
           {/* Icon */}
           <div style={{
             width: "64px", height: "64px", borderRadius: "50%",
-            background: "var(--gold-glow)", border: "1px solid var(--border-soft)",
+            background: "rgba(198,168,112,0.10)", border: "1px solid var(--border-soft)",
             display: "flex", alignItems: "center", justifyContent: "center",
             margin: "0 auto clamp(20px,3vw,28px)",
           }}>

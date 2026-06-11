@@ -4,7 +4,7 @@
  * Performance: Promise.all parallel fetches, localStorage cache hydration
  */
 import { useEffect, useState, memo, useRef } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/lib/helmet";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";

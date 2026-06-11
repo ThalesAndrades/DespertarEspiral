@@ -4,7 +4,7 @@
  * Supports ?next= redirect param (safe open-redirect guard included)
  */
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "@/lib/helmet";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import SpiralLogo from "@/components/layout/SpiralLogo";
 import { LazyAuthSpiral3D as AuthSpiral3D } from "@/components/layout/LazyDecorative";
@@ -167,7 +167,8 @@ export default function LoginPage() {
               <div>
                 <label style={LABEL}>E-mail</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com" className="input-dark" autoComplete="email" />
+                  placeholder="seu@email.com" className="input-dark" autoComplete="email"
+                  style={{ borderRadius: "14px" }} />
               </div>
 
               <div>
@@ -176,7 +177,7 @@ export default function LoginPage() {
                   <input type={showPass ? "text" : "password"} value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••" className="input-dark" autoComplete="current-password"
-                    style={{ paddingRight: "52px" }} />
+                    style={{ paddingRight: "52px", borderRadius: "14px" }} />
                   <button type="button"
                     style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer", padding: "6px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}
                     onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}>
