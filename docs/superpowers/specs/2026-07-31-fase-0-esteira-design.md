@@ -85,11 +85,56 @@ tem um `product_id` único. Ver §4.
 
 ### 3.4 Home nova
 
-Uma única ação: ir para a Bússola. As três chamadas concorrentes de hoje
-("Entrar na lista", "Começar pelo Mapa do Poder", "Reservar minha vaga") saem.
+Duas camadas, em ordem de prioridade visual:
+
+1. **Topo — uma única ação:** ir para a Bússola. As três chamadas concorrentes de
+   hoje ("Entrar na lista", "Começar pelo Mapa do Poder", "Reservar minha vaga") saem.
+2. **Abaixo — a vitrine** (§3.5), para quem já sabe o que quer e não precisa do
+   diagnóstico.
+
+A ordem não é estética, é funcional: quem chega frio converte melhor pelo
+diagnóstico; quem chega quente quer ver preço. A página serve os dois sem que um
+CTA roube o outro — só um deles é primário acima da dobra.
 
 Constrói-se sobre o design system existente (`DESIGN_SYSTEM.md`): tokens, sem hex
 solto, tipografia fluida, motion calmo, `prefers-reduced-motion` respeitado.
+
+### 3.5 Vitrine na home
+
+Grade de produtos lado a lado, com densidade comercial — mas dentro do DNA da
+marca, que o `DESIGN_SYSTEM.md` define como *premium-calm* e "quiet over loud".
+
+**Anatomia do card:** imagem, nome, promessa em uma linha, o que ela leva (3 itens
+curtos), preço visível, CTA próprio. Cards de mesma altura, grade responsiva
+(1 coluna no mobile → 2 → 3), o produto core com destaque de um degrau (borda
+dourada, não card gigante).
+
+**O que a vitrine FAZ** (é aqui que mora o "marketeiro" que converte no nicho):
+preço sempre visível, parcelamento ao lado do valor cheio, selo de garantia,
+"acesso vitalício" quando for verdade, comparação entre trilhas, ordenação que
+coloca a porta de entrada barata antes do core.
+
+**O que a vitrine NÃO faz** (queima confiança neste nicho):
+contador regressivo falso, "de R$ X por R$ Y" com preço-âncora que nunca existiu,
+"restam 3 vagas" sem estoque real, tarja vermelha de desconto, badge piscando.
+Qualquer escassez exibida tem de ser verdadeira e verificável no banco.
+
+### 3.6 Catálogo da esteira
+
+Com um único produto ativo hoje, não há vitrine possível. O catálogo passa a
+refletir a esteira: cada um dos 10 produtos vira uma linha em `products`, com um
+**status** explícito.
+
+- `disponivel` — conteúdo pronto, compra liberada.
+- `em_breve` — aparece na grade, sem botão de compra; no lugar, "avise-me quando
+  abrir", que grava em `launch_waitlist` **com o produto**.
+
+Isso resolve dois problemas de uma vez: a grade nasce cheia e honesta, e cada
+e-mail de lista de espera vira **demanda medida antes de produzir o conteúdo** —
+a Sunyan descobre qual dos 10 o público quer antes de gravar dez cursos.
+
+**Regra dura:** `em_breve` nunca aceita pagamento e nunca promete data que não
+exista. Um produto sem conteúdo não pode ser comprado por engano.
 
 ---
 
@@ -115,9 +160,31 @@ preenchido com o produto principal para não quebrar o que já lê essa coluna �
 incluindo `asaas-webhook` e `grant-pending-access`. A liberação de acesso passa a
 percorrer `order_items` quando existirem.
 
+**Novas colunas em `products`** (vitrine):
+
+| Coluna | Tipo | Uso |
+|---|---|---|
+| `status` | `text` | `disponivel` \| `em_breve` — default `em_breve` |
+| `promise` | `text` | A promessa de uma linha exibida no card |
+| `highlights` | `jsonb` | Os 3 itens curtos de "o que ela leva" |
+| `sort_order` | `int` | Ordem na vitrine (entrada barata antes do core) |
+
+`status` com default `em_breve` é proposital: um produto recém-criado no admin
+**não** fica comprável por acidente antes de ter conteúdo.
+
+**`launch_waitlist` ganha `product_id`** (nullable) — a tabela já existe e é usada
+pelo `MapaDoPoder`. Com o produto preenchido, ela passa a servir também o
+"avise-me" da vitrine, sem tabela nova. Linhas antigas continuam válidas com
+`product_id` nulo.
+
+**Estado atual do catálogo (medido em 31/07, via API pública):** 1 produto ativo —
+"Mulher Espiral", R$ 997. A esteira define o core em R$ 497 com âncora de R$ 997;
+essa divergência precisa ser resolvida pela Sunyan antes da vitrine ir ao ar.
+
 **RLS:** toda tabela nova nasce com RLS habilitada, no padrão de
 `20260414_000001_production_rls.sql`. `quiz_responses` aceita INSERT anônimo
-(a visitante não tem conta ainda) e SELECT apenas para admin.
+(a visitante não tem conta ainda) e SELECT apenas para admin. `launch_waitlist`
+mantém a política atual.
 
 ---
 
@@ -178,7 +245,12 @@ padrão:
   remover acesso; retomar reacende.
 - **Bump** — total com e sem bump; pedido com dois itens libera dois produtos;
   pedido sem bump continua liberando um (proteção contra regressão).
-- **Home** — a página tem exatamente um CTA primário.
+- **Home** — a página tem exatamente um CTA primário acima da dobra.
+- **Vitrine** — produto `em_breve` renderiza "avise-me" e **nunca** botão de compra;
+  produto `disponivel` renderiza preço e compra; a ordenação respeita `sort_order`;
+  a grade não quebra com 1, 3 ou 12 produtos.
+- **Lista de espera** — o "avise-me" grava `launch_waitlist` com `product_id`
+  correto; e-mail repetido no mesmo produto não duplica.
 
 ---
 
