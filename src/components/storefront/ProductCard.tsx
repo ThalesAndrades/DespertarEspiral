@@ -16,7 +16,10 @@ interface ProductCardProps {
  */
 export function ProductCard({ product, onNotify, featured = false }: ProductCardProps) {
   const isAvailable = product.status === "disponivel";
-  const showInstallments = isAvailable && product.price >= 100;
+  const isGratuito = product.price === 0;
+  const showInstallments = isAvailable && product.price >= 100 && !isGratuito;
+  const ctaHref = isGratuito ? "/bussola" : `/checkout/${product.slug}`;
+  const ctaLabel = isGratuito ? "Fazer o diagnóstico" : "Quero começar";
 
   return (
     <article
@@ -65,19 +68,21 @@ export function ProductCard({ product, onNotify, featured = false }: ProductCard
           {isAvailable ? (
             <>
               <p className="font-display" style={{ fontSize: "var(--fs-xl)", color: "var(--gold)", fontWeight: 300 }}>
-                {formatBRL(product.price)}
+                {isGratuito ? "Gratuito" : formatBRL(product.price)}
               </p>
               {showInstallments && (
                 <p className="font-body" style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)", marginTop: "calc(var(--space-1) * -1)" }}>
                   ou 12× de {formatBRL(product.price / 12)}
                 </p>
               )}
-              <Link to={`/checkout/${product.slug}`} className="btn-gold" style={{ textAlign: "center" }}>
-                Quero começar
+              <Link to={ctaHref} className="btn-gold" style={{ textAlign: "center" }}>
+                {ctaLabel}
               </Link>
-              <p className="font-body" style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)", textAlign: "center" }}>
-                Garantia de 7 dias
-              </p>
+              {!isGratuito && (
+                <p className="font-body" style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)", textAlign: "center" }}>
+                  Garantia de 7 dias
+                </p>
+              )}
             </>
           ) : (
             <button type="button" className="btn-outline-gold interactive" onClick={() => onNotify(product)}>

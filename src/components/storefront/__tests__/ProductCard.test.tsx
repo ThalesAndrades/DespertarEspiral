@@ -55,6 +55,19 @@ describe("ProductCard", () => {
     expect(screen.getByText("Garantia de 7 dias")).toBeInTheDocument();
   });
 
+  it("produto gratuito disponivel linka para /bussola, nao para checkout", () => {
+    renderCard({ ...base, slug: "bussola-da-espiral", price: 0, status: "disponivel" });
+    const cta = screen.getByRole("link", { name: /fazer o diagnóstico/i });
+    expect(cta).toHaveAttribute("href", "/bussola");
+    expect(screen.queryByRole("link", { name: /quero começar/i })).not.toBeInTheDocument();
+  });
+
+  it("produto gratuito mostra 'Gratuito' no lugar do preco e sem parcelamento", () => {
+    renderCard({ ...base, slug: "bussola-da-espiral", price: 0, status: "disponivel" });
+    expect(screen.getByText("Gratuito")).toBeInTheDocument();
+    expect(screen.queryByText(/12×/)).not.toBeInTheDocument();
+  });
+
   it("aplica borda dourada quando featured", () => {
     const { container } = render(
       <MemoryRouter><ProductCard product={base} onNotify={vi.fn()} featured /></MemoryRouter>
