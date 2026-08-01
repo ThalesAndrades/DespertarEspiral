@@ -543,7 +543,11 @@ describe("joinWaitlist", () => {
     insert.mockResolvedValue({ error: null });
     await joinWaitlist("  Maria@Exemplo.COM ", "prod-1");
     expect(insert).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "maria@exemplo.com", product_id: "prod-1" })
+      expect.objectContaining({
+        email: "maria@exemplo.com",
+        product_id: "prod-1",
+        source: "vitrine",
+      })
     );
   });
 
@@ -588,9 +592,17 @@ export async function joinWaitlist(
   const normalized = email.trim().toLowerCase();
   if (!EMAIL_RE.test(normalized)) return { ok: false, duplicate: false };
 
+  // name/source vao preenchidos porque a tabela ja e usada pelo MapaDoPoder
+  // com esse formato (name, email, phone, source) — omitir `name` arriscaria
+  // violar um NOT NULL que nao da para inspecionar pela API publica.
   const { error } = await supabase
     .from("launch_waitlist")
-    .insert({ email: normalized, product_id: productId });
+    .insert({
+      name: "Lista de espera",
+      email: normalized,
+      source: "vitrine",
+      product_id: productId,
+    });
 
   if (error) {
     if (error.code === "23505") return { ok: true, duplicate: true };
