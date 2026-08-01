@@ -286,7 +286,7 @@ Expected: PASS, 3 testes.
 - [ ] **Step 6: Conferir que nada quebrou com a mudança do tipo**
 
 ```bash
-npm test && npx tsc --noEmit
+npm test && npx tsc -p tsconfig.app.json --noEmit
 ```
 
 Expected: suíte verde e zero erro de tipo. Se algum arquivo usava `is_published`, corrigir para `is_active` agora.

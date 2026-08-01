@@ -21,9 +21,13 @@ export default defineConfig({
     // com 100% de falha quando, isoladas, passam 36/36 e 54/55.
     // Processos isolados + concorrencia limitada trocam alguns segundos de
     // duracao por um resultado que corresponde a realidade.
-    pool: "forks",
+    // `forks` com 2 workers derrubava workers inteiros de forma INTERMITENTE
+    // ("Worker exited unexpectedly"): duas rodadas do mesmo codigo davam
+    // 475/31 e 496/33. Threads com concorrencia limitada compartilham o heap
+    // do processo e nao sofrem esse estouro por worker.
+    pool: "threads",
     poolOptions: {
-      forks: { minForks: 1, maxForks: 2 },
+      threads: { minThreads: 1, maxThreads: 2 },
     },
     testTimeout: 20000,
     hookTimeout: 20000,
