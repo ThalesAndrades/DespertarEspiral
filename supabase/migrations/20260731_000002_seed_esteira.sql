@@ -1,5 +1,7 @@
 -- Indice unico em slug para garantir idempotencia do seed.
 -- ON CONFLICT presume esta garantia; adicionar pre-vencao aqui.
+-- Risco aceito: producao tem 1 produto hoje. Se houver slugs duplicados no
+-- futuro, este indice aborta a migracao e nada e aplicado (transacao unica).
 create unique index if not exists uniq_products_slug on public.products (slug);
 
 -- Catalogo da esteira. Idempotente por slug.

@@ -70,7 +70,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!slug) { setProductLoading(false); return; }
-    supabase.from("products").select("*").eq("slug", slug).eq("is_active", true).single()
+    supabase.from("products").select("*").eq("slug", slug).eq("is_active", true).eq("status", "disponivel").single()
       .then(({ data, error }) => {
         if (data) {
           const priceNum = typeof data.price === "number" ? data.price : parseFloat(data.price);

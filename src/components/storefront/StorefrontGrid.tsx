@@ -26,12 +26,17 @@ export function StorefrontGrid({ products, loading = false }: StorefrontGridProp
       <div
         style={{
           display: "grid", gap: "var(--space-5)",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))",
           alignItems: "stretch",
         }}
       >
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} onNotify={setWaitlistFor} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            onNotify={setWaitlistFor}
+            featured={product.slug === "mulher-espiral"}
+          />
         ))}
       </div>
 

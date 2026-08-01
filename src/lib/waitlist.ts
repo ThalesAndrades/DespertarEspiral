@@ -10,9 +10,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export async function joinWaitlist(
   email: string,
   productId: string
-): Promise<{ ok: boolean; duplicate: boolean }> {
+): Promise<{ ok: boolean; duplicate: boolean; reason?: "invalid" | "error" }> {
   const normalized = email.trim().toLowerCase();
-  if (!EMAIL_RE.test(normalized)) return { ok: false, duplicate: false };
+  if (!EMAIL_RE.test(normalized)) return { ok: false, duplicate: false, reason: "invalid" };
 
   // name/source vao preenchidos porque a tabela ja e usada pelo MapaDoPoder
   // com esse formato (name, email, phone, source) — omitir `name` arriscaria
@@ -29,7 +29,7 @@ export async function joinWaitlist(
   if (error) {
     if (error.code === "23505") return { ok: true, duplicate: true };
     console.error("[waitlist] falha ao inserir", error.message);
-    return { ok: false, duplicate: false };
+    return { ok: false, duplicate: false, reason: "error" };
   }
 
   return { ok: true, duplicate: false };

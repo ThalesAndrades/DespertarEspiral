@@ -39,4 +39,33 @@ describe("ProductCard", () => {
     renderCard({ ...base, highlights: ["a", "b", "c", "d", "e"] });
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
+
+  it("mostra parcelamento em 12x para preco >= 100", () => {
+    renderCard({ ...base, price: 997 });
+    expect(screen.getByText("ou 12× de R$ 83,08")).toBeInTheDocument();
+  });
+
+  it("NAO mostra parcelamento para preco < 100", () => {
+    renderCard({ ...base, price: 47 });
+    expect(screen.queryByText(/ou 12×/)).not.toBeInTheDocument();
+  });
+
+  it("mostra selo de garantia de 7 dias quando disponivel", () => {
+    renderCard(base);
+    expect(screen.getByText("Garantia de 7 dias")).toBeInTheDocument();
+  });
+
+  it("aplica borda dourada quando featured", () => {
+    const { container } = render(
+      <MemoryRouter><ProductCard product={base} onNotify={vi.fn()} featured /></MemoryRouter>
+    );
+    const article = container.querySelector("article");
+    expect(article).toHaveStyle({ border: "1px solid var(--gold-dim)" });
+  });
+
+  it("NAO aplica borda dourada quando nao featured", () => {
+    const { container } = renderCard(base);
+    const article = container.querySelector("article");
+    expect(article?.style.border).toBe("");
+  });
 });

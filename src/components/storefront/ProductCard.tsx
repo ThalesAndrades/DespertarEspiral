@@ -5,6 +5,8 @@ import { formatBRL } from "@/lib/dateUtils";
 interface ProductCardProps {
   product: StorefrontProduct;
   onNotify: (product: StorefrontProduct) => void;
+  /** Produto core da esteira: ganha um degrau de destaque (borda dourada), nao um card gigante. */
+  featured?: boolean;
 }
 
 /**
@@ -12,8 +14,9 @@ interface ProductCardProps {
  * preco sempre visivel, promessa em uma linha, tres destaques, um CTA.
  * Sem contador, sem tarja de desconto, sem escassez inventada.
  */
-export function ProductCard({ product, onNotify }: ProductCardProps) {
+export function ProductCard({ product, onNotify, featured = false }: ProductCardProps) {
   const isAvailable = product.status === "disponivel";
+  const showInstallments = isAvailable && product.price >= 100;
 
   return (
     <article
@@ -22,6 +25,7 @@ export function ProductCard({ product, onNotify }: ProductCardProps) {
         display: "flex", flexDirection: "column", height: "100%",
         borderRadius: "var(--r-lg)", overflow: "hidden",
         opacity: isAvailable ? 1 : 0.86,
+        border: featured ? "1px solid var(--gold-dim)" : undefined,
       }}
     >
       {product.thumbnail ? (
@@ -63,9 +67,17 @@ export function ProductCard({ product, onNotify }: ProductCardProps) {
               <p className="font-display" style={{ fontSize: "var(--fs-xl)", color: "var(--gold)", fontWeight: 300 }}>
                 {formatBRL(product.price)}
               </p>
+              {showInstallments && (
+                <p className="font-body" style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)", marginTop: "calc(var(--space-1) * -1)" }}>
+                  ou 12× de {formatBRL(product.price / 12)}
+                </p>
+              )}
               <Link to={`/checkout/${product.slug}`} className="btn-gold" style={{ textAlign: "center" }}>
                 Quero começar
               </Link>
+              <p className="font-body" style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)", textAlign: "center" }}>
+                Garantia de 7 dias
+              </p>
             </>
           ) : (
             <button type="button" className="btn-outline-gold interactive" onClick={() => onNotify(product)}>

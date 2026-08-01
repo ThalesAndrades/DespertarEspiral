@@ -20,11 +20,15 @@ export function WaitlistDialog({ product, onClose }: WaitlistDialogProps) {
     if (!product || enviando) return;
 
     setEnviando(true);
-    const { ok, duplicate } = await joinWaitlist(email, product.id);
+    const { ok, duplicate, reason } = await joinWaitlist(email, product.id);
     setEnviando(false);
 
     if (!ok) {
-      toast.error("E-mail inválido. Confere e tenta de novo?");
+      if (reason === "invalid") {
+        toast.error("E-mail inválido. Confere e tenta de novo?");
+      } else {
+        toast.error("Não conseguimos salvar agora. Tenta de novo em instantes?");
+      }
       return;
     }
 

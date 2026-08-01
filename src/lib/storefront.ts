@@ -17,7 +17,7 @@ export function sortStorefront(products: StorefrontProduct[]): StorefrontProduct
 export async function fetchStorefront(): Promise<StorefrontProduct[]> {
   const { data, error } = await supabase
     .from("products")
-    .select("id, slug, title, subtitle, promise, price, thumbnail, status, highlights, sort_order")
+    .select("id, slug, title, subtitle, promise, price, thumbnail_url, status, highlights, sort_order")
     .eq("is_active", true);
 
   if (error) {
@@ -27,6 +27,7 @@ export async function fetchStorefront(): Promise<StorefrontProduct[]> {
 
   const rows = (data ?? []).map((r) => ({
     ...r,
+    thumbnail: r.thumbnail_url ?? "",
     promise: r.promise ?? "",
     subtitle: r.subtitle ?? "",
     highlights: Array.isArray(r.highlights) ? (r.highlights as string[]) : [],
