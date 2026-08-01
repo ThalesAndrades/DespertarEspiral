@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, Navigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { safeEmbedUrl, safeExternalUrl, sanitizeHtml, isStorageVideoUrl } from "@/lib/contentSafety";
+import { SETE_MANHAS_SLUG, estadoTrilha, type ConclusaoManha } from "@/lib/seteManhas";
 import {
   CheckCircle, ArrowLeft, ArrowRight, Play, FileText,
   File, Volume2, ChevronRight, ChevronDown, List, X,
@@ -43,6 +44,7 @@ export default function LessonPage() {
   const [product, setProduct] = useState<Record<string, unknown> | null>(null);
   const [lessonData, setLessonData] = useState<Record<string, unknown> | null>(null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [completedAt, setCompletedAt] = useState<Record<string, string>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showCertModal, setShowCertModal] = useState(false);
@@ -188,12 +190,20 @@ export default function LessonPage() {
       if (user?.id) {
         const { data: progress } = await supabase
           .from("lesson_progress")
-          .select("lesson_id")
+          .select("lesson_id, completed_at")
           .eq("user_id", user.id)
           .eq("completed", true);
-        if (!cancelled) setCompleted(new Set((progress ?? []).map((r: { lesson_id: string }) => r.lesson_id)));
+        if (!cancelled) {
+          setCompleted(new Set((progress ?? []).map((r: { lesson_id: string }) => r.lesson_id)));
+          const atMap: Record<string, string> = {};
+          for (const r of (progress ?? []) as { lesson_id: string; completed_at?: string | null }[]) {
+            if (r.completed_at) atMap[r.lesson_id] = r.completed_at;
+          }
+          setCompletedAt(atMap);
+        }
       } else if (!cancelled) {
         setCompleted(new Set());
+        setCompletedAt({});
       }
 
       const { data: lessonRow } = await supabase
@@ -506,6 +516,28 @@ export default function LessonPage() {
         </div>
       </DashboardLayout>
     );
+  }
+
+  /*
+   * Trava do ritmo: aula futura do Sete Manhãs não abre por URL direta.
+   * Redireciona de volta para a trilha — sem toast de erro: o tom do produto
+   * é acolhedor, e "ainda não" não é falha.
+   */
+  if ((product.slug as string) === SETE_MANHAS_SLUG) {
+    const posicaoSeteManhas = allLessons.findIndex((l) => (l.id as string) === (lesson.id as string)) + 1;
+    if (posicaoSeteManhas > 0) {
+      const conclusoesSeteManhas: ConclusaoManha[] = [];
+      allLessons.forEach((l, i) => {
+        const at = completedAt[l.id as string];
+        if (at) conclusoesSeteManhas.push({ indice: i + 1, completedAt: at });
+      });
+      const agoraISO = new Date().toISOString();
+      const trilhaSeteManhas = estadoTrilha(conclusoesSeteManhas, agoraISO);
+      const estadoDesta = trilhaSeteManhas[posicaoSeteManhas - 1]?.estado;
+      if (estadoDesta === "bloqueada" || estadoDesta === "amanha") {
+        return <Navigate to={`/products/${product.slug as string}`} replace />;
+      }
+    }
   }
 
   /* ── Modules sidebar content (shared between drawer + desktop panel) ── */
