@@ -222,11 +222,14 @@ Deno.serve(async (req: Request) => {
     }
 
     // 1. Fetch product
+    // Trava de negocio: produto em_breve NAO pode ser cobrado. Este filtro na
+    // edge function e a trava REAL — o filtro do front e so apresentacao.
     const { data: product, error: productError } = await supabaseAdmin
       .from("products")
       .select("id, title, subtitle, price, slug")
       .eq("slug", productSlug)
       .eq("is_active", true)
+      .eq("status", "disponivel")
       .single();
 
     if (productError || !product) {
