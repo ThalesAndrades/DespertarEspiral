@@ -92,7 +92,9 @@ export default function CheckoutPage() {
           });
         } else {
           toast.error("Produto não encontrado.");
-          navigate("/products");
+          // /products e rota privada (PrivateRoute); visitante deslogada cairia
+          // no /login com erro. A home e publica e sempre acessivel.
+          navigate("/");
         }
         setProductLoading(false);
       });

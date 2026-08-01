@@ -3,7 +3,7 @@
  *
  * Covers:
  *  - Loading skeleton enquanto produto carrega
- *  - Produto não encontrado → toast de erro + navigate para /products
+ *  - Produto não encontrado → toast de erro + navigate para / (home)
  *  - Renderização com produto carregado: título, preço em BRL, método de pagamento
  *  - Validação de formulário: nome e email obrigatórios (inline + toast)
  *  - Validação: email com formato inválido
@@ -194,13 +194,15 @@ describe("CheckoutPage — loading", () => {
 /* ──────────────────────────────────────────────────────── */
 
 describe("CheckoutPage — product not found", () => {
-  it("shows error toast and navigates to /products when product is null", async () => {
+  it("shows error toast and navigates to / (home) when product is null", async () => {
     mockProductQuery(null, { message: "Not found" });
     renderCheckout("slug-inexistente");
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Produto não encontrado.");
-      expect(mockNavigate).toHaveBeenCalledWith("/products");
+      // /products e rota privada; visitante deslogada iria para /login. Home
+      // e publica, entao o redirect de "nao encontrado" vai para "/".
+      expect(mockNavigate).toHaveBeenCalledWith("/");
     });
   });
 
@@ -219,7 +221,7 @@ describe("CheckoutPage — product not found", () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Produto não encontrado.");
-      expect(mockNavigate).toHaveBeenCalledWith("/products");
+      expect(mockNavigate).toHaveBeenCalledWith("/");
     });
   });
 });

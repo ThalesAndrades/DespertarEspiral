@@ -18,8 +18,10 @@ export function ResultadoCard({ arquetipo }: ResultadoCardProps) {
       <p className="font-body" style={{ fontSize: "var(--fs-sm)", color: "var(--text-muted)", textAlign: "left" }}>
         {arquetipo.convite}
       </p>
-      <Link to="/checkout/sete-manhas" className="btn-gold">
-        Começar o Sete Manhãs
+      {/* Aponta para a vitrine da home enquanto o Sete Manhas e em_breve; quando o
+          produto abrir, trocar para /checkout/sete-manhas (pendencia registrada no plano). */}
+      <Link to="/" className="btn-gold">
+        Conhecer o Sete Manhãs
       </Link>
       <Link to="/" className="font-body interactive" style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)" }}>
         Voltar ao início

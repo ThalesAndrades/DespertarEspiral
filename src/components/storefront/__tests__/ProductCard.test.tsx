@@ -68,6 +68,13 @@ describe("ProductCard", () => {
     expect(screen.queryByText(/12×/)).not.toBeInTheDocument();
   });
 
+  it("gratuito sem rota mapeada mostra avise-me, mesmo com status disponivel", () => {
+    renderCard({ ...base, slug: "outro-gratuito-sem-mapa", price: 0, status: "disponivel" });
+    expect(screen.getByRole("button", { name: /avise-me/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /fazer o diagnóstico/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /quero começar/i })).not.toBeInTheDocument();
+  });
+
   it("aplica borda dourada quando featured", () => {
     const { container } = render(
       <MemoryRouter><ProductCard product={base} onNotify={vi.fn()} featured /></MemoryRouter>

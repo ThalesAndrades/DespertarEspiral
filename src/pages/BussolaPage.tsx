@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { fireEventAsync } from "@/lib/sequenzy";
 import { calcularResultado, type Pilar, type RespostaQuiz } from "@/lib/bussola";
-import { PERGUNTAS, ARQUETIPOS, CONTENT_VERSION } from "@/content/bussola";
+import { PERGUNTAS, ARQUETIPOS, CONTENT_VERSION, CONTEUDO_PROVISORIO } from "@/content/bussola";
 import { QuizProgress } from "@/components/quiz/QuizProgress";
 import { QuizQuestion } from "@/components/quiz/QuizQuestion";
 import { EmailGate } from "@/components/quiz/EmailGate";
@@ -18,7 +18,7 @@ import { ResultadoCard } from "@/components/quiz/ResultadoCard";
 
 type Fase = "intro" | "perguntas" | "email" | "resultado";
 
-const STORAGE_KEY = "bussola:v1";
+const STORAGE_KEY = `bussola:${CONTENT_VERSION}`;
 
 interface EstadoSalvo {
   respostas: RespostaQuiz[];
@@ -93,7 +93,9 @@ export default function BussolaPage() {
       },
     });
 
-    sessionStorage.removeItem(STORAGE_KEY);
+    // I3: so descarta o progresso salvo quando a gravacao deu certo — em caso
+    // de erro, as respostas ficam no sessionStorage e a visitante pode reenviar.
+    if (!error) sessionStorage.removeItem(STORAGE_KEY);
     setEnviando(false);
     setFase("resultado");
   }
@@ -104,6 +106,9 @@ export default function BussolaPage() {
         {fase === "intro" && (
           <section style={{ textAlign: "center", display: "grid", gap: "var(--space-5)" }}>
             <span className="overline" style={{ color: "var(--gold)" }}>Bússola da Espiral</span>
+            {CONTEUDO_PROVISORIO && (
+              <span className="overline" style={{ color: "var(--text-muted)" }}>Versão preliminar</span>
+            )}
             <h1 className="font-display" style={{ fontSize: "var(--fs-display)", fontWeight: 300, color: "var(--text-primary)" }}>
               Em que volta da espiral você está presa?
             </h1>

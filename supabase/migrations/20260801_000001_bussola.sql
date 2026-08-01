@@ -8,12 +8,15 @@
 -- e feita por trigger que consulta auth.users pelo email. SECURITY DEFINER
 -- porque o papel anon nao enxerga auth.users nem pode escrever em perfis alheios.
 
+-- Constraints abaixo mitigam flood/injecao de lixo via INSERT anonimo
+-- (qualquer um com a anon key pode inserir); rate-limit de verdade fica
+-- para a borda (pendencia).
 create table if not exists public.quiz_responses (
   id uuid primary key default gen_random_uuid(),
-  email text not null,
-  answers jsonb not null,
-  pain_primary text not null,
-  social_archetype text not null,
+  email text not null check (char_length(email) <= 254),
+  answers jsonb not null check (pg_column_size(answers) <= 8192),
+  pain_primary text not null check (pain_primary in ('consciencia','reconexao','ativacao','integracao')),
+  social_archetype text not null check (char_length(social_archetype) <= 60),
   content_version text not null default 'v1-provisorio',
   created_at timestamptz not null default now()
 );
@@ -24,11 +27,18 @@ create index if not exists idx_quiz_responses_email
 alter table public.quiz_responses enable row level security;
 
 -- Visitante anonima PODE inserir (e o unico jeito de o quiz publico gravar).
--- Ninguem le pela API publica: SELECT so para service_role/admin via painel.
+-- Ninguem le pela API publica: SELECT so para admin (policy abaixo, via
+-- public.is_admin()) — sem ela, anon/authenticated comuns recebem 0 linhas.
 drop policy if exists "quiz_responses_anon_insert" on public.quiz_responses;
 create policy "quiz_responses_anon_insert" on public.quiz_responses
   for insert to anon, authenticated
   with check (true);
+
+-- Leitura: so admin (via painel/app). A API publica nunca le respostas.
+drop policy if exists "quiz_responses_admin_read" on public.quiz_responses;
+create policy "quiz_responses_admin_read" on public.quiz_responses
+  for select to authenticated
+  using (public.is_admin());
 
 -- Segmentacao no perfil (spec §4).
 alter table public.user_profiles

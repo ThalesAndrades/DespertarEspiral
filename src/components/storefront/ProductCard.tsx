@@ -2,6 +2,13 @@ import { Link } from "react-router-dom";
 import type { StorefrontProduct } from "@/types";
 import { formatBRL } from "@/lib/dateUtils";
 
+// Produtos gratuitos tem destino proprio (nao ha checkout de R$ 0).
+// Um segundo gratuito SEM entrada aqui cai no "em breve"/avise-me — nunca
+// num checkout quebrado.
+const FREE_ROUTES: Record<string, { href: string; label: string }> = {
+  "bussola-da-espiral": { href: "/bussola", label: "Fazer o diagnóstico" },
+};
+
 interface ProductCardProps {
   product: StorefrontProduct;
   onNotify: (product: StorefrontProduct) => void;
@@ -15,11 +22,14 @@ interface ProductCardProps {
  * Sem contador, sem tarja de desconto, sem escassez inventada.
  */
 export function ProductCard({ product, onNotify, featured = false }: ProductCardProps) {
-  const isAvailable = product.status === "disponivel";
   const isGratuito = product.price === 0;
+  const rotaGratuita = FREE_ROUTES[product.slug];
+  // Gratuito sem rota mapeada nunca e "disponivel" na vitrine, mesmo que o
+  // status do banco diga o contrario — cai no "avise-me" ate ganhar destino.
+  const isAvailable = product.status === "disponivel" && (!isGratuito || !!rotaGratuita);
   const showInstallments = isAvailable && product.price >= 100 && !isGratuito;
-  const ctaHref = isGratuito ? "/bussola" : `/checkout/${product.slug}`;
-  const ctaLabel = isGratuito ? "Fazer o diagnóstico" : "Quero começar";
+  const ctaHref = rotaGratuita ? rotaGratuita.href : `/checkout/${product.slug}`;
+  const ctaLabel = rotaGratuita ? rotaGratuita.label : "Quero começar";
 
   return (
     <article
