@@ -394,7 +394,6 @@ export function ProductCard({ product, onNotify }: ProductCardProps) {
       style={{
         display: "flex", flexDirection: "column", height: "100%",
         borderRadius: "var(--r-lg)", overflow: "hidden",
-        borderColor: isAvailable ? "var(--border-subtle)" : "var(--border-subtle)",
         opacity: isAvailable ? 1 : 0.86,
       }}
     >
@@ -603,13 +602,89 @@ export async function joinWaitlist(
 }
 ```
 
-- [ ] **Step 5: Implementar `src/components/storefront/StorefrontGrid.tsx`**
+- [ ] **Step 5: Implementar `src/components/storefront/WaitlistDialog.tsx`**
+
+Modal no padrão da marca — `window.prompt` foi descartado por contradizer
+"design system é lei" nas Global Constraints.
 
 ```tsx
 import { useState } from "react";
 import { toast } from "sonner";
-import { ProductCard } from "./ProductCard";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { joinWaitlist } from "@/lib/waitlist";
+import type { StorefrontProduct } from "@/types";
+
+interface WaitlistDialogProps {
+  product: StorefrontProduct | null;
+  onClose: () => void;
+}
+
+export function WaitlistDialog({ product, onClose }: WaitlistDialogProps) {
+  const [email, setEmail] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!product || enviando) return;
+
+    setEnviando(true);
+    const { ok, duplicate } = await joinWaitlist(email, product.id);
+    setEnviando(false);
+
+    if (!ok) {
+      toast.error("E-mail inválido. Confere e tenta de novo?");
+      return;
+    }
+
+    toast.success(duplicate ? "Você já está na lista." : "Pronto — avisamos você.");
+    setEmail("");
+    onClose();
+  }
+
+  return (
+    <Dialog open={product !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="font-display" style={{ fontWeight: 300 }}>
+            {product ? `Avisar quando "${product.title}" abrir` : ""}
+          </DialogTitle>
+          <DialogDescription>
+            Você recebe um e-mail assim que as inscrições abrirem. Nada além disso.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "var(--space-4)" }}>
+          <label htmlFor="waitlist-email" className="overline" style={{ color: "var(--text-muted)" }}>
+            Seu e-mail
+          </label>
+          <input
+            id="waitlist-email" type="email" required autoFocus
+            value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="voce@exemplo.com"
+            style={{
+              background: "var(--input-bg)", border: "1px solid var(--input-border)",
+              borderRadius: "var(--r-sm)", padding: "var(--space-3) var(--space-4)",
+              color: "var(--text-primary)", fontSize: "var(--fs-base)", minHeight: 52,
+            }}
+          />
+          <button type="submit" className="btn-gold" disabled={enviando}>
+            {enviando ? "Enviando..." : "Quero ser avisada"}
+          </button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+- [ ] **Step 5b: Implementar `src/components/storefront/StorefrontGrid.tsx`**
+
+```tsx
+import { useState } from "react";
+import { ProductCard } from "./ProductCard";
+import { WaitlistDialog } from "./WaitlistDialog";
 import type { StorefrontProduct } from "@/types";
 
 interface StorefrontGridProps {
@@ -618,19 +693,7 @@ interface StorefrontGridProps {
 }
 
 export function StorefrontGrid({ products, loading = false }: StorefrontGridProps) {
-  const [pending, setPending] = useState<StorefrontProduct | null>(null);
-
-  async function handleNotify(product: StorefrontProduct) {
-    const email = window.prompt(`Avisamos você quando "${product.title}" abrir. Seu e-mail:`);
-    if (!email) return;
-
-    setPending(product);
-    const { ok, duplicate } = await joinWaitlist(email, product.id);
-    setPending(null);
-
-    if (!ok) return toast.error("E-mail inválido. Confere e tenta de novo?");
-    toast.success(duplicate ? "Você já está na lista." : "Pronto — avisamos você.");
-  }
+  const [waitlistFor, setWaitlistFor] = useState<StorefrontProduct | null>(null);
 
   if (loading) {
     return (
@@ -643,21 +706,21 @@ export function StorefrontGrid({ products, loading = false }: StorefrontGridProp
   if (products.length === 0) return null;
 
   return (
-    <div
-      style={{
-        display: "grid", gap: "var(--space-5)",
-        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-        alignItems: "stretch",
-      }}
-    >
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onNotify={pending ? () => {} : handleNotify}
-        />
-      ))}
-    </div>
+    <>
+      <div
+        style={{
+          display: "grid", gap: "var(--space-5)",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          alignItems: "stretch",
+        }}
+      >
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} onNotify={setWaitlistFor} />
+        ))}
+      </div>
+
+      <WaitlistDialog product={waitlistFor} onClose={() => setWaitlistFor(null)} />
+    </>
   );
 }
 ```
@@ -904,4 +967,4 @@ Ficam registradas para não sumirem:
 1. **Preço do core.** A esteira define R$ 497 com âncora de R$ 997; o catálogo vende R$ 997 seco. Decisão da Sunyan. O "de R$ 997" só pode ser exibido se tiver sido preço real.
 2. **Prova social.** "280+ alunas" na home e "2.500+ mulheres" no documento. Nenhum dos dois entra na página nova sem conferência contra `orders`/`user_products`.
 3. **Conteúdo.** Nenhum produto sai de `em_breve` sem aula dentro.
-4. **`window.prompt` na lista de espera** (Task 4) é deliberadamente cru — funciona e é acessível, mas destoa do design system. Substituir por um `Dialog` do shadcn é o primeiro refinamento depois que a vitrine estiver de pé.
+4. **Notificação por e-mail de fato.** A lista de espera grava o interesse, mas nada dispara o e-mail quando o produto abre. Isso é trabalho de edge function (`send-email` já existe) e fica para um plano seguinte — hoje o disparo é manual.
