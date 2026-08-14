@@ -15,6 +15,7 @@ import { Shield, CheckCircle, ArrowLeft, ArrowRight, Lock, Loader2, Zap, Star, U
 import { toast } from "sonner";
 import { fireEventAsync } from "@/lib/sequenzy";
 import { getAttribution } from "@/lib/analytics";
+import { BUMP_SLUG, bumpOferecivel, calcularTotal, type ProdutoBump } from "@/lib/bump";
 
 const LABEL: React.CSSProperties = {
   display: "block",
@@ -42,6 +43,8 @@ export default function CheckoutPage() {
 
   const [product,       setProduct]       = useState<{ id: string; slug: string; title: string; subtitle?: string; description?: string; price: number; original_price?: number } | null>(null);
   const [productLoading, setProductLoading] = useState(true);
+  const [bumpProduct,   setBumpProduct]   = useState<ProdutoBump | null>(null);
+  const [bumpMarcado,   setBumpMarcado]   = useState(false);
   const [form,          setForm]          = useState({ name: user?.name ?? "", email: user?.email ?? "" });
   const [errors,        setErrors]        = useState<{ name?: string; email?: string }>({});
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "credit" | "boleto">("pix");
@@ -71,7 +74,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!slug) { setProductLoading(false); return; }
     supabase.from("products").select("*").eq("slug", slug).eq("is_active", true).eq("status", "disponivel").single()
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (data) {
           const priceNum = typeof data.price === "number" ? data.price : parseFloat(data.price);
           const originalNum = data.original_price
@@ -90,6 +93,23 @@ export default function CheckoutPage() {
             original_price: Number.isFinite(originalNum as number) ? originalNum : undefined,
             slug: data.slug,
           });
+
+          // Produto do bump: buscado sempre, exibido so se `bumpOferecivel` deixar.
+          // Falha aqui NUNCA derruba o checkout — sem bump, a compra segue normal.
+          try {
+            const { data: bumpData } = await supabase
+              .from("products")
+              .select("id, slug, title, price, is_active, status")
+              .eq("slug", BUMP_SLUG)
+              .maybeSingle();
+
+            if (bumpData) {
+              const bumpPrice = typeof bumpData.price === "number" ? bumpData.price : parseFloat(String(bumpData.price));
+              setBumpProduct({ ...(bumpData as ProdutoBump), price: bumpPrice });
+            }
+          } catch {
+            // Bump e opcional: falha na busca nunca impede o checkout do produto principal.
+          }
         } else {
           toast.error("Produto não encontrado.");
           // /products e rota privada (PrivateRoute); visitante deslogada cairia
@@ -125,6 +145,9 @@ export default function CheckoutPage() {
       name: form.name.trim(),
       userId: user?.id ?? null,
       paymentMethod,
+      // So o booleano: o preco do bump e recalculado no servidor, nunca aceito
+      // do cliente.
+      bump: bumpAtivo,
     };
 
     const { data, error } = await supabase.functions.invoke("checkout-session", { body });
@@ -153,7 +176,7 @@ export default function CheckoutPage() {
         product_title: product?.title ?? "",
         payment_method: paymentMethod,
         order_id: data?.orderId ?? "",
-        amount: product?.price ?? 0,
+        amount: total,
         completed_at: new Date().toISOString(),
         utm_source:   attribution.utm_source   ?? "",
         utm_medium:   attribution.utm_medium   ?? "",
@@ -348,6 +371,12 @@ export default function CheckoutPage() {
     ? (product as { original_price?: number }).original_price! - product.price
     : null;
 
+  const mostrarBump = bumpOferecivel(bumpProduct, slug);
+  // Se a caixa nao pode ser oferecida, `marcado` nunca conta — nem que o estado
+  // tenha ficado true por uma troca de produto no meio do caminho.
+  const bumpAtivo = mostrarBump && bumpMarcado;
+  const total = calcularTotal(product.price, bumpProduct?.price, bumpAtivo);
+
   return (
     <>
       {helmetNode}
@@ -405,7 +434,13 @@ export default function CheckoutPage() {
 
         {/* Mobile summary */}
         <div className="lg:hidden" style={{ marginBottom: "clamp(20px,4vw,32px)" }}>
-          <OrderSummary product={product} savings={savings} compact />
+          <OrderSummary
+            product={product}
+            savings={savings}
+            bump={bumpAtivo && bumpProduct ? { title: bumpProduct.title, price: bumpProduct.price } : null}
+            total={total}
+            compact
+          />
         </div>
 
         <div style={{ display: "grid", gap: "clamp(24px,4vw,40px)" }} className="grid lg:grid-cols-5">
@@ -520,6 +555,35 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {mostrarBump && bumpProduct && (
+                <label
+                  className="card-dark"
+                  style={{
+                    display: "flex", alignItems: "flex-start", gap: "var(--space-3)",
+                    padding: "var(--space-4)", borderRadius: "var(--r-lg)", cursor: "pointer",
+                    border: bumpAtivo ? "1px solid var(--gold)" : "1px solid var(--border-subtle)",
+                    transition: "border-color var(--dur-base) var(--ease-out)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={bumpMarcado}
+                    onChange={(e) => setBumpMarcado(e.target.checked)}
+                    aria-label={`${bumpProduct.title} — adicionar por R$ ${bumpProduct.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+                    style={{ marginTop: "3px", accentColor: "var(--gold)", width: "18px", height: "18px", flexShrink: 0 }}
+                  />
+                  <span>
+                    <span style={{ display: "block", fontSize: "14px", color: "var(--text-primary)", fontWeight: 500 }}>
+                      {bumpProduct.title}
+                      <span style={{ color: "var(--gold)" }}> — +R$ {bumpProduct.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                    </span>
+                    <span className="reading-note" style={{ display: "block", fontSize: "12px", lineHeight: 1.6, marginTop: "var(--space-1)" }}>
+                      Some ao seu pedido agora e receba junto com o acesso principal.
+                    </span>
+                  </span>
+                </label>
+              )}
+
               <button type="submit" disabled={loading} className="btn-gold" style={{ width: "100%", borderRadius: "16px", minHeight: "56px" }}>
                 {loading
                   ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Registrando…</>
@@ -539,7 +603,12 @@ export default function CheckoutPage() {
           {/* Desktop summary */}
           <div className="hidden lg:block" style={{ gridColumn: "span 2" }}>
             <div style={{ position: "sticky", top: "80px" }}>
-              <OrderSummary product={product} savings={savings} />
+              <OrderSummary
+                product={product}
+                savings={savings}
+                bump={bumpAtivo && bumpProduct ? { title: bumpProduct.title, price: bumpProduct.price } : null}
+                total={total}
+              />
             </div>
           </div>
         </div>
@@ -552,7 +621,13 @@ export default function CheckoutPage() {
 }
 
 /* ── Order Summary ── */
-function OrderSummary({ product, savings, compact = false }: { product: Record<string, unknown>; savings: number | null; compact?: boolean }) {
+function OrderSummary({ product, savings, bump, total, compact = false }: {
+  product: Record<string, unknown>;
+  savings: number | null;
+  bump: { title: string; price: number } | null;
+  total: number;
+  compact?: boolean;
+}) {
   const p = product as { slug?: string; thumbnail?: string; thumbnail_url?: string; title?: string; subtitle?: string; price?: number; original_price?: number; modules?: unknown[] };
   const isMulherEspiral = p.slug === "mulher-espiral";
   const thumbSrc = isMulherEspiral ? mulherEspiralProductImg : (p.thumbnail_url || p.thumbnail || "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&q=80&auto=format");
@@ -620,10 +695,19 @@ function OrderSummary({ product, savings, compact = false }: { product: Record<s
         </>
       )}
 
+      {bump && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+          <span className="reading-note" style={{ fontSize: "12px" }}>{bump.title}</span>
+          <span style={{ fontSize: "13px", color: "var(--text-primary)" }}>
+            + R$ {bump.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+      )}
+
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <span className="font-label" style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Total</span>
-        <p className="font-display" style={{ fontSize: "clamp(26px,3.5vw,34px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>
-          R$ {(p.price as number).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+        <p className="font-display" data-testid="checkout-total" style={{ fontSize: "clamp(26px,3.5vw,34px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>
+          R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
         </p>
       </div>
       {!compact && (
