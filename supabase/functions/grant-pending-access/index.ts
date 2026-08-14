@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
   /* ── 3. Find paid orders for this email ── */
   const { data: paidOrders, error: ordersErr } = await supabase
     .from("orders")
-    .select("id, product_id, user_id, name, amount, payment_method, paid_at, products(title, slug)")
+    .select("id, product_id, user_id, name, amount, payment_method, paid_at, products(title, slug), order_items(product_id, products(title, slug))")
     .eq("email", email)
     .eq("status", "paid");
 
@@ -93,15 +93,38 @@ Deno.serve(async (req: Request) => {
 
   const alreadyGranted = new Set((existingAccess ?? []).map((up: { product_id: string }) => up.product_id));
 
-  /* ── 5. Determine which orders need access granted ── */
-  // Deduplicate by product_id (user may have multiple orders for same product)
+  /* ── 5. Achatar pedidos em produtos (bump: um pedido pode ter dois) ── */
+  interface ItemLiberavel { productId: string; title: string; slug: string; order: Record<string, unknown> }
+
   const seen = new Set<string>();
-  const toGrant = paidOrders.filter((order) => {
-    const pid = order.product_id as string;
-    if (alreadyGranted.has(pid) || seen.has(pid)) return false;
-    seen.add(pid);
-    return true;
-  });
+  const toGrant: ItemLiberavel[] = [];
+
+  for (const order of paidOrders) {
+    const itens = (order.order_items ?? []) as { product_id: string; products?: { title?: string; slug?: string } | null }[];
+
+    // Pedido antigo (sem itens) cai no produto principal — comportamento intacto.
+    const candidatos: ItemLiberavel[] = itens.length > 0
+      ? itens.filter((i) => i.product_id).map((i) => ({
+          productId: i.product_id,
+          title: i.products?.title ?? "Produto",
+          slug:  i.products?.slug  ?? "",
+          order: order as Record<string, unknown>,
+        }))
+      : (order.product_id
+          ? [{
+              productId: order.product_id as string,
+              title: (order.products as { title?: string } | null)?.title ?? "Produto",
+              slug:  (order.products as { slug?: string  } | null)?.slug  ?? "",
+              order: order as Record<string, unknown>,
+            }]
+          : []);
+
+    for (const c of candidatos) {
+      if (alreadyGranted.has(c.productId) || seen.has(c.productId)) continue;
+      seen.add(c.productId);
+      toGrant.push(c);
+    }
+  }
 
   if (toGrant.length === 0) {
     console.log(`[grant-pending-access] All ${paidOrders.length} paid order(s) already have access granted`);
@@ -112,11 +135,10 @@ Deno.serve(async (req: Request) => {
 
   const grantedProducts: string[] = [];
 
-  for (const order of toGrant) {
-    const productId    = order.product_id as string;
-    const product      = order.products as { title: string; slug: string } | null;
-    const productTitle = product?.title ?? "Produto";
-    const productSlug  = product?.slug  ?? "";
+  for (const item of toGrant) {
+    const productId    = item.productId;
+    const productTitle = item.title;
+    const productSlug  = item.slug;
 
     /* Insert user_products */
     const { error: grantErr } = await supabase
@@ -132,11 +154,11 @@ Deno.serve(async (req: Request) => {
     }
 
     /* Link order.user_id if it was null (guest checkout) */
-    if (!order.user_id) {
+    if (!item.order.user_id) {
       await supabase
         .from("orders")
         .update({ user_id: userId })
-        .eq("id", order.id)
+        .eq("id", item.order.id)
         .is("user_id", null)
         .catch((e: Error) => console.warn("[grant-pending-access] Could not link order.user_id:", e.message));
     }
@@ -148,7 +170,7 @@ Deno.serve(async (req: Request) => {
     const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
     if (sequenzyApiKey && email) {
       const firstName = (
-        (order.name as string | null)?.split(" ")[0] ||
+        (item.order.name as string | null)?.split(" ")[0] ||
         email.split("@")[0]
       ).trim();
 
@@ -160,8 +182,8 @@ Deno.serve(async (req: Request) => {
             status:               "cliente",
             product_slug:         productSlug,
             product_title:        productTitle,
-            last_order_id:        order.id as string,
-            last_payment_method:  (order.payment_method as string | null) ?? "pix",
+            last_order_id:        item.order.id as string,
+            last_payment_method:  (item.order.payment_method as string | null) ?? "pix",
             account_linked_at:    new Date().toISOString(),
           },
         }),
@@ -170,7 +192,7 @@ Deno.serve(async (req: Request) => {
         sequenzyEvent(sequenzyApiKey, email, "product.access_granted", {
           product_title:   productTitle,
           product_slug:    productSlug,
-          order_id:        order.id as string,
+          order_id:        item.order.id as string,
           login_url:       "https://despertarespiral.com/login",
           triggered_by:    "account_creation",
         }),

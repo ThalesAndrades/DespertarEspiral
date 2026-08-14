@@ -13,6 +13,7 @@ import {
   sequenzyTags,
   sequenzyBatch,
 } from "../_shared/sequenzy.ts";
+import { produtosDoPedido } from "../_shared/orderItems.ts";
 
 /* ── Timing-safe string comparison (prevents timing attacks) ── */
 function safeEquals(a: string, b: string): boolean {
@@ -146,15 +147,24 @@ Deno.serve(async (req: Request) => {
   let accessGranted = false;
   let grantedUserId: string | null = order.user_id ?? null;
 
+  const idsParaLiberar = await produtosDoPedido(supabase, order);
+
+  async function liberarPara(userId: string): Promise<boolean> {
+    // Um upsert por produto: um erro em um item nao impede a liberacao do outro.
+    let algumOk = false;
+    for (const productId of idsParaLiberar) {
+      const { error: accessErr } = await supabase
+        .from("user_products")
+        .upsert({ user_id: userId, product_id: productId }, { onConflict: "user_id,product_id" });
+      if (accessErr) console.error(`Failed to grant access product=${productId}:`, accessErr.message);
+      else algumOk = true;
+    }
+    return algumOk;
+  }
+
   if (order.user_id) {
-    const { error: accessErr } = await supabase
-      .from("user_products")
-      .upsert(
-        { user_id: order.user_id, product_id: order.product_id },
-        { onConflict: "user_id,product_id" }
-      );
-    if (!accessErr) { accessGranted = true; console.log(`Access granted: user=${order.user_id}`); }
-    else console.error("Failed to grant access:", accessErr.message);
+    accessGranted = await liberarPara(order.user_id);
+    if (accessGranted) console.log(`Access granted: user=${order.user_id} | products=${idsParaLiberar.length}`);
   } else {
     const { data: profile } = await supabase
       .from("user_profiles")
@@ -163,19 +173,11 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (profile?.id) {
-      const { error: accessErr } = await supabase
-        .from("user_products")
-        .upsert(
-          { user_id: profile.id, product_id: order.product_id },
-          { onConflict: "user_id,product_id" }
-        );
-      if (!accessErr) {
+      accessGranted = await liberarPara(profile.id);
+      if (accessGranted) {
         await supabase.from("orders").update({ user_id: profile.id }).eq("id", order.id);
-        accessGranted = true;
         grantedUserId = profile.id;
-        console.log(`Access granted (email lookup): user=${profile.id}`);
-      } else {
-        console.error("Failed to grant access (email lookup):", accessErr.message);
+        console.log(`Access granted (email lookup): user=${profile.id} | products=${idsParaLiberar.length}`);
       }
     } else {
       console.warn(`No profile found for ${order.email} — access pending account creation`);
