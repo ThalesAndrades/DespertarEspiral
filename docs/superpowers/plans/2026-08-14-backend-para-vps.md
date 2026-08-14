@@ -85,6 +85,26 @@ Cron de dump diário com verificação de restauração (o padrão do backup do 
 
 ---
 
+---
+
+## EMENDA 14/08 — sai Asaas, entram Woovi (PIX) + Stripe (cartão)
+
+Decisão do Thales no meio da execução. Também sai o Sequenzy, entra o Resend. Isto **não** é ajuste de configuração: é uma frente de trabalho própria, e a spec da Fase 0 (§9) já avisava que a troca de gateway deveria vir **antes** do bump justamente para não construir a lógica de dois itens duas vezes.
+
+**Acoplamento medido hoje:** zero linha de Woovi ou Stripe neste repo. Asaas aparece em **8 arquivos** — `asaas-webhook`, `checkout-session`, `grant-pending-access`, `order-recovery`, `sequenzy-event`, `sequenzy-webhook`, `CheckoutPage.tsx` e o teste dela. E o `orders` carrega colunas com nome de fornecedor que sai: `asaas_payment_id`, `sequenzy_session_id`, `sequenzy_payment_id`.
+
+**O que do bump sobrevive** (a maior parte): `order_items`, o schema, a revalidação do bump e o cálculo do total no servidor, o helper `produtosDoPedido` e a liberação em `grant-pending-access`/`sequenzy-webhook` são **agnósticos de gateway**. O que morre é a perna de cobrança: a chamada `createAsaasPayment` e a função `asaas-webhook` inteira.
+
+**⚠️ O padrão a preservar ao escrever os webhooks novos:** ler os itens do pedido **antes** de marcar como pago, e abortar sem mutar se a leitura falhar. Foi o achado Critical da revisão da Task 5 — sem isso, um pedido com bump entrega um produto só, em definitivo, porque o retry do gateway morre no `already_paid`.
+
+**Conhecimento que já existe na casa e não deve ser redescoberto na dor:** o app PHP irmão (`Despertarquantico`) **já fez exatamente esta migração**. Dele vêm, prontas: colunas **neutras de gateway** (`provider_charge_id`, `provider_payment_url`, `provider_event`, `provider`) — adotar isso aqui evita renomear de novo na próxima troca; **Woovi é PIX-only** (cartão só via "Woovi Parcelado", 50% PIX + 4x — é por isso que o Stripe entra); API em `api.woovi.com/api/v1/charge` com header `Authorization: <AppID>` **sem `Bearer`**; **valor em CENTAVOS**; e webhook autenticado por **assinatura RSA-SHA256** (`x-webhook-signature`), não por token. Ver a memória `despertar-espiral-projeto`.
+
+**Bloqueadores próprios desta emenda:** credenciais de Woovi (AppID + segredo do webhook) e de Stripe (secret + webhook secret) **para este projeto** — as que existem na frota são do QVCF; e a decisão de qual gateway atende qual método na tela de checkout, que hoje oferece PIX, cartão e boleto.
+
+**Efeito no corte (F6):** o item "atualizar o webhook no painel do Asaas" sai; entram configurar o webhook da Woovi e o do Stripe, cada um com seu segredo.
+
+---
+
 ## Riscos que não são óbvios
 
 - **Trocar o `JWT_SECRET` invalida todas as sessões.** Quem estiver logado cai. Aceitável, mas é comunicação a fazer, não surpresa.
