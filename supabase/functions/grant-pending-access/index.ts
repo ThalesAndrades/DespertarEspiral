@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
   /* ── 3. Find paid orders for this email ── */
   const { data: paidOrders, error: ordersErr } = await supabase
     .from("orders")
-    .select("id, product_id, user_id, name, amount, payment_method, paid_at, products(title, slug), order_items(product_id, products(title, slug))")
+    .select("id, product_id, user_id, name, amount, payment_method, paid_at, products(title, slug)")
     .eq("email", email)
     .eq("status", "paid");
 
@@ -83,6 +83,46 @@ Deno.serve(async (req: Request) => {
   if (!paidOrders || paidOrders.length === 0) {
     console.log("[grant-pending-access] No paid orders found for this email — nothing to grant");
     return json(200, { granted: 0, products: [] }, cors);
+  }
+
+  /* ── 3b. Buscar os itens desses pedidos, em consulta SEPARADA ──
+     Deliberadamente nao embutida na query acima: se um embed `order_items(...)`
+     nao resolver (nome de FK, RLS etc.), o erro do PostgREST derrubaria a
+     query INTEIRA de pedidos. A migracao (gate 1) e o deploy das functions
+     (gate 2) sao aprovacoes separadas neste plano — um deploy fora de ordem
+     faria esta function parar de conceder acesso para TODO MUNDO, inclusive
+     quem compra sem bump hoje. Isso violaria "comportamento sem bump e
+     intocavel". Consulta separada = um erro aqui fica local a esta function,
+     nunca derruba a busca de pedidos.
+
+     ASSIMETRIA vs. asaas-webhook — de proposito, NAO "harmonizar":
+     no webhook, uma falha de leitura aborta ANTES de marcar o pedido como
+     pago, pra preservar o retry do gateway (marcar pago e falhar depois seria
+     permanente). Aqui nao ha status de pedido em jogo: esta function e
+     re-executada a cada login/criacao de conta e recalcula tudo do zero
+     (`alreadyGranted`, abaixo). Por isso, se a leitura de order_items falhar,
+     a escolha e degradar para o produto principal em vez de abortar —
+     "conceder so o principal agora" nunca e pior que "nao conceder nada", e
+     se a leitura voltar a funcionar na proxima chamada o bump e concedido
+     normalmente. */
+  const orderIds = paidOrders.map((o) => o.id as string);
+  const { data: allItems, error: itemsErr } = await supabase
+    .from("order_items")
+    .select("order_id, product_id, products(title, slug)")
+    .in("order_id", orderIds);
+
+  if (itemsErr) {
+    console.error(
+      `[grant-pending-access] order_items ilegivel, degradando para o produto principal em todos os pedidos [${orderIds.join(",")}]:`,
+      itemsErr.message
+    );
+  }
+
+  const itensPorPedido = new Map<string, { product_id: string; products?: { title?: string; slug?: string } | null }[]>();
+  for (const it of (allItems ?? []) as { order_id: string; product_id: string; products?: { title?: string; slug?: string } | null }[]) {
+    const lista = itensPorPedido.get(it.order_id) ?? [];
+    lista.push(it);
+    itensPorPedido.set(it.order_id, lista);
   }
 
   /* ── 4. Find which products this user already has access to ── */
@@ -100,9 +140,9 @@ Deno.serve(async (req: Request) => {
   const toGrant: ItemLiberavel[] = [];
 
   for (const order of paidOrders) {
-    const itens = (order.order_items ?? []) as { product_id: string; products?: { title?: string; slug?: string } | null }[];
+    const itens = itensPorPedido.get(order.id as string) ?? [];
 
-    // Pedido antigo (sem itens) cai no produto principal — comportamento intacto.
+    // Pedido antigo (sem itens) OU leitura de order_items degradada (ver 3b) cai no produto principal.
     const candidatos: ItemLiberavel[] = itens.length > 0
       ? itens.filter((i) => i.product_id).map((i) => ({
           productId: i.product_id,

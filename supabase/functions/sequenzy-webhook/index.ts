@@ -3,6 +3,7 @@
 // Actions: confirm_payment | add_subscriber | trigger_event | revoke_access
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
+import { produtosDoPedido } from "../_shared/orderItems.ts";
 
 const SEQUENZY_BASE = "https://api.sequenzy.com/api/v1";
 const SITE_URL = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
@@ -109,6 +110,21 @@ Deno.serve(async (req: Request) => {
         return jsonResponse(req, 409, { error: "Pedido já confirmado" });
       }
 
+      // Ler os itens do pedido ANTES de marcar como pago — mesmo motivo do
+      // asaas-webhook: esta era a TERCEIRA rota que liberava acesso, e ela
+      // so liberava order.product_id (o principal), nunca order_items. Um
+      // pedido com bump confirmado por aqui liberava 1 de 2 produtos e, a
+      // partir dai, o proprio asaas-webhook passava a responder
+      // "already_paid" sem tentar de novo — perda permanente para pedido com
+      // user_id. Ler antes de marcar pago preserva a saida: se a leitura
+      // falhar, o pedido continua "pending" e o admin pode confirmar de novo.
+      const itensResult = await produtosDoPedido(supabaseAdmin, order);
+      if (!itensResult.ok) {
+        console.error(`order_items ilegivel — pedido NAO confirmado, pode tentar de novo | order=${orderId}`);
+        return jsonResponse(req, 500, { error: "Falha ao ler itens do pedido" });
+      }
+      const idsParaLiberar = itensResult.ids;
+
       // Transactional update — only moves pending → paid
       const { data: updated, error: updateError } = await supabaseAdmin
         .from("orders")
@@ -130,19 +146,24 @@ Deno.serve(async (req: Request) => {
         return jsonResponse(req, 409, { error: "Pedido já confirmado (ou não está pendente)" });
       }
 
-      // Grant product access (idempotent upsert)
+      // Grant product access — um upsert por produto (idempotente); erro em
+      // um item nao impede a liberacao do outro.
       if (order.user_id) {
-        const { error: accessError } = await supabaseAdmin
-          .from("user_products")
-          .upsert(
-            { user_id: order.user_id, product_id: order.product_id },
-            { onConflict: "user_id,product_id" }
-          );
-        if (accessError) {
-          console.error("Failed to grant access:", accessError);
-        } else {
-          console.log(`Access granted: user ${order.user_id} → product ${order.product_id}`);
+        let grantedCount = 0;
+        for (const productId of idsParaLiberar) {
+          const { error: accessError } = await supabaseAdmin
+            .from("user_products")
+            .upsert(
+              { user_id: order.user_id, product_id: productId },
+              { onConflict: "user_id,product_id" }
+            );
+          if (accessError) {
+            console.error(`Failed to grant access | order=${orderId} user=${order.user_id} product=${productId}:`, accessError);
+          } else {
+            grantedCount++;
+          }
         }
+        console.log(`Access granted: user=${order.user_id} | products=${grantedCount}/${idsParaLiberar.length} | order=${orderId}`);
       } else {
         console.warn(`Order ${orderId}: no user_id — guest purchase, access not auto-granted`);
       }
