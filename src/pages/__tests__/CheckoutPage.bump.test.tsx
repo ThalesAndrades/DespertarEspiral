@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { BUMP_SLUG } from "@/lib/bump";
 
 /* ── Asset mock (Vite import static) — copiado de CheckoutPage.test.tsx:25 ── */
@@ -75,15 +75,31 @@ const BUMP_DISPONIVEL = {
 let bumpNoBanco: Record<string, unknown> | null = BUMP_DISPONIVEL;
 const mockInvoke = vi.fn().mockResolvedValue({ data: { orderId: "o-1" }, error: null });
 
+/**
+ * A busca do bump agora roda num efeito PRÓPRIO, desacoplada do carregamento
+ * do produto principal (correção do Important 1 da revisão — antes, uma
+ * busca de bump lenta segurava o spinner da pagina inteira). Isso significa
+ * que "Finalizar pedido" pode aparecer ANTES da busca do bump resolver, e um
+ * `queryByLabelText(...).not.toBeInTheDocument()` logo em seguida provaria
+ * pouco: passaria mesmo que a caixa fosse aparecer um tick depois.
+ * `bumpFetchResolved` conta quantas vezes a query do bump (a que termina em
+ * `.maybeSingle()`, sempre com slug === BUMP_SLUG) realmente resolveu — os
+ * testes de ausência esperam esse sinal positivo antes de confiar no
+ * `not.toBeInTheDocument()`.
+ */
+let bumpFetchResolved = 0;
+
 function buildChainNode(slugVal: string) {
   const node = {
     eq: (_col: string, _val?: string) => node,
     single: async () => ({
       data: slugVal === BUMP_SLUG ? bumpNoBanco : PRODUTO, error: null,
     }),
-    maybeSingle: async () => ({
-      data: slugVal === BUMP_SLUG ? bumpNoBanco : PRODUTO, error: null,
-    }),
+    maybeSingle: async () => {
+      const data = slugVal === BUMP_SLUG ? bumpNoBanco : PRODUTO;
+      if (slugVal === BUMP_SLUG) bumpFetchResolved += 1;
+      return { data, error: null };
+    },
   };
   return node;
 }
@@ -132,6 +148,7 @@ async function fillNomeEmail(user: ReturnType<typeof userEvent.setup>) {
 describe("CheckoutPage — bump de R$ 27", () => {
   beforeEach(() => {
     bumpNoBanco = BUMP_DISPONIVEL;
+    bumpFetchResolved = 0;
     mockInvoke.mockClear();
     mockUseAuth.mockReturnValue({ user: null, loading: false });
   });
@@ -145,13 +162,22 @@ describe("CheckoutPage — bump de R$ 27", () => {
     bumpNoBanco = { ...BUMP_DISPONIVEL, status: "em_breve" };
     renderCheckout();
     await screen.findByText(/Finalizar pedido/i);
-    expect(screen.queryByLabelText(/Mapa dos Sentimentos que Aprisionam/i)).not.toBeInTheDocument();
+    // Espera o sinal positivo (a busca do bump ja resolveu) ANTES de confiar
+    // na ausencia da caixa — senao o teste passaria mesmo que a caixa fosse
+    // aparecer um tick depois (busca do bump roda em efeito desacoplado).
+    await waitFor(() => {
+      expect(bumpFetchResolved).toBeGreaterThan(0);
+      expect(screen.queryByLabelText(/Mapa dos Sentimentos que Aprisionam/i)).not.toBeInTheDocument();
+    });
   });
 
   it("NAO mostra a caixa no checkout do proprio produto do bump", async () => {
     renderCheckout(BUMP_SLUG);
     await screen.findByText(/Finalizar pedido/i);
-    expect(screen.queryByLabelText(/Mapa dos Sentimentos que Aprisionam/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(bumpFetchResolved).toBeGreaterThan(0);
+      expect(screen.queryByLabelText(/Mapa dos Sentimentos que Aprisionam/i)).not.toBeInTheDocument();
+    });
   });
 
   it("marcar a caixa muda o total de 47 para 74 (nas duas instancias do resumo)", async () => {
@@ -183,5 +209,44 @@ describe("CheckoutPage — bump de R$ 27", () => {
     await user.click(screen.getByRole("button", { name: /Registrar pedido/i }));
     await waitFor(() => expect(mockInvoke).toHaveBeenCalled());
     expect(mockInvoke.mock.calls[0][1].body).toMatchObject({ bump: false });
+  });
+
+  /**
+   * Regressao adicional (nao um dos 6 casos do brief, mas cobre a correcao
+   * do Important 2 da revisao): a rota `/checkout/:slug` nao tem `key`, entao
+   * navegar de um checkout para outro reaproveita a MESMA instancia de
+   * CheckoutPage — sem o reset explicito, `bumpMarcado` sobreviveria a troca
+   * de produto e cobraria +R$27 sem a compradora ter marcado nada no
+   * checkout novo.
+   */
+  it("reseta a marcacao do bump ao trocar de produto sem re-montar a pagina", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/checkout/sete-manhas"]}>
+        <Link to="/checkout/outro-produto">trocar de produto</Link>
+        <Routes>
+          <Route path="/checkout/:slug" element={<CheckoutPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const caixa = await screen.findByLabelText(/Mapa dos Sentimentos que Aprisionam/i);
+    await user.click(caixa);
+    await waitFor(() => {
+      for (const el of totals()) expect(el).toHaveTextContent("74,00");
+    });
+
+    await user.click(screen.getByRole("link", { name: /trocar de produto/i }));
+
+    // Pagina troca de produto sem desmontar. Espera o sinal positivo de que a
+    // segunda busca do bump (novo slug) ja resolveu antes de confiar no
+    // estado — a mesma cautela do Important 1/soundness acima.
+    await screen.findByText(/Finalizar pedido/i);
+    await waitFor(() => {
+      expect(bumpFetchResolved).toBeGreaterThan(1);
+      const caixaNova = screen.getByLabelText(/Mapa dos Sentimentos que Aprisionam/i) as HTMLInputElement;
+      expect(caixaNova.checked).toBe(false);
+      for (const el of totals()) expect(el).toHaveTextContent("47,00");
+    });
   });
 });

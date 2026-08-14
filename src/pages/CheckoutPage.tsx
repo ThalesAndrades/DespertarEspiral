@@ -74,7 +74,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!slug) { setProductLoading(false); return; }
     supabase.from("products").select("*").eq("slug", slug).eq("is_active", true).eq("status", "disponivel").single()
-      .then(async ({ data, error }) => {
+      .then(({ data, error }) => {
         if (data) {
           const priceNum = typeof data.price === "number" ? data.price : parseFloat(data.price);
           const originalNum = data.original_price
@@ -93,23 +93,6 @@ export default function CheckoutPage() {
             original_price: Number.isFinite(originalNum as number) ? originalNum : undefined,
             slug: data.slug,
           });
-
-          // Produto do bump: buscado sempre, exibido so se `bumpOferecivel` deixar.
-          // Falha aqui NUNCA derruba o checkout — sem bump, a compra segue normal.
-          try {
-            const { data: bumpData } = await supabase
-              .from("products")
-              .select("id, slug, title, price, is_active, status")
-              .eq("slug", BUMP_SLUG)
-              .maybeSingle();
-
-            if (bumpData) {
-              const bumpPrice = typeof bumpData.price === "number" ? bumpData.price : parseFloat(String(bumpData.price));
-              setBumpProduct({ ...(bumpData as ProdutoBump), price: bumpPrice });
-            }
-          } catch {
-            // Bump e opcional: falha na busca nunca impede o checkout do produto principal.
-          }
         } else {
           toast.error("Produto não encontrado.");
           // /products e rota privada (PrivateRoute); visitante deslogada cairia
@@ -119,6 +102,40 @@ export default function CheckoutPage() {
         setProductLoading(false);
       });
   }, [slug, navigate]);
+
+  // Produto do bump: busca INDEPENDENTE da busca do produto principal — nunca
+  // atrasa `productLoading` (a compra do produto principal nao pode ficar refem
+  // de uma chamada opcional) e reseta a cada troca de slug, senao uma marcacao
+  // feita no checkout de um produto sobreviveria para o proximo checkout (a
+  // mesma instancia de CheckoutPage e reaproveitada pela rota, sem remount).
+  useEffect(() => {
+    setBumpProduct(null);
+    setBumpMarcado(false);
+    if (!slug) return;
+    let cancelled = false;
+
+    // IIFE async (nao o proprio callback do effect): assim o try/catch cobre
+    // ATE a construcao sincrona da cadeia `.eq(...).maybeSingle()` — nao so a
+    // Promise que ela devolve. Um `.catch()` pendurado depois da chamada nao
+    // pegaria uma excecao lancada na hora de montar a propria cadeia.
+    (async () => {
+      try {
+        const { data: bumpData } = await supabase
+          .from("products")
+          .select("id, slug, title, price, is_active, status")
+          .eq("slug", BUMP_SLUG)
+          .maybeSingle();
+
+        if (cancelled || !bumpData) return;
+        const bumpPrice = typeof bumpData.price === "number" ? bumpData.price : parseFloat(String(bumpData.price));
+        setBumpProduct({ ...(bumpData as ProdutoBump), price: bumpPrice });
+      } catch {
+        // Bump e opcional: falha na busca nunca impede o checkout do produto principal.
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [slug]);
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
