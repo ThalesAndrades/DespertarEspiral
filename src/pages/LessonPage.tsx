@@ -27,6 +27,50 @@ const typeLabel: Record<string, string> = {
   video: "Vídeo", text: "Leitura", pdf: "PDF", audio: "Áudio",
 };
 
+/** Achata `produto.modules[].lessons` na ordem da trilha (mesma ordem usada pelo fetch). */
+function listaAulasSeteManhas(produto: Record<string, unknown> | null): Record<string, unknown>[] {
+  const mods = (produto?.modules as { lessons?: Record<string, unknown>[] }[] | undefined) ?? [];
+  return mods.flatMap((m) => m.lessons ?? []);
+}
+
+/**
+ * true quando `lessonId` esta bloqueado pelo ritmo do Sete Manhas. Usada em
+ * TODOS os pontos de navegacao da pagina — trava por URL direta, sidebar,
+ * teclado, auto-advance e botoes anterior/proxima — para fechar as 7 portas
+ * apontadas na revisao (I-1), nao so a URL direta.
+ *
+ * Nunca bloqueia produtos que nao sao Sete Manhas, e nunca bloqueia uma aula
+ * marcada como previa gratuita: previa e decisao comercial do admin, nao faz
+ * parte do ritmo de quem comprou (I-2).
+ */
+function seteManhasBloqueada(
+  produto: Record<string, unknown> | null,
+  completed: Set<string>,
+  completedAt: Record<string, string>,
+  lessonId: string | null | undefined
+): boolean {
+  if (!produto || !lessonId || (produto.slug as string) !== SETE_MANHAS_SLUG) return false;
+
+  const todasAulas = listaAulasSeteManhas(produto);
+  const idx = todasAulas.findIndex((l) => (l.id as string) === lessonId);
+  if (idx < 0) return false;
+
+  const alvo = todasAulas[idx] as { is_free_preview?: boolean; is_free?: boolean };
+  if (alvo.is_free_preview ?? alvo.is_free) return false;
+
+  const conclusoes: ConclusaoManha[] = [];
+  todasAulas.forEach((l, i) => {
+    const id = l.id as string;
+    // completed:true sem completed_at ainda conta (I-3) — ver CourseViewPage.
+    if (completed.has(id)) conclusoes.push({ indice: i + 1, completedAt: completedAt[id] ?? "" });
+  });
+
+  // Total vem do produto real, nao de um 7 fixo (I-4).
+  const trilha = estadoTrilha(conclusoes, new Date().toISOString(), todasAulas.length);
+  const estado = trilha[idx]?.estado;
+  return estado === "bloqueada" || estado === "amanha";
+}
+
 interface CertConfig {
   courseName?: string;
   instructorName?: string;
@@ -86,8 +130,12 @@ export default function LessonPage() {
       const idx = all.findIndex((l) => l.id === lessonId);
       if (idx < 0) return;
       if (e.key === "ArrowRight" && idx < all.length - 1) {
+        const alvo = all[idx + 1];
+        // Trava do ritmo tambem vale pro teclado (I-1): nao pula pra uma
+        // manha ainda bloqueada/amanha so porque a seta foi apertada.
+        if (seteManhasBloqueada(product, completed, completedAt, alvo.id)) return;
         e.preventDefault();
-        navigate(`/products/${slug}/lesson/${all[idx + 1].id}`);
+        navigate(`/products/${slug}/lesson/${alvo.id}`);
       } else if (e.key === "ArrowLeft" && idx > 0) {
         e.preventDefault();
         navigate(`/products/${slug}/lesson/${all[idx - 1].id}`);
@@ -95,7 +143,7 @@ export default function LessonPage() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [product, lessonId, slug, navigate, showCertModal]);
+  }, [product, lessonId, slug, navigate, showCertModal, completed, completedAt]);
 
   /* ── Player handlers ── */
   const changeSpeed = (rate: number) => {
@@ -197,7 +245,9 @@ export default function LessonPage() {
           setCompleted(new Set((progress ?? []).map((r: { lesson_id: string }) => r.lesson_id)));
           const atMap: Record<string, string> = {};
           for (const r of (progress ?? []) as { lesson_id: string; completed_at?: string | null }[]) {
-            if (r.completed_at) atMap[r.lesson_id] = r.completed_at;
+            // completed:true sem completed_at (dado legado/manual) AINDA conta
+            // como concluida — nunca re-tranca o que ja foi feito (I-3).
+            atMap[r.lesson_id] = r.completed_at ?? "";
           }
           setCompletedAt(atMap);
         }
@@ -372,6 +422,15 @@ export default function LessonPage() {
   const nextLesson = currentIndex < allLessons.length - 1 ? (allLessons[currentIndex + 1] as Record<string, unknown>) : null;
   const moduleOfLesson = mods.find((m) => m.id === ((lesson?.module_id as string | undefined) ?? (lessonMeta?.module_id as string | undefined)));
 
+  // "Próxima" efetiva para Sete Manhãs: nunca aponta pra uma manhã ainda
+  // bloqueada/amanhã — botões anterior/próxima e auto-advance param na
+  // última disponível em vez de ejetar a aluna de volta pra trilha (I-1).
+  // Para outros produtos, `seteManhasBloqueada` sempre devolve false.
+  const proximaLicaoDisponivel =
+    nextLesson && !seteManhasBloqueada(product, completed, completedAt, nextLesson.id as string)
+      ? nextLesson
+      : null;
+
   if (!lesson) {
     return (
       <DashboardLayout>
@@ -477,8 +536,13 @@ export default function LessonPage() {
       }
     }
 
-    // Auto-advance after short delay (respects the student's autoplay preference)
-    if (autoplayNext && nextLesson?.id) setTimeout(() => navigate(`/products/${slug}/lesson/${nextLesson.id as string}`), 800);
+    // Auto-advance after short delay (respects the student's autoplay preference).
+    // Para Sete Manhãs, `proximaLicaoDisponivel` já vem null quando a próxima
+    // manhã ainda está bloqueada/amanhã — o auto-advance para na última
+    // disponível em vez de ejetar a aluna de volta pra trilha (C-1 + I-1).
+    if (autoplayNext && proximaLicaoDisponivel?.id) {
+      setTimeout(() => navigate(`/products/${slug}/lesson/${proximaLicaoDisponivel.id as string}`), 800);
+    }
   };
 
   /* ── Module progress bar for current lesson ── */
@@ -521,23 +585,12 @@ export default function LessonPage() {
   /*
    * Trava do ritmo: aula futura do Sete Manhãs não abre por URL direta.
    * Redireciona de volta para a trilha — sem toast de erro: o tom do produto
-   * é acolhedor, e "ainda não" não é falha.
+   * é acolhedor, e "ainda não" não é falha. `seteManhasBloqueada` já ignora
+   * prévia gratuita (I-2) e usa o total real de aulas em vez de um 7 fixo
+   * (I-4) — a mesma regra usada pela sidebar, teclado e auto-advance (I-1).
    */
-  if ((product.slug as string) === SETE_MANHAS_SLUG) {
-    const posicaoSeteManhas = allLessons.findIndex((l) => (l.id as string) === (lesson.id as string)) + 1;
-    if (posicaoSeteManhas > 0) {
-      const conclusoesSeteManhas: ConclusaoManha[] = [];
-      allLessons.forEach((l, i) => {
-        const at = completedAt[l.id as string];
-        if (at) conclusoesSeteManhas.push({ indice: i + 1, completedAt: at });
-      });
-      const agoraISO = new Date().toISOString();
-      const trilhaSeteManhas = estadoTrilha(conclusoesSeteManhas, agoraISO);
-      const estadoDesta = trilhaSeteManhas[posicaoSeteManhas - 1]?.estado;
-      if (estadoDesta === "bloqueada" || estadoDesta === "amanha") {
-        return <Navigate to={`/products/${product.slug as string}`} replace />;
-      }
-    }
+  if (seteManhasBloqueada(product, completed, completedAt, lesson.id as string)) {
+    return <Navigate to={`/products/${product.slug as string}`} replace />;
   }
 
   /* ── Modules sidebar content (shared between drawer + desktop panel) ── */
@@ -608,20 +661,13 @@ export default function LessonPage() {
                 const Icon = typeIcons[l.type] ?? FileText;
                 const isActive = l.id === lessonId;
                 const done = completed.has(l.id);
-                return (
-                  <Link
-                    key={l.id}
-                    to={`/products/${slug}/lesson/${l.id}`}
-                    onClick={onSelect}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "10px",
-                      padding: "10px 16px 10px 24px", textDecoration: "none",
-                      background: isActive ? "rgba(198,168,112,0.10)" : "transparent",
-                      borderLeft: isActive ? "2px solid var(--gold)" : "2px solid transparent",
-                      transition: "background 0.15s",
-                      minHeight: "48px",
-                    }}
-                  >
+                // Item bloqueado/amanhã do Sete Manhãs fica não-clicável na
+                // sidebar, mesmo padrão visual do CourseViewPage — fecha mais
+                // uma das portas apontadas na revisão (I-1).
+                const bloqueada = seteManhasBloqueada(product, completed, completedAt, l.id);
+
+                const conteudoLinha = (
+                  <>
                     <div style={{
                       width: "24px", height: "24px", borderRadius: "50%", flexShrink: 0,
                       background: done ? "rgba(140,170,150,0.15)" : "rgba(198,168,112,0.07)",
@@ -644,6 +690,41 @@ export default function LessonPage() {
                         {typeLabel[l.type] ?? l.type}
                       </span>
                     )}
+                  </>
+                );
+
+                if (bloqueada) {
+                  return (
+                    <div
+                      key={l.id}
+                      aria-label={`${l.title}: ainda bloqueada`}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "10px",
+                        padding: "10px 16px 10px 24px",
+                        background: "transparent", borderLeft: "2px solid transparent",
+                        minHeight: "48px", opacity: 0.55, cursor: "default",
+                      }}
+                    >
+                      {conteudoLinha}
+                    </div>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={l.id}
+                    to={`/products/${slug}/lesson/${l.id}`}
+                    onClick={onSelect}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "10px",
+                      padding: "10px 16px 10px 24px", textDecoration: "none",
+                      background: isActive ? "rgba(198,168,112,0.10)" : "transparent",
+                      borderLeft: isActive ? "2px solid var(--gold)" : "2px solid transparent",
+                      transition: "background 0.15s",
+                      minHeight: "48px",
+                    }}
+                  >
+                    {conteudoLinha}
                   </Link>
                 );
               })}
@@ -1061,9 +1142,9 @@ export default function LessonPage() {
                     <CheckCircle size={14} strokeWidth={2} /> Concluída
                   </span>
                 )}
-                {nextLesson && (
+                {proximaLicaoDisponivel && (
                   <Link
-                    to={`/products/${slug}/lesson/${nextLesson.id}`}
+                    to={`/products/${slug}/lesson/${proximaLicaoDisponivel.id}`}
                     className="btn-outline-gold"
                     style={{ padding: "11px 22px", fontSize: "9px", borderRadius: "14px" }}
                   >
@@ -1109,8 +1190,8 @@ export default function LessonPage() {
           </div>
         )}
 
-        {nextLesson ? (
-          <Link to={`/products/${slug}/lesson/${nextLesson.id}`} className="btn-ghost" style={{ padding: "12px 14px", flex: "0 0 auto", minHeight: "48px", display: "flex", alignItems: "center", gap: "5px", fontSize: "9px" }}>
+        {proximaLicaoDisponivel ? (
+          <Link to={`/products/${slug}/lesson/${proximaLicaoDisponivel.id}`} className="btn-ghost" style={{ padding: "12px 14px", flex: "0 0 auto", minHeight: "48px", display: "flex", alignItems: "center", gap: "5px", fontSize: "9px" }}>
             <ArrowRight size={13} />
           </Link>
         ) : (

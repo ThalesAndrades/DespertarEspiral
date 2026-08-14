@@ -13,23 +13,40 @@
 export const SETE_MANHAS_SLUG = "sete-manhas";
 export const TOTAL_MANHAS = 7;
 
+/**
+ * Data usada quando `completedAt` esta ausente, vazio ou nao e uma data
+ * valida. Fica no passado distante de proposito: a manha AINDA conta como
+ * concluida (nunca re-tranca — Global Constraint "nunca punicao") e libera a
+ * proxima imediatamente; a unica coisa que se perde e o calculo de streak/fosca
+ * daquele dia especifico (I-3).
+ */
+const DATA_DESCONHECIDA = "1970-01-01";
+
 export type EstadoManha = "concluida" | "disponivel" | "amanha" | "bloqueada";
 
 export interface ManhaInfo {
-  indice: number; // 1..7
+  indice: number; // 1..N
   estado: EstadoManha;
   /** true quando houve lacuna de calendario logo apos esta manha concluida. */
   fosca: boolean;
 }
 
 export interface ConclusaoManha {
-  indice: number; // 1..7
+  indice: number; // 1..N
   completedAt: string; // ISO
 }
 
-/** Data-calendario em America/Sao_Paulo, formato YYYY-MM-DD (en-CA = ISO). */
-export function dataSP(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+/**
+ * Data-calendario em America/Sao_Paulo, formato YYYY-MM-DD (en-CA = ISO).
+ * Retorna `null` quando `iso` estiver ausente/vazio ou nao for uma data valida
+ * — nunca lanca excecao. Dado sujo do banco (string vazia, "lixo", data
+ * malformada) nao pode derrubar o render de quem chama esta funcao (I-5).
+ */
+export function dataSP(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 function diaSeguinte(yyyyMmDd: string): string {
@@ -38,12 +55,18 @@ function diaSeguinte(yyyyMmDd: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function estadoTrilha(conclusoes: ConclusaoManha[], hojeISO: string): ManhaInfo[] {
-  const hoje = dataSP(hojeISO);
+export function estadoTrilha(
+  conclusoes: ConclusaoManha[],
+  hojeISO: string,
+  total: number = TOTAL_MANHAS
+): ManhaInfo[] {
+  const hoje = dataSP(hojeISO) ?? DATA_DESCONHECIDA;
   const porIndice = new Map<number, string>(); // indice -> data da conclusao (SP)
   for (const conc of conclusoes) {
-    if (conc.indice >= 1 && conc.indice <= TOTAL_MANHAS) {
-      porIndice.set(conc.indice, dataSP(conc.completedAt));
+    if (conc.indice >= 1 && conc.indice <= total) {
+      // completed_at ausente/malformado NUNCA re-tranca uma manha ja concluida:
+      // conta como concluida em data desconhecida (I-3 + I-5).
+      porIndice.set(conc.indice, dataSP(conc.completedAt) ?? DATA_DESCONHECIDA);
     }
   }
 
@@ -53,7 +76,7 @@ export function estadoTrilha(conclusoes: ConclusaoManha[], hojeISO: string): Man
   let pendenteEncontrada = false;
 
   const trilha: ManhaInfo[] = [];
-  for (let indice = 1; indice <= TOTAL_MANHAS; indice++) {
+  for (let indice = 1; indice <= total; indice++) {
     const dataConclusao = porIndice.get(indice);
 
     if (dataConclusao) {
@@ -95,8 +118,10 @@ export function estadoTrilha(conclusoes: ConclusaoManha[], hojeISO: string): Man
 }
 
 export function streakAtual(conclusoes: ConclusaoManha[], hojeISO: string): number {
-  const hoje = dataSP(hojeISO);
-  const dias = new Set(conclusoes.map((c) => dataSP(c.completedAt)));
+  const hoje = dataSP(hojeISO) ?? DATA_DESCONHECIDA;
+  // completedAt ausente/invalido vira DATA_DESCONHECIDA (1970): nunca casa com
+  // "hoje"/"ontem", entao so custa o streak daquele dia, nunca lanca (I-5).
+  const dias = new Set(conclusoes.map((c) => dataSP(c.completedAt) ?? DATA_DESCONHECIDA));
   if (dias.size === 0) return 0;
 
   // O streak termina hoje (se ja concluiu hoje) ou ontem (ainda da tempo hoje).

@@ -108,7 +108,11 @@ export default function CourseViewPage() {
         setCompleted(new Set(progressRes.data.map((r: { lesson_id: string }) => r.lesson_id)));
         const atMap: Record<string, string> = {};
         for (const r of progressRes.data as { lesson_id: string; completed_at?: string | null }[]) {
-          if (r.completed_at) atMap[r.lesson_id] = r.completed_at;
+          // Uma linha completed:true sem completed_at (dado legado/manual) AINDA
+          // entra no mapa — quem consome isso (seteManhas.ts) trata ausencia de
+          // data como concluida em data desconhecida, nunca como "nao concluida"
+          // (nunca re-tranca o que ja foi feito — I-3).
+          atMap[r.lesson_id] = r.completed_at ?? "";
         }
         setCompletedAt(atMap);
       }
@@ -214,12 +218,26 @@ export default function CourseViewPage() {
     const agoraISO = new Date().toISOString();
     const conclusoes: ConclusaoManha[] = [];
     allLessons.forEach((l, i) => {
-      const at = completedAt[(l as { id: string }).id];
-      if (at) conclusoes.push({ indice: i + 1, completedAt: at });
+      const id = (l as { id: string }).id;
+      // Toda aula com completed:true entra na trilha, mesmo sem completed_at —
+      // a lib trata data ausente/invalida como concluida em data desconhecida,
+      // entao NUNCA re-tranca uma manha ja feita (I-3).
+      if (completed.has(id)) conclusoes.push({ indice: i + 1, completedAt: completedAt[id] ?? "" });
     });
-    trilhaSeteManhas = estadoTrilha(conclusoes, agoraISO);
+    // Total vem do produto real (allLessons.length), nao de um 7 fixo: com 5
+    // aulas a trilha tem 5 pontos, com 9 tem 9, cada uma seguindo a mesma
+    // regra em cadeia (I-4).
+    trilhaSeteManhas = estadoTrilha(conclusoes, agoraISO, allLessons.length);
     streakSeteManhas = streakAtual(conclusoes, agoraISO);
   }
+
+  // CTA do herói: para Sete Manhãs, se a próxima pendente só abre amanhã, o
+  // botão vira uma frase acolhedora em vez de um link morto (C-1).
+  const nextLessonPos = isSeteManhas
+    ? posicaoPorLessonId.get((nextLesson as { id: string } | undefined)?.id ?? "")
+    : undefined;
+  const proximaSeteManhasAmanha =
+    isSeteManhas && nextLessonPos != null && trilhaSeteManhas[nextLessonPos - 1]?.estado === "amanha";
 
   return (
     <DashboardLayout>
@@ -303,6 +321,18 @@ export default function CourseViewPage() {
                   <Link to={`/products/${slug}/certificado`} className="btn-gold" style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap" }}>
                     <Award size={13} /> Ver certificado
                   </Link>
+                ) : proximaSeteManhasAmanha ? (
+                  <div
+                    className="card-dark"
+                    style={{
+                      padding: "11px 20px", borderRadius: "12px", flexShrink: 0,
+                      display: "flex", alignItems: "center", gap: "8px",
+                      fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.04em",
+                      color: "var(--text-muted)", whiteSpace: "nowrap",
+                    }}
+                  >
+                    A próxima manhã abre amanhã 🌅
+                  </div>
                 ) : nextLesson ? (
                   <Link to={`/products/${slug}/lesson/${(nextLesson as { id: string }).id}`} className="btn-gold" style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap" }}>
                     <Play size={12} fill="#060810" style={{ color: "#060810" }} />
@@ -450,7 +480,13 @@ export default function CourseViewPage() {
 
                         const posicaoSeteManhas = isSeteManhas ? posicaoPorLessonId.get(lesson.id) : undefined;
                         const estadoSeteManhas  = posicaoSeteManhas ? trilhaSeteManhas[posicaoSeteManhas - 1]?.estado : undefined;
-                        const bloqueadaSeteManhas = estadoSeteManhas === "bloqueada" || estadoSeteManhas === "amanha";
+                        // Prévia gratuita é decisão comercial do admin, não faz parte do
+                        // ritmo de quem comprou — escapa da trava (I-2, "nas duas páginas").
+                        const previaLivre = Boolean(
+                          (lesson as unknown as { is_free_preview?: boolean; is_free?: boolean }).is_free_preview ??
+                          (lesson as unknown as { is_free?: boolean }).is_free
+                        );
+                        const bloqueadaSeteManhas = !previaLivre && (estadoSeteManhas === "bloqueada" || estadoSeteManhas === "amanha");
 
                         const rowContent = (
                           <>

@@ -64,6 +64,70 @@ describe("estadoTrilha", () => {
     const a = JSON.stringify(estadoTrilha(conclusoes, HOJE));
     expect(JSON.stringify(estadoTrilha(conclusoes, HOJE))).toBe(a);
   });
+
+  describe("total customizavel (I-4 — produto com != 7 aulas)", () => {
+    it("total=5: a trilha tem 5 pontos, e a 5a segue a mesma regra em cadeia", () => {
+      const t = estadoTrilha([c(1, "2026-08-09")], HOJE, 5);
+      expect(t).toHaveLength(5);
+      expect(t[1].estado).toBe("disponivel"); // concluiu a 1 ontem
+      expect(t.slice(2).every((m) => m.estado === "bloqueada")).toBe(true);
+    });
+
+    it("total=9: a trilha tem 9 pontos, e as aulas 8 e 9 nao escapam da trava", () => {
+      const conclusoes = [1, 2, 3, 4, 5, 6, 7].map((i) => c(i, `2026-08-0${i > 3 ? i : i + 2}`));
+      const t = estadoTrilha(conclusoes, HOJE, 9);
+      expect(t).toHaveLength(9);
+      expect(t.slice(0, 7).every((m) => m.estado === "concluida")).toBe(true);
+      // manha 8 e a pendente (concluida ontem seria dia 7 -> checa livre/bloqueada por data)
+      expect(["disponivel", "amanha"]).toContain(t[7].estado);
+      expect(t[8].estado).toBe("bloqueada");
+    });
+
+    it("sem total explicito, mantem o comportamento de 7 (compat)", () => {
+      expect(estadoTrilha([], HOJE)).toHaveLength(7);
+    });
+  });
+
+  describe("completed_at ausente/malformado NUNCA re-tranca (I-3 + I-5)", () => {
+    it('completedAt: "" conta como concluida em data desconhecida — libera a proxima', () => {
+      const t = estadoTrilha([{ indice: 1, completedAt: "" }], HOJE);
+      expect(t[0].estado).toBe("concluida");
+      expect(t[1].estado).toBe("disponivel");
+    });
+
+    it('completedAt: "lixo" NAO lanca excecao e ainda conta como concluida', () => {
+      expect(() => estadoTrilha([{ indice: 1, completedAt: "lixo" }], HOJE)).not.toThrow();
+      const t = estadoTrilha([{ indice: 1, completedAt: "lixo" }], HOJE);
+      expect(t[0].estado).toBe("concluida");
+      expect(t[1].estado).toBe("disponivel");
+    });
+
+    it("manha 1 e 2 concluidas sem completedAt: a 2a NUNCA volta a bloqueada", () => {
+      const t = estadoTrilha(
+        [{ indice: 1, completedAt: "" }, { indice: 2, completedAt: "" }],
+        HOJE
+      );
+      expect(t[0].estado).toBe("concluida");
+      expect(t[1].estado).toBe("concluida"); // "completed sem data continua concluida"
+      expect(t[2].estado).toBe("disponivel");
+    });
+
+    it("datas invalidas variadas nunca lancam", () => {
+      for (const malformada of ["0000-00-00T00:00:00Z", "2026-13-45T10:00:00Z", "Invalid Date"]) {
+        expect(() => estadoTrilha([{ indice: 1, completedAt: malformada }], HOJE)).not.toThrow();
+      }
+    });
+  });
+});
+
+describe("dataSP — dado sujo nunca lanca (I-5)", () => {
+  it("retorna null para ausente/vazio/invalido em vez de lancar", () => {
+    expect(dataSP(null)).toBeNull();
+    expect(dataSP(undefined)).toBeNull();
+    expect(dataSP("")).toBeNull();
+    expect(dataSP("lixo")).toBeNull();
+    expect(dataSP("0000-00-00T00:00:00Z")).toBeNull();
+  });
 });
 
 describe("streakAtual", () => {
