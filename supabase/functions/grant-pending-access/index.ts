@@ -195,12 +195,12 @@ Deno.serve(async (req: Request) => {
 
     /* Link order.user_id if it was null (guest checkout) */
     if (!item.order.user_id) {
-      await supabase
+      const { error: linkErr } = await supabase
         .from("orders")
         .update({ user_id: userId })
         .eq("id", item.order.id)
-        .is("user_id", null)
-        .catch((e: Error) => console.warn("[grant-pending-access] Could not link order.user_id:", e.message));
+        .is("user_id", null);
+      if (linkErr) console.warn("[grant-pending-access] Could not link order.user_id:", linkErr.message);
     }
 
     grantedProducts.push(productSlug || productId);
