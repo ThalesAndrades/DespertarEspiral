@@ -254,23 +254,31 @@ Deno.serve(async (req: Request) => {
     let bumpProduct: { id: string; title: string; price: number } | null = null;
 
     if (bump === true && productSlug !== BUMP_SLUG) {
-      const { data: bumpRow } = await supabaseAdmin
+      const { data: bumpRow, error: bumpError } = await supabaseAdmin
         .from("products")
-        .select("id, title, price")
+        .select("id, title, price, is_active, status")
         .eq("slug", BUMP_SLUG)
-        .eq("is_active", true)
-        .eq("status", "disponivel")
         .maybeSingle();
 
-      if (bumpRow) {
+      if (bumpError) {
+        // Falha de INFRA (timeout, conexao, permissao) — NAO e "produto indisponivel".
+        // Degrada pra cobrar so o principal (nunca falha a venda por causa disso),
+        // mas loga separado do catalogo pra nao mandar o on-call pro lugar errado.
+        console.error(`Bump: falha de infra ao consultar produto — seguindo sem bump | email=${email} slug=${BUMP_SLUG} erro=${bumpError.message}`);
+      } else if (!bumpRow) {
+        console.warn(`Bump solicitado mas produto "${BUMP_SLUG}" nao encontrado — seguindo sem bump | email=${email}`);
+      } else if (bumpRow.is_active !== true) {
+        console.warn(`Bump solicitado mas produto inativo (is_active=${bumpRow.is_active}) — seguindo sem bump | email=${email}`);
+      } else if (bumpRow.status !== "disponivel") {
+        console.warn(`Bump solicitado mas produto com status "${bumpRow.status}" — seguindo sem bump | email=${email}`);
+      } else {
         const bumpPrice = typeof bumpRow.price === "number" ? bumpRow.price : parseFloat(String(bumpRow.price));
         if (isFinite(bumpPrice) && bumpPrice > 0) {
           bumpProduct = { id: bumpRow.id, title: bumpRow.title, price: bumpPrice };
+        } else {
+          console.warn(`Bump solicitado mas produto com preco invalido (${bumpRow.price}) — seguindo sem bump | email=${email}`);
         }
       }
-      // Bump pedido mas indisponivel: segue SEM bump, cobrando so o principal.
-      // Nunca cobra por algo que nao pode liberar.
-      if (!bumpProduct) console.warn(`Bump solicitado mas indisponivel — seguindo sem bump | order de ${productSlug}`);
     }
 
     // Centavos para evitar 47.9 + 27.5 = 75.39999999999999
@@ -308,7 +316,7 @@ Deno.serve(async (req: Request) => {
     const { error: itemsError } = await supabaseAdmin.from("order_items").insert(itens);
 
     if (itemsError) {
-      console.error("order_items insert failed:", itemsError);
+      console.error(`order_items insert failed | order=${order.id}:`, itemsError);
       if (bumpProduct) {
         // Com bump, a falha e fatal: cobrar dois e liberar um e pior que nao vender.
         await supabaseAdmin.from("orders").update({ status: "failed" }).eq("id", order.id);
@@ -384,7 +392,7 @@ Deno.serve(async (req: Request) => {
             product_slug:   product.slug,
             product_title:  product.title,
             order_id:       order.id,
-            amount:         productPrice,
+            amount:         totalAmount,
             checkout_at:    new Date().toISOString(),
             status:         "checkout_pendente",
           },
@@ -398,7 +406,7 @@ Deno.serve(async (req: Request) => {
         sequenzyEvent(sequenzyApiKey, email, "checkout_iniciado", {
           product_title:  product.title,
           product_slug:   product.slug,
-          amount:         productPrice,
+          amount:         totalAmount,
           order_id:       order.id,
           payment_method: paymentMethod || "pix",
           started_at:     new Date().toISOString(),
@@ -406,7 +414,7 @@ Deno.serve(async (req: Request) => {
         sequenzyEvent(sequenzyApiKey, email, "checkout.started", {
           product_title:  product.title,
           product_slug:   product.slug,
-          amount:         productPrice,
+          amount:         totalAmount,
           order_id:       order.id,
           payment_method: paymentMethod || "pix",
         }),
