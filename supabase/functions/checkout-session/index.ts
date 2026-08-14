@@ -187,7 +187,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(req, 415, { error: "Content-Type deve ser application/json" });
     }
 
-    const { productSlug, email, name, paymentMethod, cpfCnpj } = await req.json();
+    const { productSlug, email, name, paymentMethod, cpfCnpj, bump } = await req.json();
 
     if (!productSlug || !email) {
       return jsonResponse(req, 400, { error: "productSlug e email são obrigatórios" });
@@ -246,6 +246,36 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(req, 500, { error: "Produto com preço inválido" });
     }
 
+    // ── Bump de R$ 27 ──
+    // A TRAVA REAL mora aqui: o cliente manda so um booleano; o preco e a
+    // elegibilidade sao lidos do banco. `status = disponivel` repete a regra dura
+    // do catalogo — produto em_breve nunca e cobrado, nem como bump.
+    const BUMP_SLUG = "mapa-dos-sentimentos";
+    let bumpProduct: { id: string; title: string; price: number } | null = null;
+
+    if (bump === true && productSlug !== BUMP_SLUG) {
+      const { data: bumpRow } = await supabaseAdmin
+        .from("products")
+        .select("id, title, price")
+        .eq("slug", BUMP_SLUG)
+        .eq("is_active", true)
+        .eq("status", "disponivel")
+        .maybeSingle();
+
+      if (bumpRow) {
+        const bumpPrice = typeof bumpRow.price === "number" ? bumpRow.price : parseFloat(String(bumpRow.price));
+        if (isFinite(bumpPrice) && bumpPrice > 0) {
+          bumpProduct = { id: bumpRow.id, title: bumpRow.title, price: bumpPrice };
+        }
+      }
+      // Bump pedido mas indisponivel: segue SEM bump, cobrando so o principal.
+      // Nunca cobra por algo que nao pode liberar.
+      if (!bumpProduct) console.warn(`Bump solicitado mas indisponivel — seguindo sem bump | order de ${productSlug}`);
+    }
+
+    // Centavos para evitar 47.9 + 27.5 = 75.39999999999999
+    const totalAmount = Math.round((productPrice + (bumpProduct?.price ?? 0)) * 100) / 100;
+
     // 2. Create pending order
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
@@ -254,7 +284,7 @@ Deno.serve(async (req: Request) => {
         product_id: product.id,
         email: email.toLowerCase().trim(),
         name: name?.trim() || null,
-        amount: productPrice,
+        amount: totalAmount,
         status: "pending",
         payment_method: paymentMethod || "pix",
       })
@@ -267,6 +297,26 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`Order created: ${order.id} | product: ${product.slug} | method: ${paymentMethod ?? "pix"}`);
+
+    // 2b. Itens do pedido. Gravados ANTES de cobrar: se falhar com bump,
+    // ninguem e cobrado por um item que nao seria liberado.
+    const itens = [
+      { order_id: order.id, product_id: product.id, unit_price: productPrice },
+      ...(bumpProduct ? [{ order_id: order.id, product_id: bumpProduct.id, unit_price: bumpProduct.price }] : []),
+    ];
+
+    const { error: itemsError } = await supabaseAdmin.from("order_items").insert(itens);
+
+    if (itemsError) {
+      console.error("order_items insert failed:", itemsError);
+      if (bumpProduct) {
+        // Com bump, a falha e fatal: cobrar dois e liberar um e pior que nao vender.
+        await supabaseAdmin.from("orders").update({ status: "failed" }).eq("id", order.id);
+        return jsonResponse(req, 500, { error: "Erro ao registrar os itens do pedido" });
+      }
+      // Sem bump, e recuperavel: a liberacao cai no fallback de orders.product_id.
+      console.warn("Seguindo sem order_items — fallback por orders.product_id cobre este pedido");
+    }
 
     // 3. Asaas integration
     const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
@@ -284,9 +334,11 @@ Deno.serve(async (req: Request) => {
         asaasData = await createAsaasPayment(
           asaasApiKey,
           customerId,
-          productPrice,
+          totalAmount,
           paymentMethod || "pix",
-          `${product.title} — Despertar Espiral`,
+          bumpProduct
+            ? `${product.title} + ${bumpProduct.title} — Despertar Espiral`
+            : `${product.title} — Despertar Espiral`,
           order.id,
           dueDateStr
         );
@@ -322,7 +374,7 @@ Deno.serve(async (req: Request) => {
     const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
     if (sequenzyApiKey) {
       const firstName = (name?.split(" ")[0] || email.split("@")[0]).trim();
-      const amountFmt = `R$ ${productPrice.toFixed(2).replace(".", ",")}`;
+      const amountFmt = `R$ ${totalAmount.toFixed(2).replace(".", ",")}`;
 
       sequenzyBatch([
         sequenzyUpsertSubscriber(sequenzyApiKey, {
