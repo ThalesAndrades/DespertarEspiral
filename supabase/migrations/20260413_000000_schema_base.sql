@@ -24,8 +24,6 @@ create table if not exists public.orders (
   amount numeric not null,
   status text default 'pending' not null,
   payment_method text,
-  sequenzy_session_id text,
-  sequenzy_payment_id text,
   paid_at timestamp with time zone,
   created_at timestamp with time zone default now(),
   asaas_payment_id text,

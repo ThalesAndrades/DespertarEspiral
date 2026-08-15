@@ -16,7 +16,6 @@ interface Order {
   payment_method: string | null;
   created_at: string;
   paid_at: string | null;
-  sequenzy_session_id: string | null;
   products: { title: string; slug: string } | null;
 }
 
