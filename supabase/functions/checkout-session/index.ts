@@ -1,7 +1,11 @@
 // Edge Function: checkout-session
-// Creates a pending order, integrates with Asaas (PIX/cartão/boleto) and Sequenzy
+// Creates a pending order, integrates with gateway de pagamento e Sequenzy.
+// PIX vai pra Woovi quando WOOVI_APP_ID estiver configurado; cartao e boleto
+// continuam no Asaas ate terem substituto (ver docs/superpowers/plans/
+// 2026-08-14-alinhar-ao-novo-formato.md).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
+import { createWooviCharge } from "../_shared/woovi.ts";
 import {
   sequenzyUpsertSubscriber,
   sequenzyEvent,
@@ -326,45 +330,57 @@ Deno.serve(async (req: Request) => {
       console.warn("Seguindo sem order_items — fallback por orders.product_id cobre este pedido");
     }
 
-    // 3. Asaas integration
-    const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
-    let asaasData: { invoiceUrl?: string; pixQrCode?: string; pixKey?: string; barCode?: string; billingType?: string; asaasId?: string } | null = null;
+    // 3. Cobranca no gateway
+    // paymentData e o formato NEUTRO que o resto da funcao (Sequenzy, resposta
+    // ao front) consome — o contrato de resposta pro front nao muda (mapeamos
+    // os campos da Woovi pros mesmos nomes que o Asaas ja usava).
+    let paymentData: { invoiceUrl?: string; pixQrCode?: string; pixKey?: string; barCode?: string; billingType?: string; asaasId?: string } | null = null;
+    let providerName: string | null = null;
+    let providerChargeId: string | null = null;
 
-    if (asaasApiKey) {
-      const firstName  = (name?.split(" ")[0] || email.split("@")[0]).trim();
-      const customerId = await upsertAsaasCustomer(asaasApiKey, email.toLowerCase().trim(), name?.trim() || firstName, cpfCnpj);
+    const wooviAppId = Deno.env.get("WOOVI_APP_ID");
+    const useWoovi = paymentMethod === "pix" && !!wooviAppId;
 
-      if (customerId) {
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + (paymentMethod === "boleto" ? 3 : paymentMethod === "credit" ? 0 : 1));
-        const dueDateStr = dueDate.toISOString().slice(0, 10);
+    if (useWoovi) {
+      // 3a. PIX via Woovi
+      const amountCents = Math.round(totalAmount * 100);
+      const wooviCharge = await createWooviCharge(wooviAppId!, {
+        correlationID: order.id,
+        valueInCents: amountCents,
+        comment: bumpProduct
+          ? `${product.title} + ${bumpProduct.title} — Despertar Espiral`
+          : `${product.title} — Despertar Espiral`,
+        customer: {
+          name: name?.trim(),
+          email: email.toLowerCase().trim(),
+          taxID: cpfCnpj ? cpfCnpj.replace(/\D/g, "") : undefined,
+        },
+      });
 
-        asaasData = await createAsaasPayment(
-          asaasApiKey,
-          customerId,
-          totalAmount,
-          paymentMethod || "pix",
-          bumpProduct
-            ? `${product.title} + ${bumpProduct.title} — Despertar Espiral`
-            : `${product.title} — Despertar Espiral`,
-          order.id,
-          dueDateStr
-        );
+      if (wooviCharge) {
+        providerName     = "woovi";
+        providerChargeId = wooviCharge.correlationID;
 
-        if (asaasData?.asaasId) {
-          await supabaseAdmin
-            .from("orders")
-            .update({
-              asaas_payment_id: asaasData.asaasId,
-              // sequenzy_session_id reserved for Sequenzy checkout session IDs only
-            })
-            .eq("id", order.id);
-        }
+        paymentData = {
+          billingType: "PIX",
+          invoiceUrl:  wooviCharge.paymentLinkUrl,
+          pixQrCode:   wooviCharge.qrCodeImage,
+          pixKey:      wooviCharge.brCode,
+        };
+
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            provider:             providerName,
+            provider_charge_id:   providerChargeId,
+            provider_payment_url: wooviCharge.paymentLinkUrl ?? null,
+          })
+          .eq("id", order.id);
       } else {
-        console.warn("Could not create/find Asaas customer");
+        console.error(`Woovi charge failed | order=${order.id}`);
       }
 
-      if (asaasData === null) {
+      if (paymentData === null) {
         await supabaseAdmin
           .from("orders")
           .update({ status: "failed" })
@@ -375,7 +391,56 @@ Deno.serve(async (req: Request) => {
         });
       }
     } else {
-      console.warn("ASAAS_API_KEY not configured — payment gateway skipped");
+      // 3b. Cartao/boleto (e PIX sem WOOVI_APP_ID configurado) seguem no Asaas
+      const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
+
+      if (asaasApiKey) {
+        const firstName  = (name?.split(" ")[0] || email.split("@")[0]).trim();
+        const customerId = await upsertAsaasCustomer(asaasApiKey, email.toLowerCase().trim(), name?.trim() || firstName, cpfCnpj);
+
+        if (customerId) {
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + (paymentMethod === "boleto" ? 3 : paymentMethod === "credit" ? 0 : 1));
+          const dueDateStr = dueDate.toISOString().slice(0, 10);
+
+          paymentData = await createAsaasPayment(
+            asaasApiKey,
+            customerId,
+            totalAmount,
+            paymentMethod || "pix",
+            bumpProduct
+              ? `${product.title} + ${bumpProduct.title} — Despertar Espiral`
+              : `${product.title} — Despertar Espiral`,
+            order.id,
+            dueDateStr
+          );
+
+          if (paymentData?.asaasId) {
+            // Caminho Asaas inalterado: so a coluna antiga e escrita aqui.
+            // As colunas neutras (provider/provider_charge_id/...) ainda nao
+            // tem equivalente Asaas nesta leva — regra 2 da Ordem obrigatoria.
+            await supabaseAdmin
+              .from("orders")
+              .update({ asaas_payment_id: paymentData.asaasId })
+              .eq("id", order.id);
+          }
+        } else {
+          console.warn("Could not create/find Asaas customer");
+        }
+
+        if (paymentData === null) {
+          await supabaseAdmin
+            .from("orders")
+            .update({ status: "failed" })
+            .eq("id", order.id);
+          return jsonResponse(req, 502, {
+            error: "Não foi possível gerar as instruções de pagamento. Tente novamente em instantes.",
+            orderId: order.id,
+          });
+        }
+      } else {
+        console.warn("ASAAS_API_KEY not configured — payment gateway skipped");
+      }
     }
 
     // 4. Sequenzy — fire checkout events (non-blocking)
@@ -424,8 +489,8 @@ Deno.serve(async (req: Request) => {
           productSubtitle: product.subtitle || "Método de Reconexão e Cura",
           orderId:         order.id.slice(0, 8).toUpperCase(),
           amount:          amountFmt,
-          pixKey:          asaasData?.pixKey || "contato@despertarespiral.com",
-          invoiceUrl:      asaasData?.invoiceUrl || `${SITE_URL}/obrigado`,
+          pixKey:          paymentData?.pixKey || "contato@despertarespiral.com",
+          invoiceUrl:      paymentData?.invoiceUrl || `${SITE_URL}/obrigado`,
           supportEmail:    "contato@despertarespiral.com",
         }),
       ]);
@@ -456,13 +521,14 @@ Deno.serve(async (req: Request) => {
         slug:     product.slug,
         price:    productPrice,
       },
-      payment: asaasData ? {
-        invoiceUrl: asaasData.invoiceUrl,
-        pixQrCode:  asaasData.pixQrCode,
-        pixKey:     asaasData.pixKey,
-        barCode:    asaasData.barCode,
-        billingType: asaasData.billingType,
-        asaasId:    asaasData.asaasId,
+      payment: paymentData ? {
+        invoiceUrl:  paymentData.invoiceUrl,
+        pixQrCode:   paymentData.pixQrCode,
+        pixKey:      paymentData.pixKey,
+        barCode:     paymentData.barCode,
+        billingType: paymentData.billingType,
+        asaasId:     paymentData.asaasId,
+        provider:    providerName ?? undefined,
       } : null,
       message: "Pedido registrado. Instruções de pagamento enviadas por e-mail.",
     });
