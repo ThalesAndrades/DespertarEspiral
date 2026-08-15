@@ -342,17 +342,16 @@ Deno.serve(async (req: Request) => {
     const useWoovi = paymentMethod === "pix" && !!wooviAppId;
 
     if (useWoovi) {
-      // 3a. PIX via Woovi
-      // O campo "comment" da Woovi rejeita travessao (—) com 400 "Emoji nao
-      // e permitido no comentario" — usa so ASCII aqui (achado em producao,
-      // 14/08). Nao mexe na descricao do Asaas, que aceita travessao.
+      // 3a. PIX via Woovi. Peculiaridades do fornecedor (comment ASCII-only,
+      // QR que vem como URL em vez de base64) ficam dentro de _shared/woovi.ts
+      // — aqui e so contrato agnostico, igual ao texto que ja ia pro Asaas.
       const amountCents = Math.round(totalAmount * 100);
       const wooviCharge = await createWooviCharge(wooviAppId!, {
         correlationID: order.id,
         valueInCents: amountCents,
         comment: bumpProduct
-          ? `${product.title} + ${bumpProduct.title} - Despertar Espiral`
-          : `${product.title} - Despertar Espiral`,
+          ? `${product.title} + ${bumpProduct.title} — Despertar Espiral`
+          : `${product.title} — Despertar Espiral`,
         customer: {
           name: name?.trim(),
           email: email.toLowerCase().trim(),
@@ -362,12 +361,15 @@ Deno.serve(async (req: Request) => {
 
       if (wooviCharge) {
         providerName     = "woovi";
-        providerChargeId = wooviCharge.correlationID;
+        // O id real da cobranca na Woovi (usado no painel pra estorno e
+        // conciliacao) — correlationID e o NOSSO order.id, so cai como
+        // fallback se por algum motivo a Woovi nao devolver "identifier".
+        providerChargeId = wooviCharge.identifier ?? wooviCharge.correlationID;
 
         paymentData = {
           billingType: "PIX",
           invoiceUrl:  wooviCharge.paymentLinkUrl,
-          pixQrCode:   wooviCharge.qrCodeImage,
+          pixQrCode:   wooviCharge.qrCodeImagePngBase64,
           pixKey:      wooviCharge.brCode,
         };
 
