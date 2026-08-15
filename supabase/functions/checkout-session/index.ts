@@ -343,13 +343,16 @@ Deno.serve(async (req: Request) => {
 
     if (useWoovi) {
       // 3a. PIX via Woovi
+      // O campo "comment" da Woovi rejeita travessao (—) com 400 "Emoji nao
+      // e permitido no comentario" — usa so ASCII aqui (achado em producao,
+      // 14/08). Nao mexe na descricao do Asaas, que aceita travessao.
       const amountCents = Math.round(totalAmount * 100);
       const wooviCharge = await createWooviCharge(wooviAppId!, {
         correlationID: order.id,
         valueInCents: amountCents,
         comment: bumpProduct
-          ? `${product.title} + ${bumpProduct.title} — Despertar Espiral`
-          : `${product.title} — Despertar Espiral`,
+          ? `${product.title} + ${bumpProduct.title} - Despertar Espiral`
+          : `${product.title} - Despertar Espiral`,
         customer: {
           name: name?.trim(),
           email: email.toLowerCase().trim(),
