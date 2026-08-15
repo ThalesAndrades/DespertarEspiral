@@ -137,7 +137,11 @@ Deno.serve(async (req: Request) => {
         console.warn(`Order ${orderId}: no user_id — guest purchase, access not auto-granted`);
       }
 
-      // Estágio 4: aqui entra o disparo do e-mail "acesso liberado" via Resend.
+      // Aqui saíram QUATRO disparos do Sequenzy: atributos do assinante, tags,
+      // o evento de CRM `compra_confirmada` e o e-mail "acesso liberado".
+      // O Estágio 4 repõe SÓ o e-mail, via Resend — a perna de CRM não tem
+      // equivalente conhecido no Resend e morre aqui, de propósito.
+      console.warn(`Cliente NAO notificado automaticamente (Resend pendente) — order ${orderId}`);
 
       console.log(`Payment confirmed: order ${orderId} by admin ${callerUser.id}`);
       return jsonResponse(req, 200, {
@@ -169,7 +173,9 @@ Deno.serve(async (req: Request) => {
         .eq("product_id", body.productId)
         .eq("status", "paid");
 
-      // Estágio 4: aqui entra a notificação de acesso revogado via Resend.
+      // Aqui saiu um evento de CRM do Sequenzy (`acesso_revogado`), NÃO um
+      // e-mail — nunca houve notificação à cliente nesta ação. Não inventar
+      // uma no Estágio 4 sem decidir antes se ela deve existir.
 
       console.log(`Access revoked: user ${body.userId} product ${body.productId} by admin ${callerUser.id}`);
       return jsonResponse(req, 200, { success: true, message: "Acesso revogado." });
