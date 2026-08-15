@@ -1,12 +1,9 @@
-// Edge Function: sequenzy-webhook
-// Handles transactional confirmations for Despertar Espiral
-// Actions: confirm_payment | add_subscriber | trigger_event | revoke_access
+// Edge Function: admin-orders
+// Endpoint de admin para operações manuais sobre pedidos.
+// Actions: confirm_payment | revoke_access
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
 import { produtosDoPedido } from "../_shared/orderItems.ts";
-
-const SEQUENZY_BASE = "https://api.sequenzy.com/api/v1";
-const SITE_URL = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://despertarespiral.com").replace(/\/+$/, "");
 
 function jsonResponse(req: Request, status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -19,34 +16,6 @@ function jsonResponse(req: Request, status: number, body: unknown) {
       "Referrer-Policy": "no-referrer",
     },
   });
-}
-
-async function sequenzyRequest(
-  apiKey: string,
-  method: string,
-  endpoint: string,
-  body?: Record<string, unknown>
-) {
-  try {
-    const res = await fetch(`${SEQUENZY_BASE}${endpoint}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const text = await res.text();
-    let json: unknown;
-    try { json = JSON.parse(text); } catch { json = null; }
-    if (!res.ok) {
-      console.warn(`Sequenzy [${method}] ${endpoint} → ${res.status}: ${text.slice(0, 200)}`);
-    }
-    return { ok: res.ok, status: res.status, data: json };
-  } catch (err) {
-    console.error(`Sequenzy [${method}] ${endpoint} error:`, err);
-    return { ok: false, status: 0, data: null };
-  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -168,70 +137,7 @@ Deno.serve(async (req: Request) => {
         console.warn(`Order ${orderId}: no user_id — guest purchase, access not auto-granted`);
       }
 
-      // Sequenzy automations (non-blocking — all fire in parallel)
-      const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
-      if (sequenzyApiKey && order.email) {
-        const product = order.products as { title?: string; subtitle?: string; slug?: string } | null;
-        const firstName = order.name?.split(" ")[0]?.trim() || order.email.split("@")[0];
-        const amountFormatted = `R$ ${parseFloat(order.amount).toFixed(2).replace(".", ",")}`;
-
-        await Promise.allSettled([
-          // 1. Update subscriber custom attributes via POST (upsert)
-          // Note: PATCH /subscribers/:email requires the subscriber to exist;
-          // using POST /subscribers as upsert is more resilient.
-          sequenzyRequest(sequenzyApiKey, "POST", "/subscribers", {
-            email: order.email,
-            customAttributes: {
-              purchase_confirmed_at: new Date().toISOString(),
-              payment_method: paymentMethod || "manual",
-              product_slug: product?.slug,
-              status: "cliente_ativo",
-            },
-          }),
-
-          // 2. Add customer tags (Sequenzy uses bulk endpoint)
-          sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/tags/bulk", {
-            email: order.email,
-            tags: [
-              "cliente",
-              `cliente-${product?.slug ?? "produto"}`,
-              "acesso-ativo",
-              "plataforma-despertar",
-            ],
-          }),
-
-          // 3. Trigger compra_confirmada event (automation flows)
-          sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/events", {
-            email: order.email,
-            event: "compra_confirmada",
-            properties: {
-              product_title:  product?.title,
-              product_slug:   product?.slug,
-              amount:         order.amount,
-              order_id:       orderId,
-              payment_method: paymentMethod || "manual",
-              confirmed_at:   new Date().toISOString(),
-            },
-          }),
-
-          // 4. Transactional welcome/access email via Sequenzy template "acesso-liberado"
-          sequenzyRequest(sequenzyApiKey, "POST", "/transactional/send", {
-            to: order.email,
-            slug: "acesso-liberado",
-            variables: {
-              firstName,
-              productTitle:    product?.title || "Despertar Espiral",
-              productSubtitle: product?.subtitle || "Método de Reconexão e Cura",
-              orderId:         orderId.slice(0, 8).toUpperCase(),
-              amount:          amountFormatted,
-              loginUrl:        `${SITE_URL}/login`,
-              supportEmail:    "contato@despertarespiral.com",
-            },
-          }),
-        ]);
-      } else if (!sequenzyApiKey) {
-        console.warn("SEQUENZY_API_KEY not set — email automation skipped");
-      }
+      // Estágio 4: aqui entra o disparo do e-mail "acesso liberado" via Resend.
 
       console.log(`Payment confirmed: order ${orderId} by admin ${callerUser.id}`);
       return jsonResponse(req, 200, {
@@ -263,67 +169,18 @@ Deno.serve(async (req: Request) => {
         .eq("product_id", body.productId)
         .eq("status", "paid");
 
-      const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
-      if (sequenzyApiKey && body.email) {
-        await Promise.allSettled([
-          sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/events", {
-            email: body.email,
-            event: "acesso_revogado",
-            properties: { product_id: body.productId, revoked_at: new Date().toISOString() },
-          }),
-        ]);
-      }
+      // Estágio 4: aqui entra a notificação de acesso revogado via Resend.
 
       console.log(`Access revoked: user ${body.userId} product ${body.productId} by admin ${callerUser.id}`);
       return jsonResponse(req, 200, { success: true, message: "Acesso revogado." });
     }
 
-    // ─────────────────────────────────────────────────
-    // ACTION: add_subscriber
-    // ─────────────────────────────────────────────────
-    if (action === "add_subscriber" && body.email) {
-      const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
-      if (!sequenzyApiKey) return jsonResponse(req, 500, { error: "SEQUENZY_API_KEY não configurada" });
-
-      const result = await sequenzyRequest(sequenzyApiKey, "POST", "/subscribers", {
-        email: body.email,
-        firstName: body.firstName || body.email.split("@")[0],
-        lastName: body.lastName || "",
-        customAttributes: body.attributes || {},
-      });
-
-      if (body.tags?.length) {
-        await sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/tags/bulk", {
-          email: body.email,
-          tags: body.tags,
-        });
-      }
-
-      return jsonResponse(req, result.ok ? 200 : 400, { success: result.ok, data: result.data });
-    }
-
-    // ─────────────────────────────────────────────────
-    // ACTION: trigger_event
-    // ─────────────────────────────────────────────────
-    if (action === "trigger_event" && body.email && body.event) {
-      const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
-      if (!sequenzyApiKey) return jsonResponse(req, 500, { error: "SEQUENZY_API_KEY não configurada" });
-
-      const result = await sequenzyRequest(sequenzyApiKey, "POST", "/subscribers/events", {
-        email: body.email,
-        event: body.event,
-        properties: body.properties || {},
-      });
-
-      return jsonResponse(req, result.ok ? 200 : 400, { success: result.ok, data: result.data });
-    }
-
     return jsonResponse(req, 400, {
-      error: "Ação não reconhecida. Use: confirm_payment | revoke_access | add_subscriber | trigger_event",
+      error: "Ação não reconhecida. Use: confirm_payment | revoke_access",
     });
 
   } catch (err) {
-    console.error("sequenzy-webhook unexpected error:", err);
+    console.error("admin-orders unexpected error:", err);
     return jsonResponse(req, 500, { error: "Erro interno do servidor" });
   }
 });

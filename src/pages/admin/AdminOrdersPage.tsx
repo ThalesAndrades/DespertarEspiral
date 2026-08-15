@@ -112,7 +112,7 @@ export default function AdminOrdersPage() {
     // Pass admin JWT so the edge function can verify admin role
     const { data: { session } } = await supabase.auth.getSession();
 
-    const { data, error } = await supabase.functions.invoke("sequenzy-webhook", {
+    const { data, error } = await supabase.functions.invoke("admin-orders", {
       body: { action: "confirm_payment", orderId, paymentMethod: method },
       headers: session?.access_token
         ? { Authorization: `Bearer ${session.access_token}` }
