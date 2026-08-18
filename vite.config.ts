@@ -31,6 +31,8 @@ export default defineConfig({
           // react-router-dom pull in (scheduler, react-router, @remix-run/router)
           // has to live in the SAME chunk, or vendor <-> react-vendor become a
           // circular import and React is undefined when the router initializes.
+          // JA FOI REVERTIDO uma vez por commit externo "onspace.ai" (18/08,
+          // 9ef7459) e o site voltaria a subir em TELA BRANCA. Nao simplificar.
           if (/[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id) || id.includes("@remix-run")) return "react-vendor";
           if (id.includes("@radix-ui")) return "radix";
           if (id.includes("@tanstack")) return "query";

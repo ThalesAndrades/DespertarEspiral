@@ -12,7 +12,6 @@ import {
 } from "@/components/layout/LazyDecorative";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero-new.jpg";
 import sunyanPortrait     from "@/assets/sunyan-portrait.jpg";
-import mockupAtualizado   from "@/assets/mockup-atualizado.png";
 import { useTheme } from "@/hooks/useTheme";
 import { ArrowRight, ArrowUpRight, Star, ChevronDown } from "lucide-react";
 import { testimonials, steps, guarantees, faqs, LANDING_STATS, COMMUNITY_STATS } from "@/constants/landingContent";
@@ -547,76 +546,9 @@ export default function LandingPage() {
                 data-parallax="-0.08"
                 style={{ width: "100%", position: "relative", zIndex: 10 }}
               >
-                {/* Floating accent badges — desktop only */}
-                <div
-                  className="hidden lg:block"
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute", top: "-28px", left: "-32px", zIndex: 5,
-                    animation: "heroFloat 6s ease-in-out infinite",
-                  }}
-                >
-                  <div style={{
-                    background: isLight ? "rgba(255,255,255,0.96)" : "rgba(12,15,34,0.92)",
-                    backdropFilter: "blur(24px)", border: "1px solid var(--border-soft)",
-                    borderRadius: "14px", padding: "10px 14px",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.20)",
-                    display: "flex", alignItems: "center", gap: "8px",
-                  }}>
-                    <div style={{ display: "flex", gap: "2px" }}>
-                      {[...Array(5)].map((_, i) => <Star key={i} size={8} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
-                    </div>
-                    <span style={{ fontSize: "11px", color: heroText, fontFamily: "DM Sans, sans-serif", fontWeight: 500 }}>4.9</span>
-                    <span style={{ fontSize: "11px", color: heroMuted, fontFamily: "DM Sans, sans-serif" }}>avaliação</span>
-                  </div>
-                </div>
-
-                <div
-                  className="hidden lg:block"
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute", bottom: "0", right: "-28px", zIndex: 5,
-                    animation: "heroFloatB 5.5s ease-in-out infinite 0.8s",
-                  }}
-                >
-                  <div style={{
-                    background: isLight ? "rgba(255,255,255,0.96)" : "rgba(12,15,34,0.92)",
-                    backdropFilter: "blur(24px)", border: "1px solid rgba(198,168,112,0.25)",
-                    borderRadius: "14px", padding: "10px 14px",
-                    boxShadow: "0 8px 32px rgba(198,168,112,0.10)",
-                    display: "flex", alignItems: "center", gap: "8px",
-                  }}>
-                    <span style={{ fontSize: "14px" }}>🏅</span>
-                    <div>
-                      <p style={{ fontSize: "11px", color: "var(--gold)", fontFamily: "Montserrat, sans-serif", fontWeight: 600, lineHeight: 1.2 }}>Certificado</p>
-                      <p style={{ fontSize: "10px", color: heroMuted, fontFamily: "DM Sans, sans-serif", lineHeight: 1.2 }}>incluso</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mockup image */}
-                <div style={{ position: "relative", width: "100%" }}>
-                  <div aria-hidden="true" style={{
-                    position: "absolute", inset: "-16px",
-                    borderRadius: "clamp(16px,3vw,28px)",
-                    background: `radial-gradient(ellipse 80% 60% at 50% 50%, ${isLight ? "rgba(122,94,30,0.08)" : "rgba(198,168,112,0.10)"} 0%, transparent 70%)`,
-                    pointerEvents: "none", zIndex: 0,
-                  }} />
-                  <img
-                    src={mockupAtualizado}
-                    alt="Plataforma Despertar Espiral no MacBook"
-                    width={768} height={454}
-                    loading="eager"
-                    decoding="async"
-                    fetchPriority="high"
-                    style={{
-                      width: "100%", height: "auto", display: "block", objectFit: "contain",
-                      position: "relative", zIndex: 1,
-                      filter: "drop-shadow(0 28px 56px rgba(0,0,0,0.32)) drop-shadow(0 4px 14px rgba(198,168,112,0.08))",
-                    }}
-                  />
-                </div>
-
+                {/* Mockup do MacBook removido (18/08, pedido do dono): o hero
+                    fica aberto para o video de fundo do site aparecer. Os
+                    badges flutuantes sairam junto — ancoravam nos cantos dele. */}
                 {/* Metrics strip */}
                 <div className="animate-pop-in delay-600" style={{
                   display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
