@@ -19,12 +19,12 @@ describe("ProductCard", () => {
   it("mostra preço e botão de compra quando disponivel", () => {
     renderCard(base);
     expect(screen.getByText("R$ 47,00")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /quero começar/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /começar agora/i })).toBeInTheDocument();
   });
 
   it("NAO mostra botão de compra quando em_breve", () => {
     renderCard({ ...base, status: "em_breve" });
-    expect(screen.queryByRole("link", { name: /quero começar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /começar agora/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /avise-me/i })).toBeInTheDocument();
   });
 
@@ -40,26 +40,28 @@ describe("ProductCard", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
-  it("mostra parcelamento em 12x para preco >= 100", () => {
+  it("mostra parcelamento em 12x para preco >= 100 (parcela em destaque)", () => {
     renderCard({ ...base, price: 997 });
-    expect(screen.getByText("ou 12× de R$ 83,08")).toBeInTheDocument();
+    expect(screen.getByText("12× de")).toBeInTheDocument();
+    expect(screen.getByText("R$ 83,08")).toBeInTheDocument();
+    expect(screen.getByText("ou R$ 997,00 à vista")).toBeInTheDocument();
   });
 
   it("NAO mostra parcelamento para preco < 100", () => {
     renderCard({ ...base, price: 47 });
-    expect(screen.queryByText(/ou 12×/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/12× de/)).not.toBeInTheDocument();
   });
 
   it("mostra selo de garantia de 7 dias quando disponivel", () => {
     renderCard(base);
-    expect(screen.getByText("Garantia de 7 dias")).toBeInTheDocument();
+    expect(screen.getByText(/garantia incondicional de 7 dias/i)).toBeInTheDocument();
   });
 
   it("produto gratuito disponivel linka para /bussola, nao para checkout", () => {
     renderCard({ ...base, slug: "bussola-da-espiral", price: 0, status: "disponivel" });
     const cta = screen.getByRole("link", { name: /fazer o diagnóstico/i });
     expect(cta).toHaveAttribute("href", "/bussola");
-    expect(screen.queryByRole("link", { name: /quero começar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /começar agora/i })).not.toBeInTheDocument();
   });
 
   it("produto gratuito mostra 'Gratuito' no lugar do preco e sem parcelamento", () => {
@@ -72,7 +74,7 @@ describe("ProductCard", () => {
     renderCard({ ...base, slug: "outro-gratuito-sem-mapa", price: 0, status: "disponivel" });
     expect(screen.getByRole("button", { name: /avise-me/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /fazer o diagnóstico/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /quero começar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /começar agora/i })).not.toBeInTheDocument();
   });
 
   it("aplica borda dourada quando featured", () => {

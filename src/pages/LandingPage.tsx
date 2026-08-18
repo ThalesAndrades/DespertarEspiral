@@ -11,7 +11,6 @@ import {
   LazySectionSpiral3D   as SectionSpiral3D,
 } from "@/components/layout/LazyDecorative";
 import mulherEspiralHero from "@/assets/mulher-espiral-hero-new.jpg";
-import sunyanPortrait     from "@/assets/sunyan-portrait.jpg";
 import { useTheme } from "@/hooks/useTheme";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import { steps, guarantees, faqs } from "@/constants/landingContent";
@@ -531,7 +530,7 @@ export default function LandingPage() {
                     textAlign: "center", marginBottom: "clamp(24px,3.5vw,38px)",
                   }}
                 >
-                  O método que a Sunyan desenha à mão, volta por volta — um caminho de autoconhecimento feminino feito de presença, ritual e verdade.
+                  Você não precisa se reinventar — precisa se reencontrar. O método que a Sunyan desenha à mão guia essa volta, com presença, ritual e verdade.
                 </p>
 
                 <div className="animate-fade-up delay-400" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "360px", marginBottom: "clamp(18px,2.5vw,26px)" }}>
@@ -595,6 +594,9 @@ export default function LandingPage() {
                 <span style={{ color: "var(--gold)", fontSize: "10px" }}>◆</span>
                 <div style={{ height: "1px", width: "44px", background: "var(--border-subtle)" }} />
               </div>
+              <p className="reveal reveal-delay-2" style={{ fontSize: "clamp(13px,1.6vw,16px)", color: "var(--text-secondary)", maxWidth: "480px", margin: "clamp(16px,2vw,22px) auto 0", lineHeight: 1.85 }}>
+                Jornadas guiadas para cada momento da sua volta — comece por onde a sua vida está pedindo.
+              </p>
             </div>
             <StorefrontGrid products={produtos} loading={carregando} />
           </div>
@@ -896,40 +898,25 @@ export default function LandingPage() {
           background: "var(--surface-glass)",
         }}>
           <div className="glow-gold" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden="true" />
-          <div style={{ position: "relative", maxWidth: "1060px", margin: "0 auto", display: "grid", gap: "clamp(32px,5vw,72px)", alignItems: "center" }} className="grid md:grid-cols-2">
-            <div className="reveal-left" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
-              <div style={{ position: "relative", width: "clamp(200px,30vw,360px)", aspectRatio: "3/4", borderRadius: "clamp(18px,2.5vw,26px)", overflow: "hidden", border: "1px solid var(--border-soft)", boxShadow: "var(--shadow-lg)", flexShrink: 0 }}>
-                <img src={sunyanPortrait} alt="Sunyan Nunes — Criadora do Método Espiral" loading="lazy" decoding="async" width="360" height="480"
-                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", display: "block" }} />
-                <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "44px 20px 20px", background: "linear-gradient(to top, rgba(6,8,15,0.90) 0%, rgba(6,8,15,0.30) 55%, transparent 100%)" }}>
-                  <p style={{ fontFamily: "Cormorant Garamond,serif", fontSize: "20px", color: "#c6a870", fontStyle: "italic", fontWeight: 300, textAlign: "center", lineHeight: 1.2 }}>Sunyan Nunes</p>
-                  <p style={{ fontFamily: "Montserrat,sans-serif", fontSize: "8px", letterSpacing: "0.20em", textTransform: "uppercase", color: "rgba(198,168,112,0.58)", textAlign: "center", marginTop: "4px" }}>Criadora do Método Espiral</p>
-                </div>
-                <div aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, transparent, rgba(198,168,112,0.55), transparent)" }} />
-              </div>
-              <div className="card-glass" style={{ position: "absolute", bottom: "-16px", right: "clamp(-8px,1vw,0px)", padding: "clamp(12px,2vw,16px) clamp(14px,2vw,20px)", minWidth: "140px" }}>
-                <p className="font-display" style={{ fontSize: "clamp(22px,2.5vw,28px)", color: "var(--gold)", fontStyle: "italic", fontWeight: 300, lineHeight: 1 }}>8+ anos</p>
-                <p className="font-label" style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: "5px" }}>conduzindo jornadas</p>
-              </div>
-            </div>
-            <div className="reveal-right">
-              <p className="overline" style={{ color: "var(--gold)", marginBottom: "18px" }}>A guia da jornada</p>
-              <h2 style={{ fontSize: "clamp(26px,4.5vw,54px)", fontWeight: 300, lineHeight: 1.1, marginBottom: "18px", color: "var(--text-primary)" }}>Sunyan Nunes</h2>
-              <p style={{ fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-secondary)", lineHeight: 1.92, marginBottom: "16px" }}>
-                Terapeuta, facilitadora e criadora do Método Espiral. Por mais de 8 anos acompanha mulheres no processo de reencontro com sua essência — uma abordagem que une profundidade emocional, sabedoria do corpo e espiritualidade prática.
-              </p>
-              <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-muted)", lineHeight: 1.92, fontStyle: "italic", marginBottom: "clamp(20px,3vw,32px)" }}>
-                "Não sou guru. Sou uma companheira de jornada que já percorreu o caminho e voltou para te mostrar que é possível."
-              </p>
-              <Link
-                to="/checkout/mulher-espiral"
-                className="btn-gold"
-                onMouseEnter={prefetchCheckout}
-                onFocus={prefetchCheckout}
-              >
-                Quero aprender com Sunyan <ArrowRight size={14} />
-              </Link>
-            </div>
+          {/* Retrato estatico removido (18/08, pedido do dono): quem apresenta
+              a Sunyan e o proprio filme de fundo — aqui fica a palavra dela. */}
+          <div className="reveal" style={{ position: "relative", maxWidth: "720px", margin: "0 auto", textAlign: "center" }}>
+            <p className="overline" style={{ color: "var(--gold)", marginBottom: "18px" }}>A guia da jornada</p>
+            <h2 style={{ fontSize: "clamp(28px,5vw,60px)", fontWeight: 300, lineHeight: 1.08, marginBottom: "clamp(18px,2.5vw,26px)", color: "var(--text-primary)" }}>Sunyan Nunes</h2>
+            <p className="font-display" style={{ fontSize: "clamp(19px,2.6vw,30px)", color: "var(--text-secondary)", lineHeight: 1.55, fontStyle: "italic", fontWeight: 300, marginBottom: "clamp(18px,2.5vw,26px)" }}>
+              "Não sou guru. Sou uma companheira de jornada que já percorreu o caminho — e voltei para te mostrar que é possível."
+            </p>
+            <p style={{ fontSize: "clamp(14px,1.6vw,16px)", color: "var(--text-secondary)", lineHeight: 1.92, marginBottom: "clamp(24px,3.5vw,36px)" }}>
+              Terapeuta, facilitadora e criadora do Método Espiral. Há mais de 8 anos ao lado de mulheres no reencontro com a própria essência — unindo profundidade emocional, sabedoria do corpo e espiritualidade prática.
+            </p>
+            <Link
+              to="/checkout/mulher-espiral"
+              className="btn-gold"
+              onMouseEnter={prefetchCheckout}
+              onFocus={prefetchCheckout}
+            >
+              Caminhar com a Sunyan <ArrowRight size={14} />
+            </Link>
           </div>
         </section>
 
