@@ -442,10 +442,11 @@ export default function LandingPage() {
             overflow: "hidden", background: "transparent",
           }}
         >
-          {/* Hero bottom fade */}
+          {/* Hero bottom fade — leve, so pra assentar o texto na transicao;
+              desembocar em cor SOLIDA cortava o video entre hero e vitrine. */}
           <div aria-hidden="true" style={{
-            position: "absolute", bottom: 0, left: 0, right: 0, height: "220px",
-            background: `linear-gradient(to bottom, transparent, ${heroBg})`,
+            position: "absolute", bottom: 0, left: 0, right: 0, height: "160px",
+            background: `linear-gradient(to bottom, transparent, color-mix(in srgb, ${heroBg} 40%, transparent))`,
             pointerEvents: "none", zIndex: 3,
           }} />
 
