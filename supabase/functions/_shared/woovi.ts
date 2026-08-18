@@ -47,6 +47,59 @@ interface CreateChargeParams {
   customer?: WooviCustomer;
 }
 
+export type WooviChargeLookup =
+  | { ok: true; status: string; correlationID?: string; identifier?: string }
+  | { ok: false; notFound: boolean };
+
+/**
+ * Consulta uma cobranca existente (por identifier OU correlationID).
+ * Distingue "nao existe" (404 — payload forjado/lixo, nao adianta retry) de
+ * falha transitoria (rede/5xx — o caller deve devolver 500 pra Woovi
+ * re-tentar). E a fonte da verdade do woovi-webhook: pago e o que a API
+ * da Woovi diz que esta COMPLETED, nunca o que o payload do webhook afirma.
+ */
+export async function getWooviCharge(
+  appId: string,
+  chargeId: string
+): Promise<WooviChargeLookup> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const res = await fetch(`${WOOVI_BASE}/charge/${encodeURIComponent(chargeId)}`, {
+      signal: controller.signal,
+      headers: {
+        "Authorization": appId,
+        "User-Agent": "DespertarEspiral/1.0",
+      },
+    });
+    // Medido 18/08: id inexistente volta 400 (nao 404). Ambos sao permanentes
+    // — sem isso, payload forjado viraria retry infinito da Woovi. 401/403 e
+    // credencial NOSSA quebrada: transitorio (500), retry apos consertar.
+    if (res.status === 400 || res.status === 404) return { ok: false, notFound: true };
+    if (!res.ok) {
+      console.warn(`[Woovi] consulta de charge falhou (${res.status})${res.status === 401 || res.status === 403 ? " — WOOVI_APP_ID invalido?" : ""}`);
+      return { ok: false, notFound: false };
+    }
+    const json = await res.json().catch(() => null) as Record<string, unknown> | null;
+    const charge = json?.charge as Record<string, unknown> | undefined;
+    if (!charge?.status) {
+      console.warn("[Woovi] consulta 2xx sem charge.status — tratando como transitorio");
+      return { ok: false, notFound: false };
+    }
+    return {
+      ok: true,
+      status:        charge.status as string,
+      correlationID: charge.correlationID as string | undefined,
+      identifier:    charge.identifier as string | undefined,
+    };
+  } catch (err) {
+    console.error("[Woovi] erro consultando charge:", err);
+    return { ok: false, notFound: false };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Normaliza o "comment" pro que a Woovi aceita. A regra exata nao e
  * documentada (a doc so cita o limite de 140 caracteres) — defesa generica:
