@@ -464,7 +464,7 @@ export default function LandingPage() {
                 /* Brilho radial do proprio tema atras do texto: legivel sem
                    lavar o video — ele aparece forte em volta do bloco. */
                 padding: "clamp(28px,4vw,56px)",
-                background: "radial-gradient(ellipse 78% 66% at 50% 46%, color-mix(in srgb, var(--bg-surface) 68%, transparent) 0%, color-mix(in srgb, var(--bg-surface) 34%, transparent) 52%, transparent 76%)",
+                background: "radial-gradient(ellipse 74% 62% at 50% 46%, color-mix(in srgb, var(--bg-surface) 50%, transparent) 0%, color-mix(in srgb, var(--bg-surface) 22%, transparent) 52%, transparent 74%)",
               }}
             >
 
@@ -769,7 +769,7 @@ export default function LandingPage() {
         <section id="section-4" className="cv-auto" style={{
           position: "relative", zIndex: 1, overflow: "hidden",
           padding: "clamp(80px,12vw,140px) clamp(16px,5vw,24px)",
-          background: "rgba(6,5,15,0.90)",
+          background: "rgba(6,5,15,0.80)",
         }}>
           {/* Atmospheric layers */}
           <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 90% 70% at 50% 0%, rgba(81,72,152,0.22) 0%, transparent 60%)", pointerEvents: "none" }} />

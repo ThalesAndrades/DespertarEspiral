@@ -236,8 +236,8 @@
      TODO o site, e o conteúdo segue legível. Ajustar presença do vídeo
      dentro das seções = mexer nos percentuais aqui. */
   :root {
-    --surface-glass:   color-mix(in srgb, var(--bg-surface) 86%, transparent);
-    --surface-glass-2: color-mix(in srgb, var(--bg-surface-2) 86%, transparent);
+    --surface-glass:   color-mix(in srgb, var(--bg-surface) 72%, transparent);
+    --surface-glass-2: color-mix(in srgb, var(--bg-surface-2) 76%, transparent);
   }
 
   /* Card do marketplace: vidro sobre o vídeo, borda viva no hover */
@@ -270,7 +270,7 @@
     position: fixed;
     inset: 0;
     background-color: var(--bg-surface);
-    opacity: 0.38;
+    opacity: 0.15;
     z-index: -1;
     pointer-events: none;
     transition: background-color 0.35s ease;
