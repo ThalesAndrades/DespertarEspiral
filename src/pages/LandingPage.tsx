@@ -501,10 +501,9 @@ export default function LandingPage() {
                     marginBottom: 0, color: heroText, textAlign: "center", width: "100%",
                   }}
                 >
-                  Reconectar-se<br />não é voltar.<br />
-                  <span style={{
-                    background: "linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 60%, var(--gold) 100%)",
-                    backgroundSize: "200% auto",
+                  Reconectar-se<br />não é <span className="text-outline-gold">voltar.</span><br />
+                  <span className="text-shimmer" style={{
+                    background: "linear-gradient(120deg, var(--gold) 0%, var(--gold-soft) 35%, #e8d5a8 50%, var(--gold-soft) 65%, var(--gold) 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -513,6 +512,10 @@ export default function LandingPage() {
                     É encontrar-se<br />pela primeira vez.
                   </span>
                 </h1>
+                {/* Traco caligrafico que se desenha — eco da espiral a mao do video */}
+                <svg className="stroke-draw" width="min(46vw, 320px)" height="16" viewBox="0 0 320 16" fill="none" aria-hidden="true" style={{ marginTop: "clamp(10px,1.6vw,18px)", overflow: "visible" }}>
+                  <path d="M4 11 Q 58 3, 118 8 T 224 7 Q 268 5, 316 9" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" pathLength="1" opacity="0.85" />
+                </svg>
               </div>
 
               {/* ── Body group (parallax: standard) ── */}
@@ -585,7 +588,7 @@ export default function LandingPage() {
             <div style={{ textAlign: "center", marginBottom: "clamp(40px,6vw,72px)" }}>
               <p className="overline reveal" style={{ color: "var(--gold)", marginBottom: "16px" }}>As jornadas</p>
               <h2 className="font-display text-balance reveal reveal-delay-1" style={{ fontSize: "clamp(30px,5.5vw,64px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.05, color: "var(--text-primary)" }}>
-                Cada volta da espiral começa em algum lugar.
+                Cada volta da <span className="text-shimmer" style={{ background: "linear-gradient(120deg, var(--gold) 0%, var(--gold-soft) 50%, var(--gold) 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>espiral</span> começa<br />em algum lugar.
               </h2>
               <div style={{ display: "flex", alignItems: "center", gap: "16px", justifyContent: "center", marginTop: "22px" }} aria-hidden="true">
                 <div style={{ height: "1px", width: "44px", background: "var(--border-subtle)" }} />
@@ -983,7 +986,7 @@ export default function LandingPage() {
               Você chegou até aqui por um motivo
             </p>
             <h2 className="font-display text-balance reveal reveal-delay-2" style={{ fontSize: "clamp(34px,6.5vw,86px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.03, marginBottom: "22px", color: "var(--text-primary)" }}>
-              Algo dentro de você reconhece esse chamado.
+              Algo dentro de você <span className="text-shimmer" style={{ background: "linear-gradient(120deg, var(--gold) 0%, var(--gold-soft) 50%, var(--gold) 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>reconhece</span> esse chamado.
             </h2>
             <p className="reveal reveal-delay-3" style={{ fontSize: "clamp(14px,1.8vw,17px)", color: "var(--text-secondary)", lineHeight: 1.88, marginBottom: "clamp(32px,5vw,52px)" }}>
               Não é coincidência. É reconhecimento.
