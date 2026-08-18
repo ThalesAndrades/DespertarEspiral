@@ -85,6 +85,46 @@ Deno.serve(async (req: Request) => {
     return json(200, { granted: 0, products: [] }, cors);
   }
 
+  /* ── 3b. Buscar os itens desses pedidos, em consulta SEPARADA ──
+     Deliberadamente nao embutida na query acima: se um embed `order_items(...)`
+     nao resolver (nome de FK, RLS etc.), o erro do PostgREST derrubaria a
+     query INTEIRA de pedidos. A migracao (gate 1) e o deploy das functions
+     (gate 2) sao aprovacoes separadas neste plano — um deploy fora de ordem
+     faria esta function parar de conceder acesso para TODO MUNDO, inclusive
+     quem compra sem bump hoje. Isso violaria "comportamento sem bump e
+     intocavel". Consulta separada = um erro aqui fica local a esta function,
+     nunca derruba a busca de pedidos.
+
+     ASSIMETRIA vs. asaas-webhook — de proposito, NAO "harmonizar":
+     no webhook, uma falha de leitura aborta ANTES de marcar o pedido como
+     pago, pra preservar o retry do gateway (marcar pago e falhar depois seria
+     permanente). Aqui nao ha status de pedido em jogo: esta function e
+     re-executada a cada login/criacao de conta e recalcula tudo do zero
+     (`alreadyGranted`, abaixo). Por isso, se a leitura de order_items falhar,
+     a escolha e degradar para o produto principal em vez de abortar —
+     "conceder so o principal agora" nunca e pior que "nao conceder nada", e
+     se a leitura voltar a funcionar na proxima chamada o bump e concedido
+     normalmente. */
+  const orderIds = paidOrders.map((o) => o.id as string);
+  const { data: allItems, error: itemsErr } = await supabase
+    .from("order_items")
+    .select("order_id, product_id, products(title, slug)")
+    .in("order_id", orderIds);
+
+  if (itemsErr) {
+    console.error(
+      `[grant-pending-access] order_items ilegivel, degradando para o produto principal em todos os pedidos [${orderIds.join(",")}]:`,
+      itemsErr.message
+    );
+  }
+
+  const itensPorPedido = new Map<string, { product_id: string; products?: { title?: string; slug?: string } | null }[]>();
+  for (const it of (allItems ?? []) as { order_id: string; product_id: string; products?: { title?: string; slug?: string } | null }[]) {
+    const lista = itensPorPedido.get(it.order_id) ?? [];
+    lista.push(it);
+    itensPorPedido.set(it.order_id, lista);
+  }
+
   /* ── 4. Find which products this user already has access to ── */
   const { data: existingAccess } = await supabase
     .from("user_products")
@@ -93,15 +133,38 @@ Deno.serve(async (req: Request) => {
 
   const alreadyGranted = new Set((existingAccess ?? []).map((up: { product_id: string }) => up.product_id));
 
-  /* ── 5. Determine which orders need access granted ── */
-  // Deduplicate by product_id (user may have multiple orders for same product)
+  /* ── 5. Achatar pedidos em produtos (bump: um pedido pode ter dois) ── */
+  interface ItemLiberavel { productId: string; title: string; slug: string; order: Record<string, unknown> }
+
   const seen = new Set<string>();
-  const toGrant = paidOrders.filter((order) => {
-    const pid = order.product_id as string;
-    if (alreadyGranted.has(pid) || seen.has(pid)) return false;
-    seen.add(pid);
-    return true;
-  });
+  const toGrant: ItemLiberavel[] = [];
+
+  for (const order of paidOrders) {
+    const itens = itensPorPedido.get(order.id as string) ?? [];
+
+    // Pedido antigo (sem itens) OU leitura de order_items degradada (ver 3b) cai no produto principal.
+    const candidatos: ItemLiberavel[] = itens.length > 0
+      ? itens.filter((i) => i.product_id).map((i) => ({
+          productId: i.product_id,
+          title: i.products?.title ?? "Produto",
+          slug:  i.products?.slug  ?? "",
+          order: order as Record<string, unknown>,
+        }))
+      : (order.product_id
+          ? [{
+              productId: order.product_id as string,
+              title: (order.products as { title?: string } | null)?.title ?? "Produto",
+              slug:  (order.products as { slug?: string  } | null)?.slug  ?? "",
+              order: order as Record<string, unknown>,
+            }]
+          : []);
+
+    for (const c of candidatos) {
+      if (alreadyGranted.has(c.productId) || seen.has(c.productId)) continue;
+      seen.add(c.productId);
+      toGrant.push(c);
+    }
+  }
 
   if (toGrant.length === 0) {
     console.log(`[grant-pending-access] All ${paidOrders.length} paid order(s) already have access granted`);
@@ -112,11 +175,10 @@ Deno.serve(async (req: Request) => {
 
   const grantedProducts: string[] = [];
 
-  for (const order of toGrant) {
-    const productId    = order.product_id as string;
-    const product      = order.products as { title: string; slug: string } | null;
-    const productTitle = product?.title ?? "Produto";
-    const productSlug  = product?.slug  ?? "";
+  for (const item of toGrant) {
+    const productId    = item.productId;
+    const productTitle = item.title;
+    const productSlug  = item.slug;
 
     /* Insert user_products */
     const { error: grantErr } = await supabase
@@ -132,13 +194,13 @@ Deno.serve(async (req: Request) => {
     }
 
     /* Link order.user_id if it was null (guest checkout) */
-    if (!order.user_id) {
-      await supabase
+    if (!item.order.user_id) {
+      const { error: linkErr } = await supabase
         .from("orders")
         .update({ user_id: userId })
-        .eq("id", order.id)
-        .is("user_id", null)
-        .catch((e: Error) => console.warn("[grant-pending-access] Could not link order.user_id:", e.message));
+        .eq("id", item.order.id)
+        .is("user_id", null);
+      if (linkErr) console.warn("[grant-pending-access] Could not link order.user_id:", linkErr.message);
     }
 
     grantedProducts.push(productSlug || productId);
@@ -148,7 +210,7 @@ Deno.serve(async (req: Request) => {
     const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
     if (sequenzyApiKey && email) {
       const firstName = (
-        (order.name as string | null)?.split(" ")[0] ||
+        (item.order.name as string | null)?.split(" ")[0] ||
         email.split("@")[0]
       ).trim();
 
@@ -160,8 +222,8 @@ Deno.serve(async (req: Request) => {
             status:               "cliente",
             product_slug:         productSlug,
             product_title:        productTitle,
-            last_order_id:        order.id as string,
-            last_payment_method:  (order.payment_method as string | null) ?? "pix",
+            last_order_id:        item.order.id as string,
+            last_payment_method:  (item.order.payment_method as string | null) ?? "pix",
             account_linked_at:    new Date().toISOString(),
           },
         }),
@@ -170,7 +232,7 @@ Deno.serve(async (req: Request) => {
         sequenzyEvent(sequenzyApiKey, email, "product.access_granted", {
           product_title:   productTitle,
           product_slug:    productSlug,
-          order_id:        order.id as string,
+          order_id:        item.order.id as string,
           login_url:       "https://despertarespiral.com/login",
           triggered_by:    "account_creation",
         }),

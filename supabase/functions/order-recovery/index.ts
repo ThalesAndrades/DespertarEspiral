@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
       products ( title, slug )
     `)
     .eq("status", "pending")
-    .not("asaas_payment_id", "is", null)   // only real Asaas-initiated orders
+    .or("asaas_payment_id.not.is.null,provider_charge_id.not.is.null")   // pedido real: Asaas OU Woovi/Stripe
     .is("recovery_sent_at", null)           // not already recovered
     .lt("created_at", cutoff)              // older than threshold
     .limit(MAX_BATCH)

@@ -17,6 +17,9 @@ import { useTheme } from "@/hooks/useTheme";
 import { ArrowRight, ArrowUpRight, Star, ChevronDown } from "lucide-react";
 import { testimonials, steps, guarantees, faqs, LANDING_STATS, COMMUNITY_STATS } from "@/constants/landingContent";
 import QuizSection from "@/components/features/QuizSection";
+import { StorefrontGrid } from "@/components/storefront/StorefrontGrid";
+import { fetchStorefront } from "@/lib/storefront";
+import type { StorefrontProduct } from "@/types";
 
 /* ─────────────────────────────────────────────────────────────────
    Prefetch helpers — fire-and-forget dynamic imports on hover/focus
@@ -234,6 +237,17 @@ export default function LandingPage() {
   const heroRef     = useRef<HTMLElement>(null);
   const { theme }   = useTheme();
   const isLight     = theme === "light";
+
+  const [produtos, setProdutos]     = useState<StorefrontProduct[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    let vivo = true;
+    fetchStorefront()
+      .then((p) => { if (vivo) setProdutos(p); })
+      .finally(() => { if (vivo) setCarregando(false); });
+    return () => { vivo = false; };
+  }, []);
 
   useScrollProgress(progressRef);
   useParallax();
@@ -689,25 +703,14 @@ export default function LandingPage() {
                 </p>
 
                 <div className="animate-fade-up delay-400" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "360px", marginBottom: "clamp(18px,2.5vw,26px)" }}>
-                  {/* Primary CTA — prefetch CheckoutPage on hover/focus */}
+                  {/* CTA único do hero — leva à Bússola */}
                   <Link
-                    to="/checkout/mulher-espiral"
+                    to="/bussola"
                     className="btn-gold"
+                    data-testid="cta-primario"
                     style={{ justifyContent: "center", minHeight: "58px", borderRadius: "18px" }}
-                    onMouseEnter={prefetchCheckout}
-                    onFocus={prefetchCheckout}
                   >
-                    Quero começar minha jornada <ArrowRight size={15} />
-                  </Link>
-                  {/* Secondary CTA — prefetch LoginPage on hover/focus */}
-                  <Link
-                    to="/login"
-                    className="btn-outline-gold"
-                    style={{ justifyContent: "center", minHeight: "52px", borderRadius: "18px" }}
-                    onMouseEnter={prefetchLogin}
-                    onFocus={prefetchLogin}
-                  >
-                    Já sou aluna
+                    Descobrir minha volta da espiral <ArrowRight size={15} />
                   </Link>
                 </div>
 
@@ -733,6 +736,19 @@ export default function LandingPage() {
             <div className="animate-float" style={{ width: "1px", height: "48px", background: "linear-gradient(to bottom, transparent, rgba(198,168,112,0.40), transparent)" }} />
             <span className="overline" style={{ fontSize: "7px", color: "rgba(198,168,112,0.35)", letterSpacing: "0.38em" }}>DESCER</span>
           </button>
+        </section>
+
+        {/* ══════════════════════════════════════
+               VITRINE — jornadas disponíveis
+            ══════════════════════════════════════ */}
+        <section id="vitrine" style={{ padding: "var(--space-20) var(--space-5)" }}>
+          <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+            <p className="overline" style={{ color: "var(--gold)" }}>As jornadas</p>
+            <h2 className="font-display" style={{ fontSize: "var(--fs-2xl)", fontWeight: 300, marginBottom: "var(--space-10)" }}>
+              Escolha por onde começar
+            </h2>
+            <StorefrontGrid products={produtos} loading={carregando} />
+          </div>
         </section>
 
         {/* ══════════════════════════════════════
