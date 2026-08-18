@@ -33,7 +33,7 @@ export function ProductCard({ product, onNotify, featured = false }: ProductCard
 
   return (
     <article
-      className="card-dark card-lift"
+      className="card-dark card-lift storefront-card"
       style={{
         display: "flex", flexDirection: "column", height: "100%",
         borderRadius: "var(--r-lg)", overflow: "hidden",
@@ -54,7 +54,7 @@ export function ProductCard({ product, onNotify, featured = false }: ProductCard
           <span className="overline" style={{ color: "var(--text-muted)" }}>Em breve</span>
         )}
 
-        <h3 className="font-display" style={{ fontSize: "var(--fs-lg)", fontWeight: 300, color: "var(--text-primary)" }}>
+        <h3 className="font-display" style={{ fontSize: "clamp(22px,2.4vw,30px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.12, color: "var(--text-primary)" }}>
           {product.title}
         </h3>
 

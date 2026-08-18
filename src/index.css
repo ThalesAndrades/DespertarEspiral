@@ -231,6 +231,28 @@
     color: var(--text-primary);
   }
 
+  /* ── Superfícies translúcidas sobre o vídeo de fundo ──
+     As seções trocam o fundo sólido por estas: o vídeo respira atrás de
+     TODO o site, e o conteúdo segue legível. Ajustar presença do vídeo
+     dentro das seções = mexer nos percentuais aqui. */
+  :root {
+    --surface-glass:   color-mix(in srgb, var(--bg-surface) 86%, transparent);
+    --surface-glass-2: color-mix(in srgb, var(--bg-surface-2) 86%, transparent);
+  }
+
+  /* Card do marketplace: vidro sobre o vídeo, borda viva no hover */
+  .storefront-card {
+    background: color-mix(in srgb, var(--bg-surface-2) 78%, transparent) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-soft);
+    transition: transform 0.45s cubic-bezier(.16,1,.3,1), border-color 0.3s ease, box-shadow 0.45s ease;
+  }
+  .storefront-card:hover {
+    border-color: var(--gold-dim);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.35), 0 2px 12px rgba(198,168,112,0.10);
+  }
+
   /* ── Video de fundo do site (BackgroundVideo.tsx) ── */
   .bg-video {
     position: fixed;
@@ -248,7 +270,7 @@
     position: fixed;
     inset: 0;
     background-color: var(--bg-surface);
-    opacity: 0.72;
+    opacity: 0.55;
     z-index: -1;
     pointer-events: none;
     transition: background-color 0.35s ease;
@@ -298,7 +320,7 @@
 @layer components {
 
   /* ── Typography ── */
-  .font-display { font-family: 'Cormorant Garamond', serif; }
+  .font-display { font-family: 'Cormorant Garamond', serif; letter-spacing: -0.015em; }
   .font-body    { font-family: 'DM Sans', sans-serif; }
   .font-label   { font-family: 'Montserrat', sans-serif; }
 

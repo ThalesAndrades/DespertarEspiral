@@ -27,7 +27,7 @@ export function BackgroundVideo() {
       <video
         ref={ref}
         className="bg-video"
-        src="/media/bg-loop.mp4"
+        src="/media/bg-loop-1080.mp4"
         autoPlay
         muted
         loop

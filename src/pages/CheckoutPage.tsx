@@ -428,9 +428,8 @@ export default function CheckoutPage() {
         gap: "clamp(12px,3vw,28px)", flexWrap: "wrap",
       }}>
         {[
-          { icon: Users, text: "280+ mulheres em jornada" },
-          { icon: Star,  text: "4.8 ★ avaliação" },
           { icon: Shield, text: "7 dias de garantia" },
+          { icon: Lock, text: "Pagamento seguro" },
         ].map(({ icon: Icon, text }) => (
           <div key={text} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <Icon size={11} style={{ color: "var(--gold)" }} strokeWidth={1.5} />

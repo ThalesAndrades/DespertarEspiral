@@ -1,35 +1,9 @@
 import { Shield, Clock, Infinity as InfinityIcon } from "lucide-react";
 
-export const LANDING_STATS = {
-  students: "280+",
-  recommendation: "92%",
-  rating: "4.8",
-  guarantee: "7 dias",
-};
-
-export const COMMUNITY_STATS = [
-  { value: "280+", label: "Alunas na comunidade" },
-  { value: "Privada", label: "Acesso exclusivo" },
-  { value: "92%", label: "Recomendam o espaço" },
-];
-
-export const testimonials = [
-  {
-    name: "Lua Crescente",
-    text: "Pela primeira vez em anos me senti em casa na minha própria pele. O método da Sunyan toca onde nenhum outro chegou.",
-    detail: "Módulo 3 — O Corpo como Sabedoria",
-  },
-  {
-    name: "Violeta Silvestre",
-    text: "Esse curso não te ensina sobre autoconhecimento. Ele te faz vivê-lo. É completamente diferente de qualquer coisa que já experimentei.",
-    detail: "Concluiu Mulher Espiral",
-  },
-  {
-    name: "Rosa do Deserto",
-    text: "Cheguei cética. Fui transformada. A profundidade do conteúdo e o cuidado de cada aula são incomparáveis.",
-    detail: "Módulo 5 — O Feminino Sagrado",
-  },
-];
+/* LANDING_STATS, COMMUNITY_STATS e testimonials foram REMOVIDOS em 18/08 a
+   pedido do dono: eram prova social fabricada (números sem lastro e
+   personagens fictícias). Quando houver depoimentos e métricas REAIS, criar
+   de novo com a fonte anotada. */
 
 export const steps = [
   { num: "01", title: "Reconhecer", body: "Você enxerga os padrões que te aprisionam, com olhos de compaixão — não de julgamento." },

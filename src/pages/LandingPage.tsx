@@ -13,8 +13,8 @@ import {
 import mulherEspiralHero from "@/assets/mulher-espiral-hero-new.jpg";
 import sunyanPortrait     from "@/assets/sunyan-portrait.jpg";
 import { useTheme } from "@/hooks/useTheme";
-import { ArrowRight, ArrowUpRight, Star, ChevronDown } from "lucide-react";
-import { testimonials, steps, guarantees, faqs, LANDING_STATS, COMMUNITY_STATS } from "@/constants/landingContent";
+import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
+import { steps, guarantees, faqs } from "@/constants/landingContent";
 import QuizSection from "@/components/features/QuizSection";
 import { StorefrontGrid } from "@/components/storefront/StorefrontGrid";
 import { fetchStorefront } from "@/lib/storefront";
@@ -93,7 +93,7 @@ function useReveal() {
 /* ─────────────────────────────────────────────────────────────────
    Section dots nav
 ───────────────────────────────────────────────────────────────── */
-const SECTION_COUNT = 10;
+const SECTION_COUNT = 8;
 function useActiveSection(dotsRef: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const els = Array.from({ length: SECTION_COUNT }, (_, i) => document.getElementById(`section-${i}`));
@@ -119,21 +119,6 @@ function useActiveSection(dotsRef: React.RefObject<HTMLDivElement | null>) {
 /* ─────────────────────────────────────────────────────────────────
    Stat counter with animated reveal
 ───────────────────────────────────────────────────────────────── */
-function Stat({ value, label, delay = "" }: { value: string; label: string; delay?: string }) {
-  return (
-    <div className={`reveal ${delay}`} style={{ textAlign: "center", padding: "clamp(14px,2.2vw,22px) 8px" }}>
-      <p className="font-display" style={{
-        fontSize: "clamp(40px,6.5vw,66px)", color: "var(--gold)",
-        fontStyle: "italic", fontWeight: 300, lineHeight: 1,
-      }}>{value}</p>
-      <p className="overline" style={{
-        color: "var(--text-muted)", fontSize: "8px",
-        letterSpacing: "0.28em", marginTop: "10px",
-      }}>{label}</p>
-    </div>
-  );
-}
-
 /* ─────────────────────────────────────────────────────────────────
    FAQ accordion
 ───────────────────────────────────────────────────────────────── */
@@ -281,7 +266,7 @@ export default function LandingPage() {
       </Helmet>
 
       <div style={{
-        background: "var(--bg-surface)", color: "var(--text-primary)",
+        background: "var(--surface-glass)", color: "var(--text-primary)",
         minHeight: "100dvh", overflowX: "hidden", position: "relative",
       }}>
 
@@ -451,29 +436,12 @@ export default function LandingPage() {
           style={{
             position: "relative", minHeight: "100svh",
             display: "flex", alignItems: "center", justifyContent: "center",
-            overflow: "hidden", background: heroBg,
+            /* Transparente de proposito: o hero e a vitrine do video de fundo
+               (BackgroundVideo) — orbs e star-field sairam junto do fundo
+               solido para nao sujar a imagem. */
+            overflow: "hidden", background: "transparent",
           }}
         >
-          {/* Ambient orbs */}
-          <Orb color={isLight ? "rgba(122,94,30,0.12)" : "rgba(198,168,112,0.15)"} x="62%" y="38%" size="600px" blur="120px" opacity={0.7} />
-          <Orb color={isLight ? "rgba(100,70,80,0.07)" : "rgba(172,128,142,0.10)"} x="18%" y="72%" size="400px" blur="90px" opacity={0.6} />
-          <Orb color={isLight ? "rgba(60,56,130,0.05)" : "rgba(81,72,152,0.08)"} x="85%" y="18%" size="320px" blur="80px" opacity={0.5} />
-
-          {/* Parallax star-field layer */}
-          <div
-            data-parallax="-0.12"
-            aria-hidden="true"
-            style={{
-              position: "absolute", inset: "-10%",
-              backgroundImage: isLight ? "none" : `radial-gradient(circle at 20% 30%, rgba(198,168,112,0.03) 1px, transparent 1px),
-                radial-gradient(circle at 60% 15%, rgba(164,158,208,0.04) 1px, transparent 1px),
-                radial-gradient(circle at 80% 55%, rgba(198,168,112,0.02) 1px, transparent 1px),
-                radial-gradient(circle at 35% 80%, rgba(172,128,142,0.03) 1px, transparent 1px)`,
-              backgroundSize: "260px 260px, 300px 300px, 220px 220px, 280px 280px",
-              pointerEvents: "none", zIndex: 0,
-            }}
-          />
-
           {/* Hero bottom fade */}
           <div aria-hidden="true" style={{
             position: "absolute", bottom: 0, left: 0, right: 0, height: "220px",
@@ -489,41 +457,22 @@ export default function LandingPage() {
             paddingTop: "clamp(76px,12vh,108px)",
           }}>
             <div
-              style={{ width: "100%", display: "grid", gap: "clamp(16px,4vw,48px)", alignItems: "center" }}
-              className="flex flex-col lg:grid lg:grid-cols-[1fr_1fr]"
+              style={{ width: "100%", maxWidth: "880px", margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(20px,3.5vw,36px)" }}
             >
 
               {/* ── Headline group (parallax: moves up slowly) ── */}
               <div
-                className="order-1 lg:order-none hero-sticky-text"
+                className="hero-sticky-text"
                 data-parallax="-0.18"
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
               >
-                {/* Social proof pill */}
-                <div
-                  className="animate-fade-up delay-100"
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: "10px",
-                    marginBottom: "clamp(16px,2.6vw,26px)",
-                    background: "var(--gold-glow)",
-                    border: "1px solid var(--border-mid)",
-                    borderRadius: "100px", padding: "7px 18px 7px 12px",
-                  }}
-                >
-                  <div style={{ display: "flex", gap: "2px" }}>
-                    {[...Array(5)].map((_, i) => <Star key={i} size={9} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
-                  </div>
-                  <span className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--gold)" }}>
-                    280+ mulheres em jornada
-                  </span>
-                </div>
-
                 <h1
                   className="animate-fade-up delay-200 text-balance"
                   style={{
-                    fontSize: "clamp(38px,5.8vw,88px)",
-                    lineHeight: 1.02, fontStyle: "italic", fontWeight: 300,
+                    fontSize: "clamp(42px,6.5vw,102px)",
+                    lineHeight: 0.98, fontStyle: "italic", fontWeight: 300,
                     marginBottom: 0, color: heroText, textAlign: "center", width: "100%",
+                    textShadow: "0 2px 32px rgba(0,0,0,0.45)",
                   }}
                 >
                   Reconectar-se<br />não é voltar.<br />
@@ -540,86 +489,8 @@ export default function LandingPage() {
                 </h1>
               </div>
 
-              {/* ── Mockup + metrics (parallax: moves slower) ── */}
-              <div
-                className="order-2 lg:order-none animate-fade-up delay-300"
-                data-parallax="-0.08"
-                style={{ width: "100%", position: "relative", zIndex: 10 }}
-              >
-                {/* Mockup do MacBook removido (18/08, pedido do dono): o hero
-                    fica aberto para o video de fundo do site aparecer. Os
-                    badges flutuantes sairam junto — ancoravam nos cantos dele. */}
-                {/* Metrics strip */}
-                <div className="animate-pop-in delay-600" style={{
-                  display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "8px", marginTop: "clamp(12px,2vw,18px)",
-                }}>
-                  {/* Card 1: Alunas */}
-                  <div style={{
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                    gap: "5px", padding: "clamp(10px,2vw,14px) clamp(8px,1.5vw,12px)",
-                    background: isLight ? "rgba(255,255,255,0.90)" : "rgba(12,15,34,0.88)",
-                    backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-                    border: `1px solid ${isLight ? "rgba(122,94,30,0.14)" : "rgba(198,168,112,0.18)"}`,
-                    borderRadius: "clamp(12px,1.5vw,16px)",
-                    boxShadow: "0 4px 24px rgba(0,0,0,0.14)",
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "center" }}>
-                      {["#c6a870","#c99aaa","#a49ed0"].map((c, i) => (
-                        <div key={i} style={{
-                          width: "22px", height: "22px", borderRadius: "50%",
-                          background: `${c}20`, border: `1.5px solid ${c}66`,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          marginLeft: i > 0 ? "-7px" : "0",
-                          fontSize: "9px", color: c, fontFamily: "Montserrat,sans-serif", fontWeight: 700,
-                          zIndex: 3 - i, position: "relative",
-                        }}>{["L","V","R"][i]}</div>
-                      ))}
-                    </div>
-                    <p style={{ fontSize: "clamp(11px,1.3vw,13px)", fontWeight: 700, color: heroText, fontFamily: "DM Sans,sans-serif", lineHeight: 1.1, textAlign: "center" }}>280+ alunas</p>
-                    <p style={{ fontSize: "clamp(9px,1vw,10px)", color: heroMuted, fontFamily: "DM Sans,sans-serif", textAlign: "center", lineHeight: 1.2 }}>em jornada</p>
-                  </div>
-
-                  {/* Card 2: Progresso */}
-                  <div style={{
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                    gap: "6px", padding: "clamp(10px,2vw,14px) clamp(8px,1.5vw,12px)",
-                    background: isLight ? "rgba(255,255,255,0.90)" : "rgba(12,15,34,0.88)",
-                    backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-                    border: `1px solid ${isLight ? "rgba(122,94,30,0.14)" : "rgba(198,168,112,0.18)"}`,
-                    borderRadius: "clamp(12px,1.5vw,16px)",
-                    boxShadow: "0 4px 24px rgba(0,0,0,0.14)",
-                  }}>
-                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(140,170,150,0.16)", border: "1.5px solid rgba(140,170,150,0.40)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#8caa96" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </div>
-                    <div style={{ width: "100%" }}>
-                      <div style={{ background: isLight ? "rgba(10,12,26,0.08)" : "rgba(255,255,255,0.07)", borderRadius: "100px", height: "3px", overflow: "hidden", marginBottom: "3px" }}>
-                        <div style={{ width: "72%", height: "100%", borderRadius: "100px", background: "linear-gradient(90deg, #c6a870, #dac394)" }} />
-                      </div>
-                      <p style={{ fontSize: "clamp(9px,1vw,10px)", color: "var(--gold)", fontFamily: "Montserrat,sans-serif", fontWeight: 700, textAlign: "center" }}>72% concluído</p>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Certificado */}
-                  <div style={{
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                    gap: "5px", padding: "clamp(10px,2vw,14px) clamp(8px,1.5vw,12px)",
-                    background: isLight ? "rgba(255,255,255,0.90)" : "linear-gradient(135deg, rgba(198,168,112,0.14), rgba(12,15,34,0.88))",
-                    backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-                    border: "1px solid rgba(198,168,112,0.25)",
-                    borderRadius: "clamp(12px,1.5vw,16px)",
-                    boxShadow: "0 4px 24px rgba(198,168,112,0.10)",
-                  }}>
-                    <div style={{ fontSize: "20px", lineHeight: 1 }}>🏅</div>
-                    <p style={{ fontSize: "clamp(9px,1vw,10px)", color: "var(--gold)", fontFamily: "Montserrat,sans-serif", letterSpacing: "0.10em", textTransform: "uppercase", fontWeight: 600, textAlign: "center", lineHeight: 1.3 }}>Certificado{"\n"}incluso</p>
-                  </div>
-                </div>
-              </div>
-
               {/* ── Body group (parallax: standard) ── */}
               <div
-                className="order-3 lg:order-none"
                 data-parallax="-0.14"
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
               >
@@ -673,12 +544,29 @@ export default function LandingPage() {
         {/* ══════════════════════════════════════
                VITRINE — jornadas disponíveis
             ══════════════════════════════════════ */}
-        <section id="vitrine" style={{ padding: "var(--space-20) var(--space-5)" }}>
+        <section
+          id="vitrine"
+          style={{
+            position: "relative",
+            padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
+            background: "var(--surface-glass)",
+            backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+            borderTop: "1px solid var(--border-subtle)",
+            borderBottom: "1px solid var(--border-subtle)",
+          }}
+        >
           <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-            <p className="overline" style={{ color: "var(--gold)" }}>As jornadas</p>
-            <h2 className="font-display" style={{ fontSize: "var(--fs-2xl)", fontWeight: 300, marginBottom: "var(--space-10)" }}>
-              Escolha por onde começar
-            </h2>
+            <div style={{ textAlign: "center", marginBottom: "clamp(40px,6vw,72px)" }}>
+              <p className="overline reveal" style={{ color: "var(--gold)", marginBottom: "16px" }}>As jornadas</p>
+              <h2 className="font-display text-balance reveal reveal-delay-1" style={{ fontSize: "clamp(30px,5.5vw,64px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.05, color: "var(--text-primary)" }}>
+                Escolha por onde começar
+              </h2>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px", justifyContent: "center", marginTop: "22px" }} aria-hidden="true">
+                <div style={{ height: "1px", width: "44px", background: "var(--border-subtle)" }} />
+                <span style={{ color: "var(--gold)", fontSize: "10px" }}>◆</span>
+                <div style={{ height: "1px", width: "44px", background: "var(--border-subtle)" }} />
+              </div>
+            </div>
             <StorefrontGrid products={produtos} loading={carregando} />
           </div>
         </section>
@@ -688,51 +576,16 @@ export default function LandingPage() {
             ══════════════════════════════════════ */}
         <Ticker />
 
-        {/* ══════════════════════════════════════
-               1 — SOCIAL PROOF
-            ══════════════════════════════════════ */}
-        <section
-          id="section-1"
-          style={{
-            position: "relative", zIndex: 1, overflow: "hidden",
-            padding: "clamp(56px,8vw,100px) clamp(16px,5vw,24px)",
-            background: "var(--bg-surface-2)",
-          }}
-        >
-          {/* Subtle texture layer */}
-          <div aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: isLight ? 0.03 : 0.015, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`, pointerEvents: "none" }} />
-          <div style={{ maxWidth: "960px", margin: "0 auto", position: "relative", zIndex: 1 }}>
-            <div className="reveal" style={{ textAlign: "center", marginBottom: "clamp(32px,5vw,56px)" }}>
-              <div style={{ display: "flex", justifyContent: "center", gap: "4px", marginBottom: "12px" }}>
-                {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
-              </div>
-              <p className="font-display" style={{
-                fontSize: "clamp(17px,2.4vw,24px)", fontStyle: "italic",
-                color: "var(--text-secondary)", fontWeight: 300,
-                maxWidth: "560px", margin: "0 auto", lineHeight: 1.5,
-              }}>
-                "A experiência mais transformadora que já vivi."
-              </p>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "clamp(4px,2vw,16px)" }} className="sm:grid-cols-4">
-              <Stat value={LANDING_STATS.students} label="Mulheres na jornada" delay="reveal-delay-1" />
-              <Stat value={LANDING_STATS.recommendation} label="Recomendam o método" delay="reveal-delay-2" />
-              <Stat value="8" label="Módulos transformadores" delay="reveal-delay-3" />
-              <Stat value={`${LANDING_STATS.rating} ★`} label="Avaliação média" delay="reveal-delay-4" />
-            </div>
-          </div>
-
-          {/* Bottom diamond */}
-          <div style={{ position: "absolute", bottom: "-9px", left: "50%", transform: "translateX(-50%)", width: "16px", height: "16px", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", rotate: "45deg", zIndex: 2 }} aria-hidden="true" />
-        </section>
+        {/* Secao "social proof" removida (18/08, pedido do dono): citacao
+            anonima + numeros (280+/92%/4.8) eram prova social sem lastro. */}
 
         {/* ══════════════════════════════════════
                2 — MÉTODO (parallax spiral)
             ══════════════════════════════════════ */}
-        <section id="section-2" className="cv-auto" style={{
+        <section id="section-1" className="cv-auto" style={{
           position: "relative", zIndex: 1, overflow: "hidden",
           padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-          background: "var(--bg-surface)",
+          background: "var(--surface-glass)",
         }}>
           <div className="glow-gold" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden="true" />
           <div
@@ -787,7 +640,7 @@ export default function LandingPage() {
         {/* ══════════════════════════════════════
                3 — PRODUTO (clip diagonal top)
             ══════════════════════════════════════ */}
-        <section id="section-3" className="cv-auto" style={{
+        <section id="section-2" className="cv-auto" style={{
           position: "relative", zIndex: 1, overflow: "hidden",
           padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
           background: "#060810",
@@ -895,62 +748,21 @@ export default function LandingPage() {
         {/* ══════════════════════════════════════
                4 — DEPOIMENTOS
             ══════════════════════════════════════ */}
-        <section id="section-4" className="cv-auto" style={{
-          position: "relative", zIndex: 1, overflow: "hidden",
-          padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-          background: "var(--bg-surface)",
-        }}>
-          <div data-parallax="0.06" style={{ position: "absolute", left: "-16px", bottom: "-24px", pointerEvents: "none" }} aria-hidden="true">
-            <SectionSpiral3D size={90} height={250} opacity={isLight ? 0.18 : 0.22} color={isLight ? "#7a3248" : "#8c4a5e"} emissive="#4a1828" speed={0.0003} lightBg={isLight} />
-          </div>
-          <div style={{ position: "relative", maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: "clamp(36px,6vw,64px)" }}>
-              <p className="overline reveal" style={{ color: "var(--gold)", marginBottom: "16px" }}>Transformações reais</p>
-              <h2 className="font-display text-balance reveal reveal-delay-1" style={{ fontSize: "clamp(26px,5vw,58px)", fontWeight: 300, color: "var(--text-primary)" }}>
-                Mulheres que percorreram a espiral
-              </h2>
-              <div style={{ display: "flex", alignItems: "center", gap: "16px", justifyContent: "center", marginTop: "20px" }}>
-                <div style={{ height: "1px", width: "40px", background: "var(--border-subtle)" }} />
-                <span style={{ color: "var(--gold)", fontSize: "10px" }}>◆</span>
-                <div style={{ height: "1px", width: "40px", background: "var(--border-subtle)" }} />
-              </div>
-            </div>
-            <div className="grid md:grid-cols-3" style={{ gap: "clamp(12px,2vw,18px)" }}>
-              {testimonials.map((t, i) => (
-                <div key={i} className={`card-dark reveal reveal-delay-${i + 1}`} style={{
-                  padding: "clamp(20px,3vw,34px)", marginTop: i === 1 ? "clamp(0px,2vw,28px)" : "0",
-                  display: "flex", flexDirection: "column",
-                }}>
-                  <div style={{ display: "flex", gap: "3px", marginBottom: "18px" }}>
-                    {[...Array(5)].map((_, s) => <Star key={s} size={11} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
-                  </div>
-                  <p className="font-display" style={{ fontSize: "clamp(15px,1.8vw,17px)", color: "var(--text-secondary)", lineHeight: 1.70, fontStyle: "italic", fontWeight: 300, flex: 1, marginBottom: "20px" }}>"{t.text}"</p>
-                  <hr className="divider-gold" style={{ marginBottom: "18px" }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "rgba(172,128,142,0.15)", color: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontFamily: "Montserrat,sans-serif", fontWeight: 500, flexShrink: 0 }}>{t.name.charAt(0)}</div>
-                    <div>
-                      <p style={{ fontSize: "13px", color: "var(--text-primary)", fontWeight: 500 }}>{t.name}</p>
-                      <p className="font-label" style={{ fontSize: "9px", color: "var(--text-faint)", letterSpacing: "0.12em", textTransform: "uppercase" }}>{t.detail}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Secao de depoimentos removida (18/08, pedido do dono): as citacoes
+            eram personagens ficticias ("Lua Crescente" etc.), nao clientes. */}
 
         {/* ══════════════════════════════════════
-               5 — QUIZ DIAGNÓSTICO
+               QUIZ DIAGNÓSTICO
             ══════════════════════════════════════ */}
-        <div id="section-5"><QuizSection /></div>
+        <div id="section-3"><QuizSection /></div>
 
         {/* ══════════════════════════════════════
                6 — COMUNIDADE
             ══════════════════════════════════════ */}
-        <section id="section-6" className="cv-auto" style={{
+        <section id="section-4" className="cv-auto" style={{
           position: "relative", zIndex: 1, overflow: "hidden",
           padding: "clamp(80px,12vw,140px) clamp(16px,5vw,24px)",
-          background: "#06050f",
+          background: "rgba(6,5,15,0.90)",
         }}>
           {/* Atmospheric layers */}
           <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 90% 70% at 50% 0%, rgba(81,72,152,0.22) 0%, transparent 60%)", pointerEvents: "none" }} />
@@ -985,25 +797,6 @@ export default function LandingPage() {
               <p style={{ fontSize: "clamp(14px,1.7vw,17px)", color: "rgba(245,240,232,0.52)", maxWidth: "540px", margin: "0 auto", lineHeight: 1.90, fontWeight: 300 }}>
                 Um espaço anônimo, seguro e vivo — onde mulheres em jornada se encontram, se apoiam e celebram juntas.
               </p>
-            </div>
-
-            {/* Stats bar */}
-            <div className="reveal reveal-delay-1" style={{
-              display: "flex", justifyContent: "center",
-              marginBottom: "clamp(40px,6vw,64px)",
-              borderRadius: "clamp(16px,2vw,20px)",
-              border: "1px solid rgba(81,72,152,0.30)",
-              background: "rgba(81,72,152,0.08)", overflow: "hidden",
-            }}>
-              {COMMUNITY_STATS.map(({ value, label }, i, arr) => (
-                <div key={label} style={{
-                  flex: "1 1 0", minWidth: 0, padding: "clamp(16px,2.5vw,28px) clamp(12px,2vw,24px)",
-                  textAlign: "center", borderRight: i < arr.length - 1 ? "1px solid rgba(81,72,152,0.20)" : "none",
-                }}>
-                  <p className="font-display" style={{ fontSize: "clamp(22px,3vw,40px)", color: "rgba(164,158,208,0.95)", fontWeight: 300, fontStyle: "italic", lineHeight: 1 }}>{value}</p>
-                  <p style={{ fontSize: "clamp(9px,1vw,11px)", color: "rgba(245,240,232,0.35)", letterSpacing: "0.16em", textTransform: "uppercase", fontFamily: "Montserrat,sans-serif", marginTop: "8px" }}>{label}</p>
-                </div>
-              ))}
             </div>
 
             {/* Two-column */}
@@ -1045,30 +838,9 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              {/* Feed */}
-              <div className="reveal-right" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px", padding: "0 2px" }}>
-                  <p style={{ fontSize: "9px", letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(164,158,208,0.55)", fontFamily: "Montserrat,sans-serif" }}>Feed da comunidade</p>
-                  <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#8caa96", animation: "communityPulse 2s ease-out infinite", display: "block" }} />
-                    <span style={{ fontSize: "9px", color: "rgba(140,170,150,0.70)", fontFamily: "Montserrat,sans-serif" }}>ao vivo</span>
-                  </span>
-                </div>
-                {testimonials.map((t, i) => (
-                  <div key={i} style={{
-                    background: "rgba(255,255,255,0.032)", border: "1px solid rgba(255,255,255,0.055)",
-                    borderRadius: "clamp(12px,1.5vw,16px)", padding: "clamp(14px,2vw,20px)",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                      <div style={{ width: "30px", height: "30px", borderRadius: "50%", flexShrink: 0, background: "rgba(198,168,112,0.12)", border: "1px solid rgba(198,168,112,0.30)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ fontSize: "12px", color: "var(--gold)", fontFamily: "Montserrat,sans-serif", fontWeight: 600 }}>{t.name.charAt(0)}</span>
-                      </div>
-                      <p style={{ fontSize: "12px", color: "rgba(245,240,232,0.75)", fontFamily: "Montserrat,sans-serif", fontWeight: 500 }}>{t.name}</p>
-                    </div>
-                    <p style={{ fontSize: "clamp(12px,1.4vw,14px)", color: "rgba(245,240,232,0.62)", lineHeight: 1.72, fontFamily: "Montserrat,sans-serif" }}>{t.text}</p>
-                  </div>
-                ))}
-                <div style={{ borderRadius: "clamp(12px,1.5vw,16px)", border: "1px dashed rgba(81,72,152,0.35)", padding: "clamp(16px,2vw,22px)", textAlign: "center", background: "rgba(81,72,152,0.05)" }}>
+              {/* Convite (o "feed ao vivo" com posts ficticios saiu — 18/08) */}
+              <div className="reveal-right" style={{ display: "flex", flexDirection: "column", gap: "10px", justifyContent: "center" }}>
+                <div style={{ borderRadius: "clamp(12px,1.5vw,16px)", border: "1px dashed rgba(81,72,152,0.35)", padding: "clamp(28px,4vw,44px)", textAlign: "center", background: "rgba(81,72,152,0.05)" }}>
                   <p style={{ fontSize: "clamp(13px,1.4vw,14px)", color: "rgba(245,240,232,0.40)", fontFamily: "Montserrat,sans-serif", marginBottom: "12px", lineHeight: 1.6 }}>
                     Sua voz também pertence aqui.
                   </p>
@@ -1089,10 +861,10 @@ export default function LandingPage() {
         {/* ══════════════════════════════════════
                7 — SUNYAN
             ══════════════════════════════════════ */}
-        <section id="section-7" className="cv-auto" style={{
+        <section id="section-5" className="cv-auto" style={{
           position: "relative", zIndex: 1, overflow: "hidden",
           padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-          background: "var(--bg-surface)",
+          background: "var(--surface-glass)",
         }}>
           <div className="glow-gold" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden="true" />
           <div style={{ position: "relative", maxWidth: "1060px", margin: "0 auto", display: "grid", gap: "clamp(32px,5vw,72px)", alignItems: "center" }} className="grid md:grid-cols-2">
@@ -1120,14 +892,6 @@ export default function LandingPage() {
               <p style={{ fontSize: "clamp(13px,1.5vw,15px)", color: "var(--text-muted)", lineHeight: 1.92, fontStyle: "italic", marginBottom: "clamp(20px,3vw,32px)" }}>
                 "Não sou guru. Sou uma companheira de jornada que já percorreu o caminho e voltou para te mostrar que é possível."
               </p>
-              <div style={{ display: "flex", gap: "clamp(8px,1.5vw,12px)", flexWrap: "wrap", marginBottom: "clamp(20px,3vw,32px)" }}>
-                {[["1.2k","alunas"],["4.9","avaliação"],["97%","recomendam"]].map(([val, lbl]) => (
-                  <div key={lbl} className="card-dark" style={{ padding: "clamp(12px,2vw,16px) clamp(14px,2vw,18px)", textAlign: "center", flex: "1 1 80px" }}>
-                    <p className="font-display" style={{ fontSize: "clamp(20px,2.5vw,28px)", color: "var(--gold)", fontWeight: 300, lineHeight: 1 }}>{val}</p>
-                    <p className="font-label" style={{ fontSize: "8px", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: "5px" }}>{lbl}</p>
-                  </div>
-                ))}
-              </div>
               <Link
                 to="/checkout/mulher-espiral"
                 className="btn-gold"
@@ -1143,10 +907,10 @@ export default function LandingPage() {
         {/* ══════════════════════════════════════
                8 — FAQ
             ══════════════════════════════════════ */}
-        <section id="section-8" className="cv-auto" style={{
+        <section id="section-6" className="cv-auto" style={{
           position: "relative", zIndex: 1, overflow: "hidden",
           padding: "clamp(72px,10vw,128px) clamp(16px,5vw,24px)",
-          background: "var(--bg-surface-2)",
+          background: "var(--surface-glass-2)",
         }}>
           <div style={{ position: "relative", maxWidth: "720px", margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: "clamp(36px,6vw,56px)" }}>
@@ -1177,7 +941,7 @@ export default function LandingPage() {
         {/* ══════════════════════════════════════
                9 — CTA FINAL
             ══════════════════════════════════════ */}
-        <section id="section-9" className="cv-auto" style={{
+        <section id="section-7" className="cv-auto" style={{
           position: "relative", zIndex: 1, overflow: "hidden",
           padding: "clamp(100px,14vw,180px) clamp(16px,5vw,24px)",
           textAlign: "center",
@@ -1189,9 +953,6 @@ export default function LandingPage() {
           <Orb color={isLight ? "rgba(122,94,30,0.09)" : "rgba(198,168,112,0.12)"} x="50%" y="50%" size="800px" blur="160px" opacity={0.8} />
 
           <div style={{ position: "relative", maxWidth: "680px", margin: "0 auto" }}>
-            <div className="reveal" style={{ display: "flex", justifyContent: "center", gap: "4px", marginBottom: "24px" }}>
-              {[...Array(5)].map((_, i) => <Star key={i} size={13} fill="var(--gold)" style={{ color: "var(--gold)" }} />)}
-            </div>
             <p className="overline reveal reveal-delay-1" style={{ color: "var(--gold)", marginBottom: "20px", letterSpacing: "0.32em" }}>
               Você chegou até aqui por um motivo
             </p>
