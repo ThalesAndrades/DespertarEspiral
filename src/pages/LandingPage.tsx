@@ -457,7 +457,15 @@ export default function LandingPage() {
             paddingTop: "clamp(76px,12vh,108px)",
           }}>
             <div
-              style={{ width: "100%", maxWidth: "880px", margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(20px,3.5vw,36px)" }}
+              style={{
+                width: "100%", maxWidth: "880px", margin: "0 auto",
+                display: "flex", flexDirection: "column", alignItems: "center",
+                gap: "clamp(20px,3.5vw,36px)",
+                /* Brilho radial do proprio tema atras do texto: legivel sem
+                   lavar o video — ele aparece forte em volta do bloco. */
+                padding: "clamp(28px,4vw,56px)",
+                background: "radial-gradient(ellipse 78% 66% at 50% 46%, color-mix(in srgb, var(--bg-surface) 68%, transparent) 0%, color-mix(in srgb, var(--bg-surface) 34%, transparent) 52%, transparent 76%)",
+              }}
             >
 
               {/* ── Headline group (parallax: moves up slowly) ── */}
@@ -472,7 +480,6 @@ export default function LandingPage() {
                     fontSize: "clamp(42px,6.5vw,102px)",
                     lineHeight: 0.98, fontStyle: "italic", fontWeight: 300,
                     marginBottom: 0, color: heroText, textAlign: "center", width: "100%",
-                    textShadow: "0 2px 32px rgba(0,0,0,0.45)",
                   }}
                 >
                   Reconectar-se<br />não é voltar.<br />
