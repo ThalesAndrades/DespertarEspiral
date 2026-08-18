@@ -16,8 +16,7 @@ export interface Product {
   description: string;
   price: number;
   thumbnail: string;
-  /** Coluna real no banco e `is_active`. `is_published` nunca existiu. */
-  is_active: boolean;
+  is_published: boolean;
   modules: Module[];
   created_at: string;
 }
@@ -116,22 +115,4 @@ export interface CommunityComment {
   body: string;
   likes: number;
   created_at: string;
-}
-
-export type ProductStatus = "disponivel" | "em_breve";
-
-/** Produto como a vitrine precisa dele — recorte de leitura, sem modulos. */
-export interface StorefrontProduct {
-  id: string;
-  slug: string;
-  title: string;
-  subtitle: string;
-  /** Promessa de uma linha exibida no card. */
-  promise: string;
-  price: number;
-  thumbnail: string;
-  status: ProductStatus;
-  /** Os 3 itens curtos de "o que ela leva". */
-  highlights: string[];
-  sort_order: number;
 }

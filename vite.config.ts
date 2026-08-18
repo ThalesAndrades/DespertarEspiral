@@ -27,11 +27,7 @@ export default defineConfig({
         // splitting only pulls the vendors it actually needs.
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
-          // react-vendor must be dependency-closed: everything react-dom and
-          // react-router-dom pull in (scheduler, react-router, @remix-run/router)
-          // has to live in the SAME chunk, or vendor <-> react-vendor become a
-          // circular import and React is undefined when the router initializes.
-          if (/[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id) || id.includes("@remix-run")) return "react-vendor";
+          if (/[\\/]react(?:-dom|-router-dom)?[\\/]/.test(id)) return "react-vendor";
           if (id.includes("@radix-ui")) return "radix";
           if (id.includes("@tanstack")) return "query";
           if (id.includes("three")) return "three";

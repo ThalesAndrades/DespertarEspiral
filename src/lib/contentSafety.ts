@@ -65,14 +65,7 @@ export function sanitizeHtml(input: string): string {
     }
   };
 
-  // Percorrer os FILHOS do body, nunca o body em si: <body> nao esta em
-  // ALLOWED_TAGS, entao walk(doc.body) substituia o proprio body por um no de
-  // texto e o removia do documento — deixando doc.body nulo na linha seguinte.
-  // O efeito era sanitizeHtml() lancar TypeError para qualquer entrada nao
-  // vazia, quebrando toda aula do tipo "text" em LessonPage.
-  for (const child of Array.from(doc.body.childNodes)) {
-    walk(child);
-  }
+  walk(doc.body);
   return doc.body.innerHTML;
 }
 

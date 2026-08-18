@@ -11,7 +11,7 @@ export const MOCK_PRODUCTS: Product[] = [
     description: "Uma jornada guiada de autoconhecimento feminino com aulas práticas, reflexões e integrações simples para o dia a dia.",
     price: 497.00,
     thumbnail: mulherEspiralProduct,
-    is_active: true,
+    is_published: true,
     created_at: "2026-01-15T00:00:00Z",
     modules: [
       {
@@ -55,7 +55,7 @@ export const MOCK_PRODUCTS: Product[] = [
     description: "Um percurso leve e objetivo para reconhecer emoções, compreender padrões e responder com mais presença no cotidiano.",
     price: 247.00,
     thumbnail: courseThumb2,
-    is_active: true,
+    is_published: true,
     created_at: "2026-02-20T00:00:00Z",
     modules: [
       {

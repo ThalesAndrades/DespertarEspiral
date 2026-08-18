@@ -42,7 +42,6 @@ const AdminEventsPage       = React.lazy(() => import("@/pages/admin/AdminEvents
 const CertificatePage       = React.lazy(() => import("@/pages/CertificatePage"));
 const ProfilePage           = React.lazy(() => import("@/pages/ProfilePage"));
 const MapaDoPoder           = React.lazy(() => import("@/pages/MapaDoPoder"));
-const BussolaPage           = React.lazy(() => import("@/pages/BussolaPage"));
 
 /* ── Global loader — branded spiral spinner ── */
 function GlobalLoader() {
@@ -191,7 +190,6 @@ export default function App() {
         {/* QR-gated event page — access control handled inside component */}
         <Route path="/mapadopoder" element={<MapaDoPoder />} />
         <Route path="/mapa"        element={<MapaDoPoder />} />
-        <Route path="/bussola"     element={<BussolaPage />} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

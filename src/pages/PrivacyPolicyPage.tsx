@@ -5,22 +5,18 @@ import { Link } from "react-router-dom";
 const CONTACT_EMAIL = "contato@despertarespiral.com";
 const SITE_NAME = "Despertar Espiral";
 
-const READING_WIDTH = "68ch";
-
 function SectionTitle({ children }: { children: string }) {
   return (
     <h2
       className="font-label"
       style={{
-        maxWidth: READING_WIDTH,
-        marginTop: "40px",
-        marginBottom: "12px",
+        marginTop: "28px",
+        marginBottom: "10px",
         fontSize: "11px",
         letterSpacing: "0.22em",
         textTransform: "uppercase",
         color: "var(--gold)",
         fontWeight: 600,
-        scrollMarginTop: "84px",
       }}
     >
       {children}
@@ -31,13 +27,11 @@ function SectionTitle({ children }: { children: string }) {
 function P({ children }: { children: ReactNode }) {
   return (
     <p
-      className="text-pretty"
       style={{
-        maxWidth: READING_WIDTH,
-        fontSize: "15.5px",
+        fontSize: "15px",
         lineHeight: 1.9,
         color: "var(--text-secondary)",
-        marginBottom: "14px",
+        marginBottom: "12px",
       }}
     >
       {children}
@@ -45,20 +39,9 @@ function P({ children }: { children: ReactNode }) {
   );
 }
 
-function List({ children }: { children: ReactNode }) {
-  return (
-    <ul style={{ maxWidth: READING_WIDTH, margin: "0 0 14px", paddingLeft: "20px" }}>
-      {children}
-    </ul>
-  );
-}
-
 function Li({ children }: { children: ReactNode }) {
   return (
-    <li
-      className="text-pretty"
-      style={{ marginBottom: "10px", lineHeight: 1.85, color: "var(--text-secondary)", fontSize: "15.5px", paddingLeft: "4px" }}
-    >
+    <li style={{ marginBottom: "10px", lineHeight: 1.85, color: "var(--text-secondary)", fontSize: "15px" }}>
       {children}
     </li>
   );
@@ -131,17 +114,16 @@ export default function PrivacyPolicyPage() {
           Transparência e cuidado
         </p>
         <h1
-          className="font-display text-balance"
+          className="font-display"
           style={{
             fontSize: "clamp(30px,5vw,52px)",
             fontWeight: 300,
             lineHeight: 1.1,
-            marginBottom: "18px",
+            marginBottom: "14px",
           }}
         >
           Política de Privacidade
         </h1>
-        <hr className="divider-gold" style={{ maxWidth: READING_WIDTH, marginBottom: "24px" }} />
         <P>
           Esta Política de Privacidade descreve como {SITE_NAME} (“nós”) coleta, usa, compartilha e protege dados pessoais quando você usa nosso site e
           plataforma (o “Serviço”).
@@ -150,8 +132,8 @@ export default function PrivacyPolicyPage() {
           Ao usar o Serviço, você concorda com esta Política. Se não concordar, recomendamos que não utilize o Serviço.
         </P>
 
-        <div className="card-dark" style={{ maxWidth: READING_WIDTH, padding: "22px 24px", marginTop: "8px", marginBottom: "8px", borderRadius: "var(--r-lg)" }}>
-          <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "12px" }}>
+        <div className="card-dark" style={{ padding: "18px 18px", marginTop: "18px" }}>
+          <p className="font-label" style={{ fontSize: "9px", letterSpacing: "0.20em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "8px" }}>
             Resumo
           </p>
           <ul style={{ margin: 0, paddingLeft: "18px" }}>
@@ -164,7 +146,7 @@ export default function PrivacyPolicyPage() {
 
         <SectionTitle>1. Dados que coletamos</SectionTitle>
         <P>Podemos coletar as seguintes categorias de dados pessoais, conforme aplicável:</P>
-        <List>
+        <ul style={{ margin: 0, paddingLeft: "18px" }}>
           <Li>
             <strong>Dados de conta</strong>: e-mail, nome e identificadores internos necessários para login e criação de perfil.
           </Li>
@@ -180,17 +162,17 @@ export default function PrivacyPolicyPage() {
           <Li>
             <strong>Dados de comunidade</strong>: publicações, comentários e interações quando você usa áreas sociais do Serviço.
           </Li>
-        </List>
+        </ul>
 
         <SectionTitle>2. Como usamos seus dados</SectionTitle>
         <P>Usamos dados pessoais para:</P>
-        <List>
+        <ul style={{ margin: 0, paddingLeft: "18px" }}>
           <Li>Autenticar você e proteger sua conta contra uso indevido.</Li>
           <Li>Entregar o conteúdo e as funcionalidades do Serviço (inclusive liberar acesso quando aplicável).</Li>
           <Li>Processar solicitações de suporte e comunicações operacionais.</Li>
           <Li>Melhorar experiência, performance e estabilidade do Serviço.</Li>
           <Li>Prevenir fraudes, abusos, e cumprir obrigações legais quando necessário.</Li>
-        </List>
+        </ul>
 
         <SectionTitle>3. Base legal (LGPD)</SectionTitle>
         <P>
@@ -203,7 +185,7 @@ export default function PrivacyPolicyPage() {
           Compartilhamos dados apenas quando necessário para operar o Serviço, com provedores que atuam como operadores/processadores, sob contratos e
           medidas de segurança. Exemplos:
         </P>
-        <List>
+        <ul style={{ margin: 0, paddingLeft: "18px" }}>
           <Li>
             <strong>Infraestrutura e banco de dados</strong> (ex.: autenticação e persistência de dados).
           </Li>
@@ -213,7 +195,7 @@ export default function PrivacyPolicyPage() {
           <Li>
             <strong>Login social</strong> (ex.: Google OAuth, quando você escolher entrar com Google).
           </Li>
-        </List>
+        </ul>
         <P>Não vendemos dados pessoais. Não compartilhamos dados para publicidade comportamental baseada em informações sensíveis.</P>
 
         <SectionTitle>5. Uso de dados do Google (OAuth)</SectionTitle>

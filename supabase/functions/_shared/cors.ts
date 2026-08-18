@@ -25,7 +25,7 @@ function getAllowedOrigins(): string[] {
 
 const baseCorsHeaders: Record<string, string> = {
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-webhook-signature, stripe-signature",
+    "authorization, x-client-info, apikey, content-type, x-sequenzy-signature",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
 };

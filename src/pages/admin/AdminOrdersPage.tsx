@@ -16,6 +16,7 @@ interface Order {
   payment_method: string | null;
   created_at: string;
   paid_at: string | null;
+  sequenzy_session_id: string | null;
   products: { title: string; slug: string } | null;
 }
 
@@ -112,7 +113,7 @@ export default function AdminOrdersPage() {
     // Pass admin JWT so the edge function can verify admin role
     const { data: { session } } = await supabase.auth.getSession();
 
-    const { data, error } = await supabase.functions.invoke("admin-orders", {
+    const { data, error } = await supabase.functions.invoke("sequenzy-webhook", {
       body: { action: "confirm_payment", orderId, paymentMethod: method },
       headers: session?.access_token
         ? { Authorization: `Bearer ${session.access_token}` }

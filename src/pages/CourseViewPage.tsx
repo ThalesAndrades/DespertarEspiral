@@ -10,8 +10,6 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import QuizPlayer from "@/components/features/QuizPlayer";
-import { SETE_MANHAS_SLUG, estadoTrilha, streakAtual, type ConclusaoManha, type ManhaInfo } from "@/lib/seteManhas";
-import { AnelSeteManhas } from "@/components/seteManhas/AnelSeteManhas";
 import {
   ChevronDown, ChevronRight, Play, FileText, File, Volume2,
   CheckCircle, ArrowLeft, BookOpen, Clock, Award, ClipboardList, TrendingUp,
@@ -68,7 +66,6 @@ export default function CourseViewPage() {
   const [product,     setProduct]     = useState<null | Record<string, unknown>>(null);
   const [loading,     setLoading]     = useState(true);
   const [completed,   setCompleted]   = useState<Set<string>>(new Set());
-  const [completedAt, setCompletedAt] = useState<Record<string, string>>({});
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
   const [activeQuiz,  setActiveQuiz]  = useState<string | null>(null);
 
@@ -82,7 +79,7 @@ export default function CourseViewPage() {
         .select(`id, slug, title, subtitle, description, thumbnail_url, modules(id, title, sort_order, lessons(id, title, type, duration_min, is_free, sort_order))`)
         .eq("slug", slug).single(),
       supabase.from("lesson_progress")
-        .select("lesson_id, completed_at").eq("user_id", user.id).eq("completed", true),
+        .select("lesson_id").eq("user_id", user.id).eq("completed", true),
     ]).then(([productRes, progressRes]) => {
       if (cancelled) return;
 
@@ -106,15 +103,6 @@ export default function CourseViewPage() {
 
       if (progressRes.data) {
         setCompleted(new Set(progressRes.data.map((r: { lesson_id: string }) => r.lesson_id)));
-        const atMap: Record<string, string> = {};
-        for (const r of progressRes.data as { lesson_id: string; completed_at?: string | null }[]) {
-          // Uma linha completed:true sem completed_at (dado legado/manual) AINDA
-          // entra no mapa — quem consome isso (seteManhas.ts) trata ausencia de
-          // data como concluida em data desconhecida, nunca como "nao concluida"
-          // (nunca re-tranca o que ja foi feito — I-3).
-          atMap[r.lesson_id] = r.completed_at ?? "";
-        }
-        setCompletedAt(atMap);
       }
       setLoading(false);
     });
@@ -208,37 +196,6 @@ export default function CourseViewPage() {
   };
   const totalTimeLabel = totalMinutes > 0 ? formatDuration(totalMinutes) : null;
 
-  /* ── Sete Manhãs: trilha (anel) + trava por manhã — nenhum efeito para outros produtos ── */
-  const isSeteManhas = (product as unknown as { slug?: string }).slug === SETE_MANHAS_SLUG;
-  const posicaoPorLessonId = new Map<string, number>();
-  let trilhaSeteManhas: ManhaInfo[] = [];
-  let streakSeteManhas = 0;
-  if (isSeteManhas) {
-    allLessons.forEach((l, i) => posicaoPorLessonId.set((l as { id: string }).id, i + 1));
-    const agoraISO = new Date().toISOString();
-    const conclusoes: ConclusaoManha[] = [];
-    allLessons.forEach((l, i) => {
-      const id = (l as { id: string }).id;
-      // Toda aula com completed:true entra na trilha, mesmo sem completed_at —
-      // a lib trata data ausente/invalida como concluida em data desconhecida,
-      // entao NUNCA re-tranca uma manha ja feita (I-3).
-      if (completed.has(id)) conclusoes.push({ indice: i + 1, completedAt: completedAt[id] ?? "" });
-    });
-    // Total vem do produto real (allLessons.length), nao de um 7 fixo: com 5
-    // aulas a trilha tem 5 pontos, com 9 tem 9, cada uma seguindo a mesma
-    // regra em cadeia (I-4).
-    trilhaSeteManhas = estadoTrilha(conclusoes, agoraISO, allLessons.length);
-    streakSeteManhas = streakAtual(conclusoes, agoraISO);
-  }
-
-  // CTA do herói: para Sete Manhãs, se a próxima pendente só abre amanhã, o
-  // botão vira uma frase acolhedora em vez de um link morto (C-1).
-  const nextLessonPos = isSeteManhas
-    ? posicaoPorLessonId.get((nextLesson as { id: string } | undefined)?.id ?? "")
-    : undefined;
-  const proximaSeteManhasAmanha =
-    isSeteManhas && nextLessonPos != null && trilhaSeteManhas[nextLessonPos - 1]?.estado === "amanha";
-
   return (
     <DashboardLayout>
       <div style={{ maxWidth: "760px", margin: "0 auto", padding: "0 0 clamp(40px,6vw,80px)" }}>
@@ -321,18 +278,6 @@ export default function CourseViewPage() {
                   <Link to={`/products/${slug}/certificado`} className="btn-gold" style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap" }}>
                     <Award size={13} /> Ver certificado
                   </Link>
-                ) : proximaSeteManhasAmanha ? (
-                  <div
-                    className="card-dark"
-                    style={{
-                      padding: "11px 20px", borderRadius: "12px", flexShrink: 0,
-                      display: "flex", alignItems: "center", gap: "8px",
-                      fontSize: "9px", fontFamily: "Montserrat, sans-serif", letterSpacing: "0.04em",
-                      color: "var(--text-muted)", whiteSpace: "nowrap",
-                    }}
-                  >
-                    A próxima manhã abre amanhã 🌅
-                  </div>
                 ) : nextLesson ? (
                   <Link to={`/products/${slug}/lesson/${(nextLesson as { id: string }).id}`} className="btn-gold" style={{ padding: "11px 20px", fontSize: "9px", borderRadius: "12px", flexShrink: 0, whiteSpace: "nowrap" }}>
                     <Play size={12} fill="#060810" style={{ color: "#060810" }} />
@@ -411,13 +356,6 @@ export default function CourseViewPage() {
           </div>
         )}
 
-        {/* ── Sete Manhãs: anel da jornada ── */}
-        {isSeteManhas && (
-          <div style={{ padding: "0 clamp(14px,4vw,24px)", margin: "clamp(8px,1.5vw,12px) 0" }}>
-            <AnelSeteManhas trilha={trilhaSeteManhas} streak={streakSeteManhas} />
-          </div>
-        )}
-
         {/* ── Module accordion ── */}
         <div style={{ padding: "0 clamp(14px,4vw,24px)" }}>
           <p className="overline" style={{ color: "var(--gold)", marginBottom: "clamp(12px,2vw,16px)", fontSize: "8px" }}>
@@ -478,18 +416,13 @@ export default function CourseViewPage() {
                         const done   = completed.has(lesson.id);
                         const isLast = lIdx === mod.lessons.length - 1;
 
-                        const posicaoSeteManhas = isSeteManhas ? posicaoPorLessonId.get(lesson.id) : undefined;
-                        const estadoSeteManhas  = posicaoSeteManhas ? trilhaSeteManhas[posicaoSeteManhas - 1]?.estado : undefined;
-                        // Prévia gratuita é decisão comercial do admin, não faz parte do
-                        // ritmo de quem comprou — escapa da trava (I-2, "nas duas páginas").
-                        const previaLivre = Boolean(
-                          (lesson as unknown as { is_free_preview?: boolean; is_free?: boolean }).is_free_preview ??
-                          (lesson as unknown as { is_free?: boolean }).is_free
-                        );
-                        const bloqueadaSeteManhas = !previaLivre && (estadoSeteManhas === "bloqueada" || estadoSeteManhas === "amanha");
-
-                        const rowContent = (
-                          <>
+                        return (
+                          <Link
+                            key={lesson.id}
+                            to={`/products/${slug}/lesson/${lesson.id}`}
+                            className="lesson-row"
+                            style={{ borderBottom: isLast ? "none" : "1px solid var(--border-subtle)", display: "flex" }}
+                          >
                             <div style={{
                               width: "clamp(28px,4vw,32px)", height: "clamp(28px,4vw,32px)", borderRadius: "50%", flexShrink: 0,
                               background: done ? "rgba(140,170,150,0.12)" : "rgba(198,168,112,0.07)",
@@ -518,33 +451,6 @@ export default function CourseViewPage() {
                                 {lessonLabel[lesson.type] ?? lesson.type}
                               </span>
                             </div>
-                          </>
-                        );
-
-                        if (bloqueadaSeteManhas) {
-                          const rotulo = estadoSeteManhas === "amanha"
-                            ? `Manhã ${posicaoSeteManhas}: abre amanhã`
-                            : `Manhã ${posicaoSeteManhas}: ainda bloqueada`;
-                          return (
-                            <div
-                              key={lesson.id}
-                              className="lesson-row"
-                              aria-label={rotulo}
-                              style={{ borderBottom: isLast ? "none" : "1px solid var(--border-subtle)", display: "flex", cursor: "default", opacity: 0.55 }}
-                            >
-                              {rowContent}
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <Link
-                            key={lesson.id}
-                            to={`/products/${slug}/lesson/${lesson.id}`}
-                            className="lesson-row"
-                            style={{ borderBottom: isLast ? "none" : "1px solid var(--border-subtle)", display: "flex" }}
-                          >
-                            {rowContent}
                           </Link>
                         );
                       })}
