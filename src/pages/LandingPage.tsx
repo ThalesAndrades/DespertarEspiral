@@ -509,7 +509,7 @@ export default function LandingPage() {
                     textAlign: "center", marginBottom: "clamp(24px,3.5vw,38px)",
                   }}
                 >
-                  Uma jornada de autoconhecimento feminina, clara e acolhedora, para quem quer voltar a sentir presença, direção e verdade.
+                  O método que a Sunyan desenha à mão, volta por volta — um caminho de autoconhecimento feminino feito de presença, ritual e verdade.
                 </p>
 
                 <div className="animate-fade-up delay-400" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "360px", marginBottom: "clamp(18px,2.5vw,26px)" }}>
@@ -566,7 +566,7 @@ export default function LandingPage() {
             <div style={{ textAlign: "center", marginBottom: "clamp(40px,6vw,72px)" }}>
               <p className="overline reveal" style={{ color: "var(--gold)", marginBottom: "16px" }}>As jornadas</p>
               <h2 className="font-display text-balance reveal reveal-delay-1" style={{ fontSize: "clamp(30px,5.5vw,64px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.05, color: "var(--text-primary)" }}>
-                Escolha por onde começar
+                Cada volta da espiral começa em algum lugar.
               </h2>
               <div style={{ display: "flex", alignItems: "center", gap: "16px", justifyContent: "center", marginTop: "22px" }} aria-hidden="true">
                 <div style={{ height: "1px", width: "44px", background: "var(--border-subtle)" }} />
