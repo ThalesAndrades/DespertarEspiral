@@ -442,6 +442,18 @@ export default function LandingPage() {
             overflow: "hidden", background: "transparent",
           }}
         >
+          {/* Moldura-convite: fio dourado com o ◆ da marca no topo */}
+          <div aria-hidden="true" style={{
+            position: "absolute", inset: "clamp(12px,2.2vw,30px)", zIndex: 3,
+            border: "1px solid color-mix(in srgb, var(--gold) 38%, transparent)",
+            pointerEvents: "none",
+          }} />
+          <div aria-hidden="true" style={{
+            position: "absolute", top: "clamp(4px,1.4vw,20px)", left: "50%", transform: "translateX(-50%)",
+            zIndex: 4, color: "var(--gold)", fontSize: "11px", lineHeight: 1,
+            background: "transparent", padding: "0 10px", pointerEvents: "none",
+          }}>◆</div>
+
           {/* Hero bottom fade — leve, so pra assentar o texto na transicao;
               desembocar em cor SOLIDA cortava o video entre hero e vitrine. */}
           <div aria-hidden="true" style={{
@@ -475,11 +487,17 @@ export default function LandingPage() {
                 data-parallax="-0.18"
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
               >
+                <p className="overline animate-fade-up delay-100" style={{
+                  color: "var(--gold)", letterSpacing: "0.42em", fontSize: "clamp(8px,1vw,10px)",
+                  marginBottom: "clamp(14px,2vw,22px)", textAlign: "center",
+                }}>
+                  O Método Despertar Espiral
+                </p>
                 <h1
                   className="animate-fade-up delay-200 text-balance"
                   style={{
-                    fontSize: "clamp(42px,6.5vw,102px)",
-                    lineHeight: 0.98, fontStyle: "italic", fontWeight: 300,
+                    fontSize: "clamp(46px,7.5vw,118px)",
+                    lineHeight: 0.96, fontStyle: "italic", fontWeight: 300,
                     marginBottom: 0, color: heroText, textAlign: "center", width: "100%",
                   }}
                 >

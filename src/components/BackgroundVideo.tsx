@@ -45,6 +45,7 @@ export function BackgroundVideo() {
         disablePictureInPicture
       />
       <div className="bg-video-veil" aria-hidden="true" />
+      <div className="bg-video-cine" aria-hidden="true" />
     </>
   );
 }

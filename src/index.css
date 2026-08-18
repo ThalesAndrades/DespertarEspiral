@@ -262,6 +262,25 @@
     object-fit: cover;
     z-index: -2;
     pointer-events: none;
+    /* Respiro cinematografico: zoom quase imperceptivel, 36s por volta. */
+    animation: bgSlowZoom 36s ease-in-out infinite alternate;
+  }
+  @keyframes bgSlowZoom {
+    from { transform: scale(1); }
+    to   { transform: scale(1.07); }
+  }
+
+  /* Camada de cinema sobre o video (abaixo do conteudo): vinheta fotografica
+     + grao de filme. O grao mascara compressao e da textura de pelicula. */
+  .bg-video-cine {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(ellipse 130% 100% at 50% 42%, transparent 58%, rgba(10, 8, 6, 0.30) 100%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.05'/%3E%3C/svg%3E");
+    background-size: auto, 160px 160px;
   }
 
   /* Veu na cor do tema por cima do video: mantem contraste e a identidade
@@ -277,8 +296,17 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .bg-video { display: none; }
+    .bg-video { display: none; animation: none; }
     .bg-video-veil { opacity: 1; }
+    .bg-video-cine { display: none; }
+  }
+
+  /* Marketplace: zoom lento na imagem do produto no hover */
+  .storefront-card img {
+    transition: transform 0.9s cubic-bezier(.16,1,.3,1);
+  }
+  .storefront-card:hover img {
+    transform: scale(1.05);
   }
 
   h1, h2 {
