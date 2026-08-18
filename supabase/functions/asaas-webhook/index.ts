@@ -13,6 +13,7 @@ import {
   sequenzyTags,
   sequenzyBatch,
 } from "../_shared/sequenzy.ts";
+import { produtosDoPedido } from "../_shared/orderItems.ts";
 
 /* ── Timing-safe string comparison (prevents timing attacks) ── */
 function safeEquals(a: string, b: string): boolean {
@@ -123,7 +124,20 @@ Deno.serve(async (req: Request) => {
     return json(200, { received: true, action: "already_paid" });
   }
 
-  /* ── 6. Mark order as paid (atomic) ── */
+  /* ── 6. Ler os itens do pedido ANTES de marcar como pago ──
+     Se essa leitura falhar, abortamos SEM marcar o pedido como pago: o
+     pedido continua "pending" e o proximo retry do Asaas processa do zero.
+     Se marcassemos pago primeiro e a leitura falhasse depois, a idempotencia
+     da secao 5 bloquearia QUALQUER retry futuro — para um pedido que ja tem
+     user_id, a perda de acesso ao segundo produto vira permanente. */
+  const itensResult = await produtosDoPedido(supabase, order);
+  if (!itensResult.ok) {
+    console.error(`order_items ilegivel — pedido NAO marcado como pago, retry do Asaas preservado | order=${order.id}`);
+    return json(500, { error: "Falha ao ler itens do pedido" });
+  }
+  const idsParaLiberar = itensResult.ids;
+
+  /* ── 7. Mark order as paid (atomic) ── */
   const { error: updateErr } = await supabase
     .from("orders")
     .update({
@@ -142,19 +156,27 @@ Deno.serve(async (req: Request) => {
 
   console.log(`Order ${order.id} marked as paid | method=${billingType} | value=${confirmedValue}`);
 
-  /* ── 7. Grant product access ── */
+  /* ── 8. Grant product access ── */
   let accessGranted = false;
   let grantedUserId: string | null = order.user_id ?? null;
 
+  async function liberarPara(userId: string): Promise<{ anyOk: boolean; grantedCount: number }> {
+    // Um upsert por produto: um erro em um item nao impede a liberacao do outro.
+    let grantedCount = 0;
+    for (const productId of idsParaLiberar) {
+      const { error: accessErr } = await supabase
+        .from("user_products")
+        .upsert({ user_id: userId, product_id: productId }, { onConflict: "user_id,product_id" });
+      if (accessErr) console.error(`Failed to grant access | order=${order.id} user=${userId} product=${productId}:`, accessErr.message);
+      else grantedCount++;
+    }
+    return { anyOk: grantedCount > 0, grantedCount };
+  }
+
   if (order.user_id) {
-    const { error: accessErr } = await supabase
-      .from("user_products")
-      .upsert(
-        { user_id: order.user_id, product_id: order.product_id },
-        { onConflict: "user_id,product_id" }
-      );
-    if (!accessErr) { accessGranted = true; console.log(`Access granted: user=${order.user_id}`); }
-    else console.error("Failed to grant access:", accessErr.message);
+    const resultado = await liberarPara(order.user_id);
+    accessGranted = resultado.anyOk;
+    if (accessGranted) console.log(`Access granted: user=${order.user_id} | products=${resultado.grantedCount}/${idsParaLiberar.length}`);
   } else {
     const { data: profile } = await supabase
       .from("user_profiles")
@@ -163,26 +185,19 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (profile?.id) {
-      const { error: accessErr } = await supabase
-        .from("user_products")
-        .upsert(
-          { user_id: profile.id, product_id: order.product_id },
-          { onConflict: "user_id,product_id" }
-        );
-      if (!accessErr) {
+      const resultado = await liberarPara(profile.id);
+      accessGranted = resultado.anyOk;
+      if (accessGranted) {
         await supabase.from("orders").update({ user_id: profile.id }).eq("id", order.id);
-        accessGranted = true;
         grantedUserId = profile.id;
-        console.log(`Access granted (email lookup): user=${profile.id}`);
-      } else {
-        console.error("Failed to grant access (email lookup):", accessErr.message);
+        console.log(`Access granted (email lookup): user=${profile.id} | products=${resultado.grantedCount}/${idsParaLiberar.length}`);
       }
     } else {
       console.warn(`No profile found for ${order.email} — access pending account creation`);
     }
   }
 
-  /* ── 8. Sequenzy events (fire-and-forget) ── */
+  /* ── 9. Sequenzy events (fire-and-forget) ── */
   const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
   if (sequenzyApiKey && order.email) {
     const firstName    = (order.name?.split(" ")[0] || order.email.split("@")[0]).trim();

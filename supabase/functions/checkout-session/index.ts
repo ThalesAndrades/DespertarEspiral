@@ -1,7 +1,11 @@
 // Edge Function: checkout-session
-// Creates a pending order, integrates with Asaas (PIX/cartão/boleto) and Sequenzy
+// Creates a pending order, integrates with gateway de pagamento e Sequenzy.
+// PIX vai pra Woovi quando WOOVI_APP_ID estiver configurado; cartao e boleto
+// continuam no Asaas ate terem substituto (ver docs/superpowers/plans/
+// 2026-08-14-alinhar-ao-novo-formato.md).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeadersFor, handleCors, isAllowedOrigin } from "../_shared/cors.ts";
+import { createWooviCharge } from "../_shared/woovi.ts";
 import {
   sequenzyUpsertSubscriber,
   sequenzyEvent,
@@ -187,7 +191,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(req, 415, { error: "Content-Type deve ser application/json" });
     }
 
-    const { productSlug, email, name, paymentMethod, cpfCnpj } = await req.json();
+    const { productSlug, email, name, paymentMethod, cpfCnpj, bump } = await req.json();
 
     if (!productSlug || !email) {
       return jsonResponse(req, 400, { error: "productSlug e email são obrigatórios" });
@@ -222,11 +226,14 @@ Deno.serve(async (req: Request) => {
     }
 
     // 1. Fetch product
+    // Trava de negocio: produto em_breve NAO pode ser cobrado. Este filtro na
+    // edge function e a trava REAL — o filtro do front e so apresentacao.
     const { data: product, error: productError } = await supabaseAdmin
       .from("products")
       .select("id, title, subtitle, price, slug")
       .eq("slug", productSlug)
       .eq("is_active", true)
+      .eq("status", "disponivel")
       .single();
 
     if (productError || !product) {
@@ -243,6 +250,44 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(req, 500, { error: "Produto com preço inválido" });
     }
 
+    // ── Bump de R$ 27 ──
+    // A TRAVA REAL mora aqui: o cliente manda so um booleano; o preco e a
+    // elegibilidade sao lidos do banco. `status = disponivel` repete a regra dura
+    // do catalogo — produto em_breve nunca e cobrado, nem como bump.
+    const BUMP_SLUG = "mapa-dos-sentimentos";
+    let bumpProduct: { id: string; title: string; price: number } | null = null;
+
+    if (bump === true && productSlug !== BUMP_SLUG) {
+      const { data: bumpRow, error: bumpError } = await supabaseAdmin
+        .from("products")
+        .select("id, title, price, is_active, status")
+        .eq("slug", BUMP_SLUG)
+        .maybeSingle();
+
+      if (bumpError) {
+        // Falha de INFRA (timeout, conexao, permissao) — NAO e "produto indisponivel".
+        // Degrada pra cobrar so o principal (nunca falha a venda por causa disso),
+        // mas loga separado do catalogo pra nao mandar o on-call pro lugar errado.
+        console.error(`Bump: falha de infra ao consultar produto — seguindo sem bump | email=${email} slug=${BUMP_SLUG} erro=${bumpError.message}`);
+      } else if (!bumpRow) {
+        console.warn(`Bump solicitado mas produto "${BUMP_SLUG}" nao encontrado — seguindo sem bump | email=${email}`);
+      } else if (bumpRow.is_active !== true) {
+        console.warn(`Bump solicitado mas produto inativo (is_active=${bumpRow.is_active}) — seguindo sem bump | email=${email}`);
+      } else if (bumpRow.status !== "disponivel") {
+        console.warn(`Bump solicitado mas produto com status "${bumpRow.status}" — seguindo sem bump | email=${email}`);
+      } else {
+        const bumpPrice = typeof bumpRow.price === "number" ? bumpRow.price : parseFloat(String(bumpRow.price));
+        if (isFinite(bumpPrice) && bumpPrice > 0) {
+          bumpProduct = { id: bumpRow.id, title: bumpRow.title, price: bumpPrice };
+        } else {
+          console.warn(`Bump solicitado mas produto com preco invalido (${bumpRow.price}) — seguindo sem bump | email=${email}`);
+        }
+      }
+    }
+
+    // Centavos para evitar 47.9 + 27.5 = 75.39999999999999
+    const totalAmount = Math.round((productPrice + (bumpProduct?.price ?? 0)) * 100) / 100;
+
     // 2. Create pending order
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
@@ -251,7 +296,7 @@ Deno.serve(async (req: Request) => {
         product_id: product.id,
         email: email.toLowerCase().trim(),
         name: name?.trim() || null,
-        amount: productPrice,
+        amount: totalAmount,
         status: "pending",
         payment_method: paymentMethod || "pix",
       })
@@ -265,43 +310,82 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Order created: ${order.id} | product: ${product.slug} | method: ${paymentMethod ?? "pix"}`);
 
-    // 3. Asaas integration
-    const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
-    let asaasData: { invoiceUrl?: string; pixQrCode?: string; pixKey?: string; barCode?: string; billingType?: string; asaasId?: string } | null = null;
+    // 2b. Itens do pedido. Gravados ANTES de cobrar: se falhar com bump,
+    // ninguem e cobrado por um item que nao seria liberado.
+    const itens = [
+      { order_id: order.id, product_id: product.id, unit_price: productPrice },
+      ...(bumpProduct ? [{ order_id: order.id, product_id: bumpProduct.id, unit_price: bumpProduct.price }] : []),
+    ];
 
-    if (asaasApiKey) {
-      const firstName  = (name?.split(" ")[0] || email.split("@")[0]).trim();
-      const customerId = await upsertAsaasCustomer(asaasApiKey, email.toLowerCase().trim(), name?.trim() || firstName, cpfCnpj);
+    const { error: itemsError } = await supabaseAdmin.from("order_items").insert(itens);
 
-      if (customerId) {
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + (paymentMethod === "boleto" ? 3 : paymentMethod === "credit" ? 0 : 1));
-        const dueDateStr = dueDate.toISOString().slice(0, 10);
+    if (itemsError) {
+      console.error(`order_items insert failed | order=${order.id}:`, itemsError);
+      if (bumpProduct) {
+        // Com bump, a falha e fatal: cobrar dois e liberar um e pior que nao vender.
+        await supabaseAdmin.from("orders").update({ status: "failed" }).eq("id", order.id);
+        return jsonResponse(req, 500, { error: "Erro ao registrar os itens do pedido" });
+      }
+      // Sem bump, e recuperavel: a liberacao cai no fallback de orders.product_id.
+      console.warn("Seguindo sem order_items — fallback por orders.product_id cobre este pedido");
+    }
 
-        asaasData = await createAsaasPayment(
-          asaasApiKey,
-          customerId,
-          productPrice,
-          paymentMethod || "pix",
-          `${product.title} — Despertar Espiral`,
-          order.id,
-          dueDateStr
-        );
+    // 3. Cobranca no gateway
+    // paymentData e o formato NEUTRO que o resto da funcao (Sequenzy, resposta
+    // ao front) consome — o contrato de resposta pro front nao muda (mapeamos
+    // os campos da Woovi pros mesmos nomes que o Asaas ja usava).
+    let paymentData: { invoiceUrl?: string; pixQrCode?: string; pixKey?: string; barCode?: string; billingType?: string; asaasId?: string } | null = null;
+    let providerName: string | null = null;
+    let providerChargeId: string | null = null;
 
-        if (asaasData?.asaasId) {
-          await supabaseAdmin
-            .from("orders")
-            .update({
-              asaas_payment_id: asaasData.asaasId,
-              // sequenzy_session_id reserved for Sequenzy checkout session IDs only
-            })
-            .eq("id", order.id);
-        }
+    const wooviAppId = Deno.env.get("WOOVI_APP_ID");
+    const useWoovi = paymentMethod === "pix" && !!wooviAppId;
+
+    if (useWoovi) {
+      // 3a. PIX via Woovi. Peculiaridades do fornecedor (comment ASCII-only,
+      // QR que vem como URL em vez de base64) ficam dentro de _shared/woovi.ts
+      // — aqui e so contrato agnostico, igual ao texto que ja ia pro Asaas.
+      const amountCents = Math.round(totalAmount * 100);
+      const wooviCharge = await createWooviCharge(wooviAppId!, {
+        correlationID: order.id,
+        valueInCents: amountCents,
+        comment: bumpProduct
+          ? `${product.title} + ${bumpProduct.title} — Despertar Espiral`
+          : `${product.title} — Despertar Espiral`,
+        customer: {
+          name: name?.trim(),
+          email: email.toLowerCase().trim(),
+          taxID: cpfCnpj ? cpfCnpj.replace(/\D/g, "") : undefined,
+        },
+      });
+
+      if (wooviCharge) {
+        providerName     = "woovi";
+        // O id real da cobranca na Woovi (usado no painel pra estorno e
+        // conciliacao) — correlationID e o NOSSO order.id, so cai como
+        // fallback se por algum motivo a Woovi nao devolver "identifier".
+        providerChargeId = wooviCharge.identifier ?? wooviCharge.correlationID;
+
+        paymentData = {
+          billingType: "PIX",
+          invoiceUrl:  wooviCharge.paymentLinkUrl,
+          pixQrCode:   wooviCharge.qrCodeImagePngBase64,
+          pixKey:      wooviCharge.brCode,
+        };
+
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            provider:             providerName,
+            provider_charge_id:   providerChargeId,
+            provider_payment_url: wooviCharge.paymentLinkUrl ?? null,
+          })
+          .eq("id", order.id);
       } else {
-        console.warn("Could not create/find Asaas customer");
+        console.error(`Woovi charge failed | order=${order.id}`);
       }
 
-      if (asaasData === null) {
+      if (paymentData === null) {
         await supabaseAdmin
           .from("orders")
           .update({ status: "failed" })
@@ -312,14 +396,63 @@ Deno.serve(async (req: Request) => {
         });
       }
     } else {
-      console.warn("ASAAS_API_KEY not configured — payment gateway skipped");
+      // 3b. Cartao/boleto (e PIX sem WOOVI_APP_ID configurado) seguem no Asaas
+      const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
+
+      if (asaasApiKey) {
+        const firstName  = (name?.split(" ")[0] || email.split("@")[0]).trim();
+        const customerId = await upsertAsaasCustomer(asaasApiKey, email.toLowerCase().trim(), name?.trim() || firstName, cpfCnpj);
+
+        if (customerId) {
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + (paymentMethod === "boleto" ? 3 : paymentMethod === "credit" ? 0 : 1));
+          const dueDateStr = dueDate.toISOString().slice(0, 10);
+
+          paymentData = await createAsaasPayment(
+            asaasApiKey,
+            customerId,
+            totalAmount,
+            paymentMethod || "pix",
+            bumpProduct
+              ? `${product.title} + ${bumpProduct.title} — Despertar Espiral`
+              : `${product.title} — Despertar Espiral`,
+            order.id,
+            dueDateStr
+          );
+
+          if (paymentData?.asaasId) {
+            // Caminho Asaas inalterado: so a coluna antiga e escrita aqui.
+            // As colunas neutras (provider/provider_charge_id/...) ainda nao
+            // tem equivalente Asaas nesta leva — regra 2 da Ordem obrigatoria.
+            await supabaseAdmin
+              .from("orders")
+              .update({ asaas_payment_id: paymentData.asaasId })
+              .eq("id", order.id);
+          }
+        } else {
+          console.warn("Could not create/find Asaas customer");
+        }
+
+        if (paymentData === null) {
+          await supabaseAdmin
+            .from("orders")
+            .update({ status: "failed" })
+            .eq("id", order.id);
+          return jsonResponse(req, 502, {
+            error: "Não foi possível gerar as instruções de pagamento. Tente novamente em instantes.",
+            orderId: order.id,
+          });
+        }
+      } else {
+        console.warn("ASAAS_API_KEY not configured — payment gateway skipped");
+      }
     }
 
     // 4. Sequenzy — fire checkout events (non-blocking)
     const sequenzyApiKey = Deno.env.get("SEQUENZY_API_KEY");
     if (sequenzyApiKey) {
       const firstName = (name?.split(" ")[0] || email.split("@")[0]).trim();
-      const amountFmt = `R$ ${productPrice.toFixed(2).replace(".", ",")}`;
+      const amountFmt = `R$ ${totalAmount.toFixed(2).replace(".", ",")}`;
 
       sequenzyBatch([
         sequenzyUpsertSubscriber(sequenzyApiKey, {
@@ -329,7 +462,7 @@ Deno.serve(async (req: Request) => {
             product_slug:   product.slug,
             product_title:  product.title,
             order_id:       order.id,
-            amount:         productPrice,
+            amount:         totalAmount,
             checkout_at:    new Date().toISOString(),
             status:         "checkout_pendente",
           },
@@ -343,7 +476,7 @@ Deno.serve(async (req: Request) => {
         sequenzyEvent(sequenzyApiKey, email, "checkout_iniciado", {
           product_title:  product.title,
           product_slug:   product.slug,
-          amount:         productPrice,
+          amount:         totalAmount,
           order_id:       order.id,
           payment_method: paymentMethod || "pix",
           started_at:     new Date().toISOString(),
@@ -351,7 +484,7 @@ Deno.serve(async (req: Request) => {
         sequenzyEvent(sequenzyApiKey, email, "checkout.started", {
           product_title:  product.title,
           product_slug:   product.slug,
-          amount:         productPrice,
+          amount:         totalAmount,
           order_id:       order.id,
           payment_method: paymentMethod || "pix",
         }),
@@ -361,8 +494,8 @@ Deno.serve(async (req: Request) => {
           productSubtitle: product.subtitle || "Método de Reconexão e Cura",
           orderId:         order.id.slice(0, 8).toUpperCase(),
           amount:          amountFmt,
-          pixKey:          asaasData?.pixKey || "contato@despertarespiral.com",
-          invoiceUrl:      asaasData?.invoiceUrl || `${SITE_URL}/obrigado`,
+          pixKey:          paymentData?.pixKey || "contato@despertarespiral.com",
+          invoiceUrl:      paymentData?.invoiceUrl || `${SITE_URL}/obrigado`,
           supportEmail:    "contato@despertarespiral.com",
         }),
       ]);
@@ -393,13 +526,14 @@ Deno.serve(async (req: Request) => {
         slug:     product.slug,
         price:    productPrice,
       },
-      payment: asaasData ? {
-        invoiceUrl: asaasData.invoiceUrl,
-        pixQrCode:  asaasData.pixQrCode,
-        pixKey:     asaasData.pixKey,
-        barCode:    asaasData.barCode,
-        billingType: asaasData.billingType,
-        asaasId:    asaasData.asaasId,
+      payment: paymentData ? {
+        invoiceUrl:  paymentData.invoiceUrl,
+        pixQrCode:   paymentData.pixQrCode,
+        pixKey:      paymentData.pixKey,
+        barCode:     paymentData.barCode,
+        billingType: paymentData.billingType,
+        asaasId:     paymentData.asaasId,
+        provider:    providerName ?? undefined,
       } : null,
       message: "Pedido registrado. Instruções de pagamento enviadas por e-mail.",
     });

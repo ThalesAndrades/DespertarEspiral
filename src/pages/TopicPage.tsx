@@ -51,11 +51,26 @@ function timeAgo(iso: string) {
   return `${days}d atrás`;
 }
 
-function Spinner() {
+function Sk({ w = "100%", h = "14px", r = "8px", style }: { w?: string; h?: string; r?: string; style?: React.CSSProperties }) {
+  return <div className="skeleton" style={{ width: w, height: h, borderRadius: r, ...style }} />;
+}
+
+function TopicSkeleton() {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px" }}>
-      <Loader2 size={22} style={{ color: "var(--gold)", animation: "spin 0.9s linear infinite" }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div style={{ maxWidth: "680px", margin: "0 auto", padding: "clamp(14px,2.5vw,20px) 16px 0" }} aria-hidden="true">
+      <Sk w="120px" h="11px" style={{ marginBottom: "20px" }} />
+      <div className="card-dark" style={{ padding: "clamp(18px,4vw,28px)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "18px" }}>
+          <Sk w="68px" h="22px" r="100px" />
+          <Sk w="22px" h="22px" r="50%" />
+          <Sk w="90px" h="13px" />
+        </div>
+        <Sk h="28px" style={{ marginBottom: "8px" }} />
+        <Sk w="65%" h="28px" style={{ marginBottom: "18px" }} />
+        <Sk h="14px" style={{ marginBottom: "8px" }} />
+        <Sk h="14px" style={{ marginBottom: "8px" }} />
+        <Sk w="80%" h="14px" />
+      </div>
     </div>
   );
 }
@@ -193,15 +208,21 @@ export default function TopicPage() {
   };
 
   if (loadingPost) {
-    return <DashboardLayout><Spinner /></DashboardLayout>;
+    return <DashboardLayout><TopicSkeleton /></DashboardLayout>;
   }
 
   if (!post) {
     return (
       <DashboardLayout>
-        <div style={{ padding: "48px 24px", textAlign: "center" }}>
-          <p style={{ color: "var(--text-muted)", marginBottom: "16px" }}>Post não encontrado.</p>
-          <Link to="/community" className="btn-gold" style={{ padding: "10px 24px", fontSize: "9px" }}>Voltar</Link>
+        <div style={{ padding: "clamp(56px,14vw,88px) 24px", textAlign: "center", maxWidth: "420px", margin: "0 auto" }}>
+          <div aria-hidden="true" style={{ fontSize: "20px", color: "var(--gold)", opacity: 0.55, marginBottom: "14px", lineHeight: 1 }}>✦</div>
+          <p className="font-display" style={{ fontSize: "clamp(22px,3.5vw,28px)", fontWeight: 300, color: "var(--text-primary)", lineHeight: 1.2, marginBottom: "8px" }}>
+            Post não encontrado.
+          </p>
+          <p style={{ fontSize: "14px", color: "var(--text-muted)", lineHeight: 1.7, marginBottom: "20px" }}>
+            Esse post pode ter sido removido ou o link está incorreto.
+          </p>
+          <Link to="/community" className="btn-gold" style={{ padding: "10px 24px", fontSize: "9px" }}>Voltar para a comunidade</Link>
         </div>
       </DashboardLayout>
     );
@@ -243,9 +264,9 @@ export default function TopicPage() {
               }}>
                 {catLabel[post.category] ?? post.category}
               </span>
-              {post.is_pinned && <Flame size={11} style={{ color: "var(--gold)" }} />}
+              {post.is_pinned && <Flame size={11} aria-label="Post fixado" style={{ color: "var(--gold)" }} />}
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "2px" }}>
-                <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(164,158,208,0.14)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div aria-hidden="true" style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(164,158,208,0.14)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span style={{ fontSize: "9px", color: "var(--lavender)", fontFamily: "Montserrat", fontWeight: 600 }}>
                     {authorName.charAt(0)}
                   </span>
@@ -276,6 +297,8 @@ export default function TopicPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "4px", paddingTop: "14px", borderTop: "1px solid var(--border-subtle)" }}>
               <button
                 onClick={handleLikePost}
+                aria-label={likedPost ? "Remover curtida" : "Curtir"}
+                aria-pressed={likedPost}
                 style={{
                   display: "flex", alignItems: "center", gap: "6px",
                   padding: "8px 12px", background: "transparent", border: "none",
@@ -319,7 +342,7 @@ export default function TopicPage() {
                 <div key={c.id} className="card-dark" style={{ padding: "clamp(14px,3vw,20px)" }}>
                   {/* Author */}
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(172,128,142,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div aria-hidden="true" style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(172,128,142,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <span style={{ fontSize: "10px", color: "var(--rose)", fontFamily: "Montserrat", fontWeight: 600 }}>
                         {commentAuthor.charAt(0)}
                       </span>
@@ -338,12 +361,14 @@ export default function TopicPage() {
                   {/* Like */}
                   <button
                     onClick={() => handleLikeComment(c.id)}
+                    aria-label={isLiked ? "Remover curtida do comentário" : "Curtir comentário"}
+                    aria-pressed={isLiked}
                     style={{
                       display: "flex", alignItems: "center", gap: "5px",
                       background: "transparent", border: "none", cursor: "pointer",
                       fontSize: "12px", fontFamily: "DM Sans",
                       color: isLiked ? "var(--rose)" : "var(--text-faint)",
-                      padding: "4px 0", minHeight: "36px",
+                      padding: "4px 0", minHeight: "44px",
                       transition: "color 0.2s",
                     }}
                   >
@@ -390,7 +415,6 @@ export default function TopicPage() {
           </div>
         </div>
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </DashboardLayout>
   );
 }

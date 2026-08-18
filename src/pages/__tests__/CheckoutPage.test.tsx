@@ -3,7 +3,7 @@
  *
  * Covers:
  *  - Loading skeleton enquanto produto carrega
- *  - Produto não encontrado → toast de erro + navigate para /products
+ *  - Produto não encontrado → toast de erro + navigate para / (home)
  *  - Renderização com produto carregado: título, preço em BRL, método de pagamento
  *  - Validação de formulário: nome e email obrigatórios (inline + toast)
  *  - Validação: email com formato inválido
@@ -69,6 +69,7 @@ const mockFrom       = vi.fn();
 const mockSelect     = vi.fn();
 const mockEqSlug     = vi.fn();
 const mockEqActive   = vi.fn();
+const mockEqStatus   = vi.fn();
 const mockSingle     = vi.fn();
 
 vi.mock("@/lib/supabase", () => ({
@@ -114,7 +115,8 @@ const MOCK_PRODUCT = {
 /** Sets up the Supabase `from('products')` chain to resolve with given data/error */
 function mockProductQuery(data: typeof MOCK_PRODUCT | null, error: unknown = null) {
   mockSingle.mockResolvedValue({ data, error });
-  mockEqActive.mockReturnValue({ single: mockSingle });
+  mockEqStatus.mockReturnValue({ single: mockSingle });
+  mockEqActive.mockReturnValue({ eq: mockEqStatus });
   mockEqSlug.mockReturnValue({ eq: mockEqActive });
   mockSelect.mockReturnValue({ eq: mockEqSlug });
   mockFrom.mockReturnValue({ select: mockSelect });
@@ -167,7 +169,8 @@ describe("CheckoutPage — loading", () => {
     let resolve: (v: unknown) => void;
     const pending = new Promise((r) => { resolve = r; });
     mockSingle.mockReturnValue(pending);
-    mockEqActive.mockReturnValue({ single: mockSingle });
+    mockEqStatus.mockReturnValue({ single: mockSingle });
+    mockEqActive.mockReturnValue({ eq: mockEqStatus });
     mockEqSlug.mockReturnValue({ eq: mockEqActive });
     mockSelect.mockReturnValue({ eq: mockEqSlug });
     mockFrom.mockReturnValue({ select: mockSelect });
@@ -191,13 +194,34 @@ describe("CheckoutPage — loading", () => {
 /* ──────────────────────────────────────────────────────── */
 
 describe("CheckoutPage — product not found", () => {
-  it("shows error toast and navigates to /products when product is null", async () => {
+  it("shows error toast and navigates to / (home) when product is null", async () => {
     mockProductQuery(null, { message: "Not found" });
     renderCheckout("slug-inexistente");
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith("Produto não encontrado.");
-      expect(mockNavigate).toHaveBeenCalledWith("/products");
+      // /products e rota privada; visitante deslogada iria para /login. Home
+      // e publica, entao o redirect de "nao encontrado" vai para "/".
+      expect(mockNavigate).toHaveBeenCalledWith("/");
+    });
+  });
+
+  it("filters the product query by status='disponivel' (em_breve nunca aceita pagamento)", async () => {
+    renderCheckout();
+    await waitFor(() => {
+      expect(mockEqStatus).toHaveBeenCalledWith("status", "disponivel");
+    });
+  });
+
+  it("treats a product hidden by the status filter the same as not found", async () => {
+    // Simula o comportamento real do PostgREST: produto em_breve nao bate no
+    // .eq("status", "disponivel") e o single() retorna sem linha (PGRST116).
+    mockProductQuery(null, { message: "JSON object requested, multiple (or no) rows returned" });
+    renderCheckout("sete-manhas");
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith("Produto não encontrado.");
+      expect(mockNavigate).toHaveBeenCalledWith("/");
     });
   });
 });

@@ -57,7 +57,7 @@ export default function NotFoundPage() {
           Esse caminho<br />não existe.
         </h1>
 
-        <p style={{
+        <p className="text-pretty" style={{
           fontSize: "clamp(14px,1.8vw,17px)",
           color: "var(--text-secondary)",
           lineHeight: 1.82, maxWidth: "400px",
@@ -66,7 +66,7 @@ export default function NotFoundPage() {
           Talvez você tenha chegado aqui por um motivo — mas a sua jornada começa em outro lugar.
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
           <Link to="/" className="btn-gold" style={{ minWidth: "220px", justifyContent: "center" }}>
             <Home size={14} /> Voltar ao início
           </Link>

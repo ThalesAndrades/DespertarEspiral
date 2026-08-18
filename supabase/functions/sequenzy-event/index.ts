@@ -25,6 +25,8 @@ const PUBLIC_EVENTS = new Set([
   "lead.optin.pain_relacionamentos",
   "lead.optin.pain_ansiedade",
   "lead.diagnostic_completed",
+  // Bussola da Espiral: disparado por visitante anonima ao concluir o quiz
+  "bussola.completed",
   "checkout.started",
   "checkout_iniciado",
   "checkout.completed",    // fired client-side when order is registered (pre-payment)
