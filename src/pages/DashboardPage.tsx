@@ -384,7 +384,7 @@ export default function DashboardPage() {
                 <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.75, marginBottom: "22px", maxWidth: "320px" }}>
                   Adquira um curso e desperte o que está dentro de você.
                 </p>
-                <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ fontSize: "9px", padding: "12px 28px" }}>
+                <Link to="/checkout/sete-manhas" className="btn-gold" style={{ fontSize: "9px", padding: "12px 28px" }}>
                   Conhecer cursos <ArrowRight size={13} aria-hidden="true" />
                 </Link>
               </div>
@@ -510,7 +510,7 @@ export default function DashboardPage() {
               <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.82, marginBottom: "24px", maxWidth: "360px", margin: "0 auto 24px" }}>
                 O Mulher Espiral tem 8 módulos de autoconhecimento esperando por você.
               </p>
-              <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ width: "100%", justifyContent: "center", fontSize: "10px" }}>
+              <Link to="/checkout/sete-manhas" className="btn-gold" style={{ width: "100%", justifyContent: "center", fontSize: "10px" }}>
                 Quero começar <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </div>

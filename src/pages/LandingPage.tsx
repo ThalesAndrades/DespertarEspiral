@@ -642,7 +642,7 @@ export default function LandingPage() {
                 Cada volta representa um nível mais profundo de consciência. Não é linearidade — é aprofundamento. Você volta ao mesmo ponto, mas sempre mais inteira.
               </p>
               <Link
-                to="/checkout/mulher-espiral"
+                to="/checkout/sete-manhas"
                 className="btn-outline-gold"
                 onMouseEnter={prefetchCheckout}
                 onFocus={prefetchCheckout}
@@ -741,7 +741,7 @@ export default function LandingPage() {
                       <p className="font-label" style={{ fontSize: "9px", color: "rgba(140,170,150,0.78)", letterSpacing: "0.12em", marginTop: "4px" }}>ou 12× de R$ 97,10</p>
                     </div>
                     <Link
-                      to="/checkout/mulher-espiral"
+                      to="/checkout/sete-manhas"
                       className="btn-gold"
                       onMouseEnter={prefetchCheckout}
                       onFocus={prefetchCheckout}
@@ -859,7 +859,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <Link
-                  to="/checkout/mulher-espiral"
+                  to="/checkout/sete-manhas"
                   className="btn-gold"
                   style={{ fontSize: "10px" }}
                   onMouseEnter={prefetchCheckout}
@@ -876,7 +876,7 @@ export default function LandingPage() {
                     Sua voz também pertence aqui.
                   </p>
                   <Link
-                    to="/checkout/mulher-espiral"
+                    to="/checkout/sete-manhas"
                     style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "10px", color: "rgba(164,158,208,0.90)", letterSpacing: "0.18em", textTransform: "uppercase", fontFamily: "Montserrat,sans-serif", fontWeight: 500, textDecoration: "none" }}
                     onMouseEnter={prefetchCheckout}
                     onFocus={prefetchCheckout}
@@ -910,7 +910,7 @@ export default function LandingPage() {
               Terapeuta, facilitadora e criadora do Método Espiral. Há mais de 8 anos ao lado de mulheres no reencontro com a própria essência — unindo profundidade emocional, sabedoria do corpo e espiritualidade prática.
             </p>
             <Link
-              to="/checkout/mulher-espiral"
+              to="/checkout/sete-manhas"
               className="btn-gold"
               onMouseEnter={prefetchCheckout}
               onFocus={prefetchCheckout}
@@ -980,7 +980,7 @@ export default function LandingPage() {
             </p>
             <div className="reveal reveal-delay-4" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
               <Link
-                to="/checkout/mulher-espiral"
+                to="/checkout/sete-manhas"
                 className="btn-gold"
                 style={{ padding: "17px clamp(32px,5vw,60px)", fontSize: "10px", width: "100%", maxWidth: "440px", justifyContent: "center" }}
                 onMouseEnter={prefetchCheckout}

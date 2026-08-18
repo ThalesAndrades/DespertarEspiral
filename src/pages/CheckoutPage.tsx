@@ -30,8 +30,12 @@ const LABEL: React.CSSProperties = {
 
 const PAYMENT_METHODS = [
   { id: "pix",    label: "PIX",    sub: "Aprovação imediata", icon: Zap },
-  { id: "credit", label: "Cartão", sub: "12× sem juros",      icon: Shield },
-  { id: "boleto", label: "Boleto", sub: "Vence em 3 dias",    icon: Star },
+  // Cartao e boleto DESLIGADOS em 18/08: o stack de producao nao tem Asaas
+  // (credencial ausente) e o Stripe ainda nao esta integrado no checkout-
+  // session. Oferecer um metodo que retorna erro e pior que nao oferecer.
+  // Reativar quando o caminho Stripe existir de ponta a ponta:
+  // { id: "credit", label: "Cartão", sub: "12× sem juros",      icon: Shield },
+  // { id: "boleto", label: "Boleto", sub: "Vence em 3 dias",    icon: Star },
 ];
 
 function validateEmail(e: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
@@ -645,7 +649,7 @@ function OrderSummary({ product, savings, bump, total, compact = false }: {
   compact?: boolean;
 }) {
   const p = product as { slug?: string; thumbnail?: string; thumbnail_url?: string; title?: string; subtitle?: string; price?: number; original_price?: number; modules?: unknown[] };
-  const isMulherEspiral = p.slug === "mulher-espiral";
+  const isMulherEspiral = p.slug === "sete-manhas";
   const thumbSrc = isMulherEspiral ? mulherEspiralProductImg : (p.thumbnail_url || p.thumbnail || "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&q=80&auto=format");
 
   return (

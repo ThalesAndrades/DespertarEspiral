@@ -119,7 +119,7 @@ export default function LandingNav() {
               >
                 Entrar
               </a>
-              <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ padding: "10px 22px", fontSize: "9px", minHeight: "40px" }}>
+              <Link to="/checkout/sete-manhas" className="btn-gold" style={{ padding: "10px 22px", fontSize: "9px", minHeight: "40px" }}>
                 Começar
               </Link>
             </>
@@ -214,7 +214,7 @@ export default function LandingNav() {
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "14px", fontFamily: "Montserrat, sans-serif", fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-secondary)", textDecoration: "none", minHeight: "52px" }}>
                   Entrar
                 </Link>
-                <Link to="/checkout/mulher-espiral" onClick={() => setOpen(false)} className="btn-gold" style={{ width: "100%", fontSize: "9px" }}>
+                <Link to="/checkout/sete-manhas" onClick={() => setOpen(false)} className="btn-gold" style={{ width: "100%", fontSize: "9px" }}>
                   Começar jornada
                 </Link>
               </>

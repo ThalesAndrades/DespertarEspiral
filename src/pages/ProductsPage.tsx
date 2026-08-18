@@ -177,7 +177,7 @@ export default function ProductsPage() {
                 <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.82, marginBottom: "24px", maxWidth: "340px", margin: "0 auto 24px" }}>
                   Explore nossos cursos e inicie sua jornada de autoconhecimento.
                 </p>
-                <Link to="/checkout/mulher-espiral" className="btn-gold" style={{ fontSize: "10px" }}>
+                <Link to="/checkout/sete-manhas" className="btn-gold" style={{ fontSize: "10px" }}>
                   Conhecer cursos <ArrowRight size={14} aria-hidden="true" />
                 </Link>
               </div>

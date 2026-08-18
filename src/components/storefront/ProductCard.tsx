@@ -27,7 +27,10 @@ export function ProductCard({ product, onNotify, featured = false }: ProductCard
   // Gratuito sem rota mapeada nunca e "disponivel" na vitrine, mesmo que o
   // status do banco diga o contrario — cai no "avise-me" ate ganhar destino.
   const isAvailable = product.status === "disponivel" && (!isGratuito || !!rotaGratuita);
-  const showInstallments = isAvailable && product.price >= 100 && !isGratuito;
+  // PIX-only em 18/08 (checkout sem cartao): prometer "12x" sem meio de
+  // parcelar seria claim falso. Reativar junto com o cartao (Stripe):
+  // isAvailable && product.price >= 100 && !isGratuito
+  const showInstallments = false;
   const ctaHref = rotaGratuita ? rotaGratuita.href : `/checkout/${product.slug}`;
   const ctaLabel = rotaGratuita ? rotaGratuita.label : "Começar agora";
 
@@ -77,6 +80,17 @@ export function ProductCard({ product, onNotify, featured = false }: ProductCard
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "var(--space-5)", flex: 1 }}>
         {!isAvailable && !product.thumbnail && (
           <span className="overline" style={{ color: "var(--text-muted)" }}>Em breve</span>
+        )}
+        {featured && !product.thumbnail && (
+          <span style={{
+            alignSelf: "flex-start",
+            fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase",
+            fontFamily: "Montserrat,sans-serif", fontWeight: 600,
+            color: "var(--bg-surface)", background: "var(--gold)",
+            borderRadius: "100px", padding: "5px 12px",
+          }}>
+            Jornada principal
+          </span>
         )}
 
         <h3 className="font-display" style={{ fontSize: "clamp(22px,2.4vw,30px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.12, color: "var(--text-primary)" }}>

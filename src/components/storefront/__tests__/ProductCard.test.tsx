@@ -40,16 +40,10 @@ describe("ProductCard", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
-  it("mostra parcelamento em 12x para preco >= 100 (parcela em destaque)", () => {
+  it("NAO promete parcelamento enquanto o checkout for PIX-only", () => {
     renderCard({ ...base, price: 997 });
-    expect(screen.getByText("12× de")).toBeInTheDocument();
-    expect(screen.getByText("R$ 83,08")).toBeInTheDocument();
-    expect(screen.getByText("ou R$ 997,00 à vista")).toBeInTheDocument();
-  });
-
-  it("NAO mostra parcelamento para preco < 100", () => {
-    renderCard({ ...base, price: 47 });
     expect(screen.queryByText(/12× de/)).not.toBeInTheDocument();
+    expect(screen.getByText("R$ 997,00")).toBeInTheDocument();
   });
 
   it("mostra selo de garantia de 7 dias quando disponivel", () => {

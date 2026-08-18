@@ -3,7 +3,7 @@
  * Wizard animado inserido na LandingPage entre Depoimentos e Comunidade.
  * Q4 = qualificação de investimento (segmenta intenção de compra).
  * Dispara lead.diagnostic_completed + lead.optin.pain_* via Sequenzy.
- * Redireciona para /checkout/mulher-espiral?pain=X após coleta de e-mail.
+ * Redireciona para /checkout/sete-manhas?pain=X após coleta de e-mail.
  */
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -178,7 +178,7 @@ export default function QuizSection() {
         moment:         answers[1] ?? "",
         desire:         answers[2] ?? "",
         investment:     answers[3] ?? "",
-        product_slug:   "mulher-espiral",
+        product_slug:   "sete-manhas",
         completed_at:   new Date().toISOString(),
       },
     });
@@ -197,7 +197,7 @@ export default function QuizSection() {
     setSubmitted(true);
 
     await new Promise((r) => setTimeout(r, 900));
-    navigate(`/checkout/mulher-espiral?pain=${painKey}`);
+    navigate(`/checkout/sete-manhas?pain=${painKey}`);
   }
 
   function restart() {

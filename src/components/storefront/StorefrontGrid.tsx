@@ -35,7 +35,7 @@ export function StorefrontGrid({ products, loading = false }: StorefrontGridProp
             key={product.id}
             product={product}
             onNotify={setWaitlistFor}
-            featured={product.slug === "mulher-espiral"}
+            featured={product.slug === "sete-manhas"}
           />
         ))}
       </div>
