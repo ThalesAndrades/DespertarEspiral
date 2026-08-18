@@ -3,6 +3,7 @@ import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/lib/ErrorBoundary";
+import { BackgroundVideo } from "@/components/BackgroundVideo";
 import LandingPage from "@/pages/LandingPage"; // static — first page, no lazy delay
 
 /* ── Prefetch helpers ── */
@@ -146,7 +147,9 @@ function Suspense({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Suspense>
+    <>
+      <BackgroundVideo />
+      <Suspense>
       <Routes>
         {/* Public — LandingPage is static for instant load */}
         <Route path="/"                element={<LandingPage />} />
@@ -193,6 +196,7 @@ export default function App() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </Suspense>
+      </Suspense>
+    </>
   );
 }

@@ -204,10 +204,15 @@
     scrollbar-gutter: stable;
     font-size: 16px;
     overflow-y: scroll;
+    /* Base solida do canvas: e o que aparece se o video de fundo faltar ou
+       estiver desligado (reduced-motion) — visual identico ao pre-video. */
+    background-color: var(--bg-surface);
   }
 
   body {
-    background-color: var(--bg-surface);
+    /* Transparente de proposito: o video de fundo (z -2) e o veu (z -1)
+       vivem atras do body; a base solida fica no html acima. */
+    background-color: transparent;
     color: var(--text-primary);
     font-family: 'DM Sans', sans-serif;
     font-weight: 300;
@@ -224,6 +229,34 @@
   ::selection {
     background: rgba(198,168,112,0.20);
     color: var(--text-primary);
+  }
+
+  /* ── Video de fundo do site (BackgroundVideo.tsx) ── */
+  .bg-video {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  /* Veu na cor do tema por cima do video: mantem contraste e a identidade
+     do tema. Ajustar a presenca do video e mexer so nesta opacidade. */
+  .bg-video-veil {
+    position: fixed;
+    inset: 0;
+    background-color: var(--bg-surface);
+    opacity: 0.72;
+    z-index: -1;
+    pointer-events: none;
+    transition: background-color 0.35s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bg-video { display: none; }
+    .bg-video-veil { opacity: 1; }
   }
 
   h1, h2 {
@@ -1054,7 +1087,9 @@ img { animation: imgFadeIn 0.22s ease both; }
 /* ═══════════════════════════════════════════════════════════════════
    LIGHT MODE OVERRIDES
 ═══════════════════════════════════════════════════════════════════ */
-[data-theme="light"] body { background-color: var(--bg-surface); color: var(--text-primary); }
+/* O fundo do tema vive no html (base solida) — o body fica transparente para
+   o video de fundo aparecer; ver BackgroundVideo.tsx. */
+[data-theme="light"] body { background-color: transparent; color: var(--text-primary); }
 [data-theme="light"] .card-dark {
   background: var(--card-bg); border-color: var(--border-subtle);
   box-shadow: 0 1px 8px rgba(10,12,26,0.05);
