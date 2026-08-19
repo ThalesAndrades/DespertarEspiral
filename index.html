@@ -9,11 +9,9 @@
     <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#0b0d1c" />
 
-    <!-- ── Security Headers ── -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="DENY" />
-    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
-    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(self), usb=()" />
+    <!-- Security headers vivem no .htaccess (public/.htaccess), NUNCA em meta:
+         X-Frame-Options, Permissions-Policy e afins são ignorados por spec
+         quando vêm em http-equiv — as tags que existiam aqui eram decorativas. -->
 
     <!-- ── Icons ── -->
     <link rel="icon" type="image/svg+xml" href="/brand-mark.svg" />
@@ -44,27 +42,13 @@
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500&family=Montserrat:wght@400;500;600&display=swap" />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" />
 
-    <!-- ── Structured Data ── -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Course",
-      "name": "Mulher Espiral",
-      "description": "Método de Reconexão e Cura feminina por Sunyan Nunes. Jornada de 8 módulos com comunidade exclusiva e certificado.",
-      "url": "https://despertarespiral.com",
-      "provider": {
-        "@type": "Person",
-        "name": "Sunyan Nunes",
-        "url": "https://despertarespiral.com"
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "997.00",
-        "priceCurrency": "BRL",
-        "availability": "https://schema.org/InStock"
-      }
-    }
-    </script>
+    <!-- ── Structured Data ──
+         SÓ WebSite, de propósito. O Course "Mulher Espiral" R$997 que vivia
+         aqui anunciava um preço que a página não exibe (o catálogo real mudou —
+         a entrada é outra) e a SearchAction apontava para /community, rota
+         atrás de login: markup não representativo viola a diretriz do Google e
+         convida o robô a uma porta trancada. Quando um produto tiver preço
+         VISÍVEL na landing, o Product/Offer volta — do catálogo, não de literal. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -72,11 +56,7 @@
       "name": "Despertar Espiral",
       "url": "https://despertarespiral.com",
       "description": "Método de Reconexão e Cura feminina por Sunyan Nunes",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://despertarespiral.com/community?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
+      "inLanguage": "pt-BR"
     }
     </script>
 
@@ -90,8 +70,12 @@
   <body>
     <div id="root"></div>
     <noscript>
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#070915;color:#f5f0e8;font-family:sans-serif;text-align:center;padding:24px;">
-        <p>Despertar Espiral requer JavaScript para funcionar. Por favor, habilite JavaScript no seu navegador.</p>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#070915;color:#f5f0e8;font-family:Georgia,serif;text-align:center;padding:24px;">
+        <div style="max-width:520px;">
+          <h1 style="font-weight:400;font-size:1.6rem;margin:0 0 12px;">Despertar Espiral</h1>
+          <p style="line-height:1.6;color:#cfc7b8;margin:0 0 20px;">Método de Reconexão e Cura feminina, por Sunyan Nunes: um caminho de autoconhecimento profundo, estruturado e amoroso.</p>
+          <p style="line-height:1.6;color:#cfc7b8;margin:0;">A área interativa do site precisa de JavaScript — habilite-o no navegador para conhecer o método e entrar na jornada.</p>
+        </div>
       </div>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>

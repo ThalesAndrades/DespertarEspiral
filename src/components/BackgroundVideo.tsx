@@ -15,11 +15,17 @@ const SRC_MOBILE  = "/media/bg-loop-720.mp4";
 
 export function BackgroundVideo() {
   const ref = useRef<HTMLVideoElement>(null);
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
 
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
+    // O src e escolhido AQUI, e nao no render: a home chega pre-renderizada e a
+    // hidratacao de producao ADOTA os atributos do DOM sem corrigir — um src
+    // decidido no render do servidor (que nao tem viewport) faria todo celular
+    // baixar o 1080p do desktop com preload=auto, sem erro nenhum no console.
+    // Ate o efeito rodar o <video> fica so com o poster — o mesmo visual do
+    // primeiro frame, sem download errado.
+    v.src = window.matchMedia("(max-width: 768px)").matches ? SRC_MOBILE : SRC_DESKTOP;
     v.play().catch(() => {});
     // iOS em economia de bateria (e afins) bloqueia autoplay ate haver
     // gesto: re-tenta UMA vez no primeiro toque e sai de cena.
@@ -33,7 +39,6 @@ export function BackgroundVideo() {
       <video
         ref={ref}
         className="bg-video"
-        src={isMobile ? SRC_MOBILE : SRC_DESKTOP}
         poster="/media/bg-poster.jpg"
         autoPlay
         muted

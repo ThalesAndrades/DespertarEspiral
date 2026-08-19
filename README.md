@@ -28,7 +28,7 @@ cp .env.example .env
 npm run dev        # ou: bun run dev
 ```
 
-Outros scripts: `npm run build` (produção), `npm run build:dev`, `npm run preview`, `npm run lint`.
+Outros scripts: `npm run build` (produção: cliente + SSR + pré-render), `npm run build:spa` (só o cliente), `npm run build:dev`, `npm run preview`, `npm run lint`.
 
 ## Variáveis de ambiente
 
@@ -50,6 +50,21 @@ dependência de nenhuma plataforma específica de hospedagem.
 
 ## Deploy
 
-Build estático (`npm run build` → `dist/`) servível por qualquer host estático
-(Netlify, Vercel, Cloudflare Pages, etc.). As Edge Functions são publicadas via
-Supabase CLI (`supabase functions deploy`).
+Build estático (`npm run build` → `dist/`). O build é um PIPELINE: cliente +
+SSR + pré-render (`scripts/prerender.mjs` gera `dist/prerender/*.html`, que o
+`.htaccess` versionado serve em `/`, `/termos` e `/privacidade`). Publicar um
+dist sem a pasta `prerender/` volta a servir a casca vazia aos crawlers — por
+isso `vite build` puro agora se chama `npm run build:spa` e não é build de
+deploy.
+
+Produção vive na Hostinger compartilhada (`u525832347@srv1772.hstgr.io:65002`,
+`domains/despertarespiral.com/public_html`), publicada por tar-over-ssh do
+conteúdo de `dist/`. Duas regras do procedimento:
+1. **Nunca limpar o docroot antes de extrair** — `/media/*.mp4` e
+   `bg-poster.jpg` vivem só lá (fora do git; o CDN cacheia mp4 e troca exige
+   NOME novo, ver `src/components/BackgroundVideo.tsx`).
+2. O `.htaccess` do repo (`public/.htaccess`) **sobrescreve** o do servidor —
+   o repo é a verdade; mudança feita direto no servidor volta para cá no
+   mesmo dia.
+
+As Edge Functions são publicadas via Supabase CLI (`supabase functions deploy`).

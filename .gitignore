@@ -16,6 +16,10 @@ dist-ssr
 .env
 .env.*
 !.env.example
+# O de produção é versionado DE PROPÓSITO: só tem a URL pública da API e a
+# anon key (que já sai embutida no bundle do navegador — quem protege é a RLS).
+# Sem ele, um `vite build` ingênuo apontava o site pro backend fóssil do OnSpace.
+!.env.production
 
 # Editor directories and files
 .vscode/*

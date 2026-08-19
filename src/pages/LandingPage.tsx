@@ -219,7 +219,18 @@ export default function LandingPage() {
   const dotsRef     = useRef<HTMLDivElement>(null);
   const heroRef     = useRef<HTMLElement>(null);
   const { theme }   = useTheme();
-  const isLight     = theme === "light";
+  /* isLight em DUAS PASSADAS por causa da pré-renderização: o servidor não tem
+     matchMedia e rende sempre o ramo dark. Se o primeiro render do cliente já
+     viesse light, a hidratação de produção ADOTARIA os estilos inline dark do
+     DOM sem corrigir (React 18 não compara atributos ao hidratar) e o fiber
+     ficaria dizendo light — nenhum re-render futuro consertaria: visitante em
+     tema claro veria hero e seções cravados no escuro. Então o primeiro render
+     ESPELHA o servidor (dark) e o efeito vira a chave; a re-renderização diffa
+     dark→light e o React corrige o DOM de verdade. No dark (o padrão), o efeito
+     é no-op e nada re-renderiza. */
+  const [temaHidratado, setTemaHidratado] = useState<"dark" | "light">("dark");
+  useEffect(() => { setTemaHidratado(theme); }, [theme]);
+  const isLight     = temaHidratado === "light";
 
   const [produtos, setProdutos]     = useState<StorefrontProduct[]>([]);
   const [carregando, setCarregando] = useState(true);

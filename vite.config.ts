@@ -3,7 +3,11 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+// Função porque o build de PRERENDER (vite build --ssr src/entry-server.tsx)
+// compartilha este arquivo: no SSR os node_modules ficam externos e o
+// manualChunks abaixo não se aplica — gate por isSsrBuild, sem tocar na regra
+// do cliente (que segue EXATAMENTE como era; ver o aviso do react-vendor).
+export default defineConfig(({ isSsrBuild }) => ({
   server: {
     host: "::",
     port: 8080,
@@ -20,7 +24,7 @@ export default defineConfig({
     target: "es2020",
     cssCodeSplit: true,
     chunkSizeWarningLimit: 900,
-    rollupOptions: {
+    rollupOptions: isSsrBuild ? {} : {
       output: {
         // Split heavy vendor libraries into stable, cacheable chunks so a change
         // in app code doesn't bust the whole vendor bundle, and route-level code
@@ -45,4 +49,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

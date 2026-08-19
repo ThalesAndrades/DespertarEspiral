@@ -41,7 +41,15 @@ const initialTheme = ((): "dark" | "light" => {
 /* Apply theme attribute immediately to prevent flash */
 document.documentElement.setAttribute("data-theme", initialTheme);
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+/* ── Mount ou hidratação ──
+   A home chega PRÉ-RENDERIZADA do build (dist/prerender/home.html): quando o
+   root já tem filhos, hidrata em vez de montar do zero — jogar o DOM fora e
+   remontar desperdiçaria exatamente o HTML que o prerender pagou para servir.
+   Nas demais rotas o fallback do SPA serve a casca vazia e o createRoot segue
+   como sempre foi. A árvore abaixo é ESPELHADA em src/entry-server.tsx — mudou
+   aqui, mude lá, ou a hidratação da home degrada em remontagem com aviso. */
+const raiz = document.getElementById("root")!;
+const arvore = (
   <React.StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -73,3 +81,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+if (raiz.hasChildNodes()) {
+  ReactDOM.hydrateRoot(raiz, arvore);
+} else {
+  ReactDOM.createRoot(raiz).render(arvore);
+}
